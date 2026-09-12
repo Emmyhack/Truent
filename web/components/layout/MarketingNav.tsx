@@ -13,7 +13,6 @@ interface MarketingNavProps {
 
 const navLinks = [
   { label: 'Home', href: '/' },
-  { label: 'Library', href: '/library' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Docs', href: '/docs' },
   { label: 'Contact', href: '/contact' },

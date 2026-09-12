@@ -35,8 +35,6 @@ type Particle = {
   twSpeed: number
 }
 
-type DriftLine = { text: string; kind: 'cmd' | 'expr' | 'tag' }
-
 interface ParticleHeroProps {
   /** ASCII block art the particles resolve into. */
   ascii: string
@@ -49,8 +47,6 @@ interface ParticleHeroProps {
   bullets?: React.ReactNode
   actions?: React.ReactNode
   hint?: string
-  driftLeft?: DriftLine[]
-  driftRight?: DriftLine[]
   accent?: string
   base?: string
 }
@@ -59,60 +55,6 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min)
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 /** power3.out — quick departure, long settle. */
 const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3)
-
-const driftStyle = (kind: DriftLine['kind']): React.CSSProperties => ({
-  fontFamily: 'var(--font-mono)',
-  fontSize: kind === 'tag' ? 10 : 11,
-  whiteSpace: 'nowrap',
-  ...(kind === 'tag'
-    ? { letterSpacing: '0.16em', color: 'rgba(52,211,153,0.5)' }
-    : kind === 'cmd'
-      ? { color: 'rgba(143,220,178,0.42)' }
-      : { color: 'rgba(160,180,168,0.3)' }),
-})
-
-/** Gutter column of audit vocabulary, duplicated so the loop is seamless. */
-function DriftColumn({
-  lines,
-  side,
-}: {
-  lines: DriftLine[]
-  side: 'left' | 'right'
-}) {
-  const mask =
-    `linear-gradient(to bottom,transparent,#000 20%,#000 80%,transparent),` +
-    `linear-gradient(to ${side === 'left' ? 'right' : 'left'},#000 55%,transparent)`
-
-  return (
-    <div
-      className="relative hidden self-stretch justify-self-stretch overflow-hidden lg:block"
-      style={{
-        gridColumn: side === 'left' ? 1 : 3,
-        gridRow: 1,
-        pointerEvents: 'none',
-        maskImage: mask,
-        WebkitMaskImage: mask,
-        maskComposite: 'intersect',
-        WebkitMaskComposite: 'source-in',
-      }}
-    >
-      <div
-        className="flex flex-col gap-5"
-        style={{
-          animation: `${side === 'left' ? 'driftUp 34s' : 'driftDown 40s'} linear infinite`,
-          alignItems: side === 'left' ? 'flex-start' : 'flex-end',
-          padding: side === 'left' ? '24px 0 24px 22px' : '24px 22px 24px 0',
-        }}
-      >
-        {[...lines, ...lines].map((line, i) => (
-          <span key={`${line.text}-${i}`} style={driftStyle(line.kind)}>
-            {line.text}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 export function ParticleHero({
   ascii,
@@ -123,8 +65,6 @@ export function ParticleHero({
   bullets,
   actions,
   hint = 'Scroll to explore ↓',
-  driftLeft = [],
-  driftRight = [],
   accent = '#34D399',
   base = '#9ab4a9',
 }: ParticleHeroProps) {
@@ -173,8 +113,7 @@ export function ParticleHero({
       probe.font = `400 100px ${getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim() || 'sans-serif'}`
       const w = probe.measureText(text).width
       if (w <= 0) return
-      // Fit against the centre grid track, not the full stage — the gutters
-      // either side carry the drift columns and must stay clear.
+      // Fit against the centre grid track, not the full stage.
       const track = Math.max(copy.clientWidth - 48, 240)
       // Two lines at this measure, so allow twice the track before capping.
       bigSize = Math.min(((track * 2) / w) * 100, height * 0.19, 96)
@@ -392,9 +331,6 @@ export function ParticleHero({
         />
         <div ref={sparkleRef} className="pointer-events-none absolute inset-0" />
 
-        <DriftColumn lines={driftLeft} side="left" />
-        <DriftColumn lines={driftRight} side="right" />
-
         {/* Headline block: shrinks and lifts clear of the resolving wordmark. */}
         <div
           ref={copyRef}
@@ -423,7 +359,7 @@ export function ParticleHero({
           </h1>
         </div>
 
-        {/* Scroll hint, inside the centre track so the gutters stay clear. */}
+        {/* Scroll hint, inside the centre track. */}
         {hint && (
           <div
             ref={hintRef}

@@ -10,7 +10,7 @@ import { AsciiLogo } from '@/components/ui/AsciiLogo'
 const REASONS = [
   'Enterprise plan inquiry',
   'On-premises deployment',
-  'Custom invariant library',
+  'Custom .sinv invariants',
   'Integration partnership',
   'Security research collaboration',
   'Other',
@@ -62,11 +62,7 @@ export default function ContactPage() {
       <MarketingNav />
 
       <header className="mx-auto max-w-[1100px] border-b border-white/[0.06] px-6 pb-12 pt-[84px]">
-        <span className="inline-flex items-center gap-2 rounded-full border border-acc-text/20 bg-acc-text/[0.07] px-4 py-[7px] font-mono text-[11px] uppercase tracking-[0.18em] text-[#8fdcb2]">
-          <span className="inline-block h-[5px] w-[5px] rounded-full bg-acc-text" />
-          Contact sales
-        </span>
-        <h1 className="m-0 mt-6 text-[clamp(36px,5.5vw,60px)] font-normal tracking-[-0.03em] text-[#f2f6f2]">
+        <h1 className="m-0 text-[clamp(36px,5.5vw,60px)] font-normal tracking-[-0.03em] text-[#f2f6f2]">
           Let&apos;s{' '}
           <span
             className="bg-clip-text text-transparent"

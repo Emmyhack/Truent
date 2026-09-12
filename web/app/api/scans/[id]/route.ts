@@ -14,7 +14,11 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 
   const scan = await prisma.scan.findFirst({
     where: { id: params.id, userId: user.id },
-    include: { findings: { orderBy: { createdAt: 'asc' } } },
+    select: {
+      id: true, projectName: true, language: true, status: true, error: true,
+      durationMs: true, createdAt: true, completedAt: true,
+      findings: { orderBy: { createdAt: 'asc' } },
+    },
   })
   if (!scan) return NextResponse.json({ error: 'Scan not found' }, { status: 404 })
   return NextResponse.json({ scan })

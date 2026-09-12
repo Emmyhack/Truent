@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { X, Github, FolderOpen, Upload, ArrowRight, CheckCircle, AlertCircle, Loader } from 'lucide-react'
 import { Button } from './Button'
 import { useEscapeKey } from '@/components/hooks/useEscapeKey'
+import { ENGINE, languageForExtension, staticDetectorCount } from '@/lib/engine'
 
 type ScanStatus = 'idle' | 'uploading' | 'scanning' | 'complete' | 'error'
 
@@ -38,54 +39,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
       return
     }
 
-    setScanStatus('uploading')
-    setProgress(0)
-    setError('')
-
-    // Simulate upload progress
-    const uploadInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 30) {
-          clearInterval(uploadInterval)
-          return 30
-        }
-        return prev + 5
-      })
-    }, 200)
-    timersRef.current.push(uploadInterval)
-
-    // Simulate API call
-    const apiTimeout = setTimeout(() => {
-      clearInterval(uploadInterval)
-      setScanStatus('scanning')
-      setProgress(30)
-
-      // Simulate scanning
-      const scanInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(scanInterval)
-            return 100
-          }
-          return prev + 15
-        })
-      }, 400)
-      timersRef.current.push(scanInterval)
-
-      const completeTimeout = setTimeout(() => {
-        clearInterval(scanInterval)
-        setScanStatus('complete')
-        setProgress(100)
-        setFindings([
-          { severity: 'critical', count: 3 },
-          { severity: 'high', count: 5 },
-          { severity: 'medium', count: 8 },
-          { severity: 'low', count: 12 },
-        ])
-      }, 3000)
-      timersRef.current.push(completeTimeout)
-    }, 2000)
-    timersRef.current.push(apiTimeout)
+    setError('GitHub App ingestion is not enabled yet. Upload a contract file to run the production analyzer.')
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,59 +50,41 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
     }
   }
 
-  const handleUploadSubmit = () => {
+  const handleUploadSubmit = async () => {
     if (!uploadedFile) {
       setError('Please select a file to upload')
       return
     }
 
-    setScanStatus('uploading')
-    setProgress(0)
+    setScanStatus('scanning')
+    setProgress(15)
     setError('')
-
-    // Simulate upload progress
-    const uploadInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 40) {
-          clearInterval(uploadInterval)
-          return 40
-        }
-        return prev + 8
+    try {
+      const language = languageForExtension(uploadedFile.name)
+      const response = await fetch('/api/analyze', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: await uploadedFile.text(), language, projectName: uploadedFile.name }),
       })
-    }, 150)
-    timersRef.current.push(uploadInterval)
-
-    const apiTimeout = setTimeout(() => {
-      clearInterval(uploadInterval)
-      setScanStatus('scanning')
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to queue scan')
       setProgress(40)
-
-      // Simulate scanning
-      const scanInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(scanInterval)
-            return 100
-          }
-          return prev + 12
-        })
-      }, 300)
-      timersRef.current.push(scanInterval)
-
-      const completeTimeout = setTimeout(() => {
-        clearInterval(scanInterval)
-        setScanStatus('complete')
-        setProgress(100)
-        setFindings([
-          { severity: 'critical', count: 2 },
-          { severity: 'high', count: 4 },
-          { severity: 'medium', count: 6 },
-          { severity: 'low', count: 9 },
-        ])
-      }, 2500)
-      timersRef.current.push(completeTimeout)
-    }, 2000)
-    timersRef.current.push(apiTimeout)
+      for (let attempt = 0; attempt < 150; attempt++) {
+        const statusResponse = await fetch(`/api/scans/${result.scanId}`, { cache: 'no-store' })
+        const { scan } = await statusResponse.json()
+        if (scan.status === 'failed') throw new Error(scan.error || 'Analyzer failed')
+        if (scan.status === 'complete') {
+          setProgress(100)
+          window.location.assign(`/reports/${result.scanId}`)
+          return
+        }
+        setProgress((current) => Math.min(current + 2, 90))
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
+      throw new Error('Scan is taking longer than expected. It remains available on your dashboard.')
+    } catch (error) {
+      setScanStatus('error')
+      setError(error instanceof Error ? error.message : 'Unable to run scan')
+    }
   }
 
   const handleReset = () => {
@@ -216,7 +152,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
                   }`}
                 >
                   <FolderOpen className="w-5 h-5 mx-auto mb-2 text-text" />
-                  <p className="text-sm font-[600] text-text">Upload Folder</p>
+                  <p className="text-sm font-[600] text-text">Upload a file</p>
                 </button>
               </div>
 
@@ -241,7 +177,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
                       className="w-full px-4 py-2.5 bg-surface-2 border border-hair rounded-lg text-text placeholder-on-surface-variant focus:outline-none focus:border-brand transition"
                     />
                     <p className="text-xs text-sec mt-2">
-                      Enter the GitHub repository URL to scan. We&apos;ll clone the repository and analyze all smart contracts.
+                      Repository ingestion is not enabled in the hosted dashboard yet. Scan a repository with the CLI (truent scan . --chain auto) or upload a single file here.
                     </p>
                   </div>
 
@@ -262,7 +198,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-text mb-3">
-                      Upload Smart Contract Folder
+                      Upload a file
                     </label>
                     <div className="relative">
                       <input
@@ -270,7 +206,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
                         onChange={handleFileUpload}
                         aria-label="Upload smart contract folder"
                         className="absolute inset-0 opacity-0 cursor-pointer"
-                        {...({ webkitdirectory: '', directory: '' } as any)}
+                        accept=".sol,.rs,.move,.py,.js,.mjs,.cjs,.jsx,.ts,.tsx,.go,.sh,.bash,.tf,.yml,.yaml,.txt,Dockerfile"
                       />
                       <div className="px-4 py-6 bg-surface-2 border-2 border-dashed border-hair rounded-lg text-center hover:border-brand transition">
                         <Upload className="w-8 h-8 mx-auto mb-2 text-sec" />
@@ -278,7 +214,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
                           Click to upload or drag and drop
                         </p>
                         <p className="text-xs text-sec">
-                          {uploadedFile ? uploadedFile.name : 'Select folder containing .sol or .rs files'}
+                          {uploadedFile ? uploadedFile.name : 'Contract, source or infrastructure file: .sol .rs .move .py .js .ts .go .sh .tf Dockerfile .yml'}
                         </p>
                       </div>
                     </div>
@@ -321,8 +257,18 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
                 <Loader className="w-4 h-4 animate-spin" />
                 {scanStatus === 'uploading'
                   ? 'Uploading your code to our secure servers...'
-                  : 'Running security analysis with 50+ automated checks...'}
+                  : `Running the engine: ${staticDetectorCount()} static detectors across ${Object.keys(ENGINE.byChain).length - 2} analyzers…`}
               </div>
+            </div>
+          )}
+
+          {scanStatus === 'error' && (
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 rounded-lg border border-critical/30 bg-critical/10 p-4">
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-critical" />
+                <p className="text-sm text-critical">{error}</p>
+              </div>
+              <Button variant="secondary" fullWidth onClick={handleReset}>Try again</Button>
             </div>
           )}
 

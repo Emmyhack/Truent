@@ -1,0 +1,6290 @@
+{
+ "generated_from": "truent 0.6.0",
+ "total_detectors": 174,
+ "by_chain": {
+  "evm": 59,
+  "general": 49,
+  "move": 12,
+  "runtime": 12,
+  "supply-chain": 8,
+  "solana": 18,
+  "soroban": 15,
+  "chain-agnostic": 1
+ },
+ "detectors": [
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-330"
+   ],
+   "cwe_names": [
+    "Use of Insufficiently Random Values"
+   ],
+   "dasp": [
+    "DASP-6"
+   ],
+   "fix": "Follow ERC-4337/EIP-7702 rules: no state side effects in validation, do not assume `msg.sender == tx.origin` means an EOA, derive salts from user-controlled and unique inputs.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_aa_entropy_weakness",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC09"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-120"
+   ],
+   "vector": "network",
+   "verify": "Bundler simulation passes; tests cover delegated-EOA callers."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-284",
+    "CWE-862"
+   ],
+   "cwe_names": [
+    "Improper Access Control",
+    "Missing Authorization"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Gate the function with an explicit role check (`onlyOwner`/AccessControl) tied to msg.sender, not tx.origin or a caller-supplied address.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_access_control",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-105"
+   ],
+   "vector": "network",
+   "verify": "Test: call from a non-privileged account and assert revert."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-610",
+    "CWE-829"
+   ],
+   "cwe_names": [
+    "Externally Controlled Reference to a Resource in Another Sphere",
+    "Inclusion of Functionality from Untrusted Control Sphere"
+   ],
+   "dasp": [
+    "DASP-4"
+   ],
+   "fix": "Do not forward `msg.value` in a call whose target or data the caller controls; separate payable entry points from generic call routers.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_arbitrary_call_msg_value",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC06",
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-112"
+   ],
+   "vector": "network",
+   "verify": "Test: router call with attacker-chosen target cannot move the contract's ETH."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-913",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Improper Control of Dynamically-Managed Code Resources",
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Never delegatecall or forward a caller-supplied target/selector; allowlist targets in storage set by an admin.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_arbitrary_function_selector_dispatch",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01",
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-127"
+   ],
+   "vector": "network",
+   "verify": "Test: arbitrary target/selector call from an unprivileged account reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-682",
+    "CWE-1339"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation",
+    "Insufficient Precision or Accuracy of a Real Number"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Check divisors are non-zero before dividing; multiply before dividing and use fixed-point (WAD/RAY) math for ratios.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_arithmetic_rounding",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "condition",
+   "swc": [
+    "SWC-101"
+   ],
+   "vector": "network",
+   "verify": "Test with zero and dust inputs; assert no revert path leaks and rounding favours the protocol."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-345",
+    "CWE-347"
+   ],
+   "cwe_names": [
+    "Insufficient Verification of Data Authenticity",
+    "Improper Verification of Cryptographic Signature"
+   ],
+   "dasp": [],
+   "fix": "Verify the remote sender against a registered trusted-remote mapping and check the message hash/signature before minting or releasing.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_bridge_address_cryptographic_verify",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-122"
+   ],
+   "vector": "network",
+   "verify": "Test: message from an unregistered remote is rejected."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation"
+   ],
+   "dasp": [],
+   "fix": "Assert protocol invariants (solvency, conservation, health factor) at the end of every state-changing function.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_conservation_check_absent",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Invariant fuzz test with `truent fuzz` holds across random call sequences."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-362",
+    "CWE-665"
+   ],
+   "cwe_names": [
+    "Concurrent Execution using Shared Resource with Improper Synchronization",
+    "Improper Initialization"
+   ],
+   "dasp": [
+    "DASP-7"
+   ],
+   "fix": "Set critical addresses in the constructor or in the deployment transaction; never leave an owner/admin settable by the first caller.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_constructor_race_condition",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-114"
+   ],
+   "vector": "network",
+   "verify": "Deployment script asserts owner after deploy in the same transaction."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-294"
+   ],
+   "cwe_names": [
+    "Authentication Bypass by Capture-replay"
+   ],
+   "dasp": [],
+   "fix": "Include nonce, chainId, contract address and deadline in the signed digest (EIP-712) and mark nonces used.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_cross_chain_replay_missing_chainid",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-121"
+   ],
+   "vector": "network",
+   "verify": "Test: replaying a used signature or a signature from another chain reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-829",
+    "CWE-913"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere",
+    "Improper Control of Dynamically-Managed Code Resources"
+   ],
+   "dasp": [],
+   "fix": "Never delegatecall or forward a caller-supplied target/selector; allowlist targets in storage set by an admin.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_delegatecall_injection",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01",
+    "SC06"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-112"
+   ],
+   "vector": "network",
+   "verify": "Test: arbitrary target/selector call from an unprivileged account reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-369",
+    "CWE-703"
+   ],
+   "cwe_names": [
+    "Divide By Zero",
+    "Improper Check or Handling of Exceptional Conditions"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Check divisors are non-zero before dividing; multiply before dividing and use fixed-point (WAD/RAY) math for ratios.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_division_by_zero",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test with zero and dust inputs; assert no revert path leaks and rounding favours the protocol."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-654"
+   ],
+   "cwe_names": [
+    "Reliance on a Single Factor in a Security Decision"
+   ],
+   "dasp": [],
+   "fix": "Require multiple independent verifiers/signers (threshold >= 2 of N, N >= 3) and hold admin keys in a multisig with a timelock.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_dvn_single_point_failure",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Config review: threshold and signer set match policy; `truent scan` clean."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-654",
+    "CWE-285"
+   ],
+   "cwe_names": [
+    "Reliance on a Single Factor in a Security Decision",
+    "Improper Authorization"
+   ],
+   "dasp": [],
+   "fix": "Require multiple independent verifiers/signers (threshold >= 2 of N, N >= 3) and hold admin keys in a multisig with a timelock.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_dvn_threshold",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Config review: threshold and signer set match policy; `truent scan` clean."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-807",
+    "CWE-693"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Protection Mechanism Failure"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Follow ERC-4337/EIP-7702 rules: no state side effects in validation, do not assume `msg.sender == tx.origin` means an EOA, derive salts from user-controlled and unique inputs.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_eip7702_eoa_assumption",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-115"
+   ],
+   "vector": "network",
+   "verify": "Bundler simulation passes; tests cover delegated-EOA callers."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-670",
+    "CWE-693"
+   ],
+   "cwe_names": [
+    "Always-Incorrect Control Flow Implementation",
+    "Protection Mechanism Failure"
+   ],
+   "dasp": [],
+   "fix": "Follow ERC-4337/EIP-7702 rules: no state side effects in validation, do not assume `msg.sender == tx.origin` means an EOA, derive salts from user-controlled and unique inputs.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_erc4337_validation_side_effects",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Bundler simulation passes; tests cover delegated-EOA callers."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-682",
+    "CWE-1339"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation",
+    "Insufficient Precision or Accuracy of a Real Number"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Use virtual shares/assets offset (OpenZeppelin ERC4626 >=4.9) or seed the vault with a burned initial deposit.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_erc4626_inflation_protection",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03",
+    "SC02"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-132"
+   ],
+   "vector": "network",
+   "verify": "Test: first-depositor donation attack yields no profit."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-682",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation",
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Credit the balance difference measured before and after `transferFrom`, not the requested amount.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_fee_on_transfer_incompatibility",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03",
+    "SC04"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test with a mock fee-on-transfer token: credited amount equals received amount."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-807",
+    "CWE-654"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Reliance on a Single Factor in a Security Decision"
+   ],
+   "dasp": [],
+   "fix": "Use snapshot-based voting power (ERC20Votes, block-delayed checkpoints) so votes reflect balance at a past block.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_flash_loan_governance",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC07"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: tokens acquired in the proposal block carry no voting power."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-362",
+    "CWE-367"
+   ],
+   "cwe_names": [
+    "Concurrent Execution using Shared Resource with Improper Synchronization",
+    "Time-of-check Time-of-use (TOCTOU) Race Condition"
+   ],
+   "dasp": [
+    "DASP-7"
+   ],
+   "fix": "Require a caller-supplied `minAmountOut`/`deadline` and enforce them; consider commit-reveal for sensitive ordering.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_frontrunning",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-114"
+   ],
+   "vector": "adjacent",
+   "verify": "Test: swap with minAmountOut above the achievable output reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-654",
+    "CWE-285"
+   ],
+   "cwe_names": [
+    "Reliance on a Single Factor in a Security Decision",
+    "Improper Authorization"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require multiple independent verifiers/signers (threshold >= 2 of N, N >= 3) and hold admin keys in a multisig with a timelock.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_insufficient_multisig_threshold",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Config review: threshold and signer set match policy; `truent scan` clean."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-190"
+   ],
+   "cwe_names": [
+    "Integer Overflow or Wraparound"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Compile with Solidity >=0.8 (checked arithmetic) or wrap arithmetic in SafeMath; audit every `unchecked` block.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_integer_overflow",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-101"
+   ],
+   "vector": "network",
+   "verify": "Fuzz test arithmetic paths with boundary values (0, max) and assert revert on overflow."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-191"
+   ],
+   "cwe_names": [
+    "Integer Underflow (Wrap or Wraparound)"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Compile with Solidity >=0.8 (checked arithmetic) or wrap arithmetic in SafeMath; audit every `unchecked` block.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_integer_underflow",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-101"
+   ],
+   "vector": "network",
+   "verify": "Fuzz test arithmetic paths with boundary values (0, max) and assert revert on overflow."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-190",
+    "CWE-191"
+   ],
+   "cwe_names": [
+    "Integer Overflow or Wraparound",
+    "Integer Underflow (Wrap or Wraparound)"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Compile with Solidity >=0.8 (checked arithmetic) or wrap arithmetic in SafeMath; audit every `unchecked` block.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_legacy_unsafe_math",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-101"
+   ],
+   "vector": "network",
+   "verify": "Fuzz test arithmetic paths with boundary values (0, max) and assert revert on overflow."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-807",
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Incorrect Calculation"
+   ],
+   "dasp": [],
+   "fix": "Value liquid-staking tokens by their exchange rate from the staking contract with a depeg circuit breaker, not 1:1 with the underlying.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_lst_depeg",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: simulated 10% depeg triggers the breaker before undercollateralisation."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-345",
+    "CWE-665"
+   ],
+   "cwe_names": [
+    "Insufficient Verification of Data Authenticity",
+    "Improper Initialization"
+   ],
+   "dasp": [],
+   "fix": "Require a non-zero root at initialization and on every update; verify proofs with a non-empty leaf domain separator.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_merkle_root_zero",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: initialization with root 0 reverts; empty proof against zero root fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-665",
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Improper Initialization",
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [],
+   "fix": "Require a non-zero root at initialization and on every update; verify proofs with a non-empty leaf domain separator.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_merkle_root_zero_default",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: initialization with root 0 reverts; empty proof against zero root fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-693"
+   ],
+   "cwe_names": [
+    "Protection Mechanism Failure"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Add Pausable with whenNotPaused on value-moving functions; give pause to a multisig or guardian with a short path and unpause to governance.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_missing_pause_mechanism",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: after pause(), deposit/withdraw/borrow revert; guardian can pause without a timelock."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-754"
+   ],
+   "cwe_names": [
+    "Improper Check for Unusual or Exceptional Conditions"
+   ],
+   "dasp": [],
+   "fix": "Assert protocol invariants (solvency, conservation, health factor) at the end of every state-changing function.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_missing_post_state_health_check",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-123"
+   ],
+   "vector": "network",
+   "verify": "Invariant fuzz test with `truent fuzz` holds across random call sequences."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-862",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Gate the function with an explicit role check (`onlyOwner`/AccessControl) tied to msg.sender, not tx.origin or a caller-supplied address.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_missing_signer_check",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-105"
+   ],
+   "vector": "network",
+   "verify": "Test: call from a non-privileged account and assert revert."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-807",
+    "CWE-349"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Acceptance of Extraneous Untrusted Data With Trusted Data"
+   ],
+   "dasp": [],
+   "fix": "Price from a manipulation-resistant source (Chainlink, TWAP over many blocks); never from `balanceOf`/reserves in the same transaction.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_oracle_self_trade",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: flash-loan-driven swap in the same block does not change the price the contract uses."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-807",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Price from a manipulation-resistant source (Chainlink, TWAP over many blocks); never from `balanceOf`/reserves in the same transaction.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_oracle_spot_price",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: flash-loan-driven swap in the same block does not change the price the contract uses."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-1339",
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Insufficient Precision or Accuracy of a Real Number",
+    "Incorrect Calculation"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Check divisors are non-zero before dividing; multiply before dividing and use fixed-point (WAD/RAY) math for ratios.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_precision_loss",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "condition",
+   "swc": [
+    "SWC-101"
+   ],
+   "vector": "network",
+   "verify": "Test with zero and dust inputs; assert no revert path leaks and rounding favours the protocol."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-665",
+    "CWE-843"
+   ],
+   "cwe_names": [
+    "Improper Initialization",
+    "Access of Resource Using Incompatible Type ('Type Confusion')"
+   ],
+   "dasp": [],
+   "fix": "Use ERC-1967 / unstructured storage slots for proxy state and OpenZeppelin upgradeable base contracts; run storage-layout diff before each upgrade.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_proxy_storage_collision",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "privileged",
+   "swc": [
+    "SWC-124"
+   ],
+   "vector": "network",
+   "verify": "`forge inspect <Contract> storage-layout` diff is empty between versions."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-610",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Externally Controlled Reference to a Resource in Another Sphere",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-4"
+   ],
+   "fix": "Restrict relay/execute entry points to authorized relayers or require the payload to be signed by the origin.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_public_relay",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01",
+    "SC06"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-112"
+   ],
+   "vector": "network",
+   "verify": "Test: unauthorized relayer call reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-400",
+    "CWE-703"
+   ],
+   "cwe_names": [
+    "Uncontrolled Resource Consumption",
+    "Improper Check or Handling of Exceptional Conditions"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Record what each recipient is owed and let them withdraw (pull payment); never revert the batch on one failed transfer.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_push_payment_in_loop",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-113"
+   ],
+   "vector": "network",
+   "verify": "Test: a recipient that reverts does not block the others."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-841",
+    "CWE-663"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Use of a Non-reentrant Function in a Concurrent Context"
+   ],
+   "dasp": [
+    "DASP-1"
+   ],
+   "fix": "Do not read pool/vault state (getters, price, totalSupply) during an external call; take a snapshot before the call or mark view functions with a reentrancy check.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_readonly_reentrancy",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC05"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-107"
+   ],
+   "vector": "network",
+   "verify": "Test: call the view function from a receiver during withdraw and assert it reverts or returns the pre-call value."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-841",
+    "CWE-663"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Use of a Non-reentrant Function in a Concurrent Context"
+   ],
+   "dasp": [
+    "DASP-1"
+   ],
+   "fix": "Apply checks-effects-interactions: update state before any external call, and guard entry points with a nonReentrant modifier (OpenZeppelin ReentrancyGuard).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_reentrancy_classic",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC05"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-107"
+   ],
+   "vector": "network",
+   "verify": "Re-run `truent scan`; add a test that re-enters from a malicious receiver and asserts revert."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-841",
+    "CWE-663"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Use of a Non-reentrant Function in a Concurrent Context"
+   ],
+   "dasp": [
+    "DASP-1"
+   ],
+   "fix": "Apply checks-effects-interactions: update state before any external call, and guard entry points with a nonReentrant modifier (OpenZeppelin ReentrancyGuard).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_reentrancy_erc20",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC05"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-107"
+   ],
+   "vector": "network",
+   "verify": "Re-run `truent scan`; add a test that re-enters from a malicious receiver and asserts revert."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-841",
+    "CWE-662"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Improper Synchronization"
+   ],
+   "dasp": [
+    "DASP-1"
+   ],
+   "fix": "Apply checks-effects-interactions: update state before any external call, and guard entry points with a nonReentrant modifier (OpenZeppelin ReentrancyGuard).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_reentrancy_protection",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC05"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-107"
+   ],
+   "vector": "network",
+   "verify": "Re-run `truent scan`; add a test that re-enters from a malicious receiver and asserts revert."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-841",
+    "CWE-663"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Use of a Non-reentrant Function in a Concurrent Context"
+   ],
+   "dasp": [
+    "DASP-1"
+   ],
+   "fix": "Apply checks-effects-interactions: update state before any external call, and guard entry points with a nonReentrant modifier (OpenZeppelin ReentrancyGuard).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_reentrancy_via_whitelisted",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC05"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-107"
+   ],
+   "vector": "network",
+   "verify": "Re-run `truent scan`; add a test that re-enters from a malicious receiver and asserts revert."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-1284",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Improper Validation of Specified Quantity in Input",
+    "Improper Input Validation"
+   ],
+   "dasp": [
+    "DASP-7"
+   ],
+   "fix": "Require a caller-supplied `minAmountOut`/`deadline` and enforce them; consider commit-reveal for sensitive ordering.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_router_slippage_validation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "adjacent",
+   "verify": "Test: swap with minAmountOut above the achievable output reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-863",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Incorrect Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Gate the function with an explicit role check (`onlyOwner`/AccessControl) tied to msg.sender, not tx.origin or a caller-supplied address.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_shallow_auth",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-105"
+   ],
+   "vector": "network",
+   "verify": "Test: call from a non-privileged account and assert revert."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-294"
+   ],
+   "cwe_names": [
+    "Authentication Bypass by Capture-replay"
+   ],
+   "dasp": [],
+   "fix": "Include nonce, chainId, contract address and deadline in the signed digest (EIP-712) and mark nonces used.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_signature_replay_protection",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-121"
+   ],
+   "vector": "network",
+   "verify": "Test: replaying a used signature or a signature from another chain reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-654"
+   ],
+   "cwe_names": [
+    "Reliance on a Single Factor in a Security Decision"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require multiple independent verifiers/signers (threshold >= 2 of N, N >= 3) and hold admin keys in a multisig with a timelock.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_single_eoa_admin",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Config review: threshold and signer set match policy; `truent scan` clean."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-672",
+    "CWE-807"
+   ],
+   "cwe_names": [
+    "Operation on a Resource after Expiration or Release",
+    "Reliance on Untrusted Inputs in a Security Decision"
+   ],
+   "dasp": [],
+   "fix": "Check `updatedAt` against a max staleness and `answer > 0` on every oracle read; revert or pause when stale.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_stale_oracle_price",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: mocked stale round reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-841",
+    "CWE-663"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Use of a Non-reentrant Function in a Concurrent Context"
+   ],
+   "dasp": [
+    "DASP-1"
+   ],
+   "fix": "Assert protocol invariants (solvency, conservation, health factor) at the end of every state-changing function.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_state_mutation_ordering",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC05"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-107"
+   ],
+   "vector": "network",
+   "verify": "Invariant fuzz test with `truent fuzz` holds across random call sequences."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-670",
+    "CWE-693"
+   ],
+   "cwe_names": [
+    "Always-Incorrect Control Flow Implementation",
+    "Protection Mechanism Failure"
+   ],
+   "dasp": [],
+   "fix": "Fix the property violation the counterexample demonstrates (the input is in the finding), add the input as a concrete regression test, and re-run `truent symbolic` until the check passes.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_symbolic_counterexample",
+   "nist_csf": [],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent symbolic` reports the check as passed and the regression test is green."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [],
+   "fix": "Make the check decidable: raise the solver timeout, bound loops, loosen a setup that reverts every path, or split the property into smaller checks.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_symbolic_unresolved",
+   "nist_csf": [],
+   "owasp_sc": [],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent symbolic` reports the check as passed or failed \u2014 not unresolved."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-807"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision"
+   ],
+   "dasp": [],
+   "fix": "Price from a manipulation-resistant source (Chainlink, TWAP over many blocks); never from `balanceOf`/reserves in the same transaction.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_synthetic_collateral_oracle",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: flash-loan-driven swap in the same block does not change the price the contract uses."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-829"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere"
+   ],
+   "dasp": [
+    "DASP-8"
+   ],
+   "fix": "Do not use `block.timestamp` as a source of randomness or for fine-grained (<15 min) decisions; use block numbers or a VRF.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_timestamp_dependence",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-116"
+   ],
+   "vector": "adjacent",
+   "verify": "Review: timestamp comparisons tolerate miner drift."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-807",
+    "CWE-349"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Acceptance of Extraneous Untrusted Data With Trusted Data"
+   ],
+   "dasp": [],
+   "fix": "Price from a manipulation-resistant source (Chainlink, TWAP over many blocks); never from `balanceOf`/reserves in the same transaction.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_token_balance_manipulation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02",
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-132"
+   ],
+   "vector": "network",
+   "verify": "Test: flash-loan-driven swap in the same block does not change the price the contract uses."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-682",
+    "CWE-754"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation",
+    "Improper Check for Unusual or Exceptional Conditions"
+   ],
+   "dasp": [],
+   "fix": "Mint synthetic tokens only against verified collateral deposits in the same transaction; cap supply to backing.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_unbacked_synthetic_mint",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Invariant: totalSupply <= backing at all times under `truent fuzz`."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-400",
+    "CWE-834"
+   ],
+   "cwe_names": [
+    "Uncontrolled Resource Consumption",
+    "Excessive Iteration"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Bound the iteration (process in pages with a cursor) or restructure so per-user state is updated on demand instead of looping over all holders.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_unbounded_loop",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-128"
+   ],
+   "vector": "network",
+   "verify": "Test: the function completes at 10\u00d7 the expected array length within the block gas limit."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-1284",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Improper Validation of Specified Quantity in Input",
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Price from a manipulation-resistant source (Chainlink, TWAP over many blocks); never from `balanceOf`/reserves in the same transaction.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_unbounded_pricing_input",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: flash-loan-driven swap in the same block does not change the price the contract uses."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-252"
+   ],
+   "cwe_names": [
+    "Unchecked Return Value"
+   ],
+   "dasp": [
+    "DASP-4"
+   ],
+   "fix": "Check the boolean result of low-level calls and ERC-20 transfers, or use SafeERC20 / revert on failure.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_unchecked_returns",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC06"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-104"
+   ],
+   "vector": "network",
+   "verify": "Test with a token that returns false: the operation reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-824",
+    "CWE-665"
+   ],
+   "cwe_names": [
+    "Access of Uninitialized Pointer",
+    "Improper Initialization"
+   ],
+   "dasp": [],
+   "fix": "Declare storage structs/arrays explicitly with `storage` and initialize them; avoid uninitialized local storage pointers (pre-0.5 pattern).",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_uninitialized_pointers",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-109"
+   ],
+   "vector": "network",
+   "verify": "Compile with a modern Solidity (>=0.5) where this is a compile error."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-665",
+    "CWE-862"
+   ],
+   "cwe_names": [
+    "Improper Initialization",
+    "Missing Authorization"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Add the `initializer` modifier, call `_disableInitializers()` in the implementation constructor, and initialize in the same transaction as deployment.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_unprotected_initializer",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-118"
+   ],
+   "vector": "network",
+   "verify": "Test: second `initialize` call reverts; implementation contract cannot be initialized."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-494",
+    "CWE-913"
+   ],
+   "cwe_names": [
+    "Download of Code Without Integrity Check",
+    "Improper Control of Dynamically-Managed Code Resources"
+   ],
+   "dasp": [],
+   "fix": "Restrict `_authorizeUpgrade`/`upgradeTo` to an admin behind a timelock; validate the new implementation (ERC-1822 UUID / interface check).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_upgrade_path_verification",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: non-admin upgrade reverts; upgrade to a non-UUPS implementation reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-693",
+    "CWE-665"
+   ],
+   "cwe_names": [
+    "Protection Mechanism Failure",
+    "Improper Initialization"
+   ],
+   "dasp": [],
+   "fix": "Enforce a non-zero challenge/withdrawal delay before finalizing optimistic messages or withdrawals.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_zero_challenge_period",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: finalize before the delay elapses reverts."
+  },
+  {
+   "attack": [
+    "T1195.002",
+    "T1059"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Supply Chain",
+    "Command and Scripting Interpreter"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-829",
+    "CWE-94"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere",
+    "Improper Control of Generation of Code ('Code Injection')"
+   ],
+   "dasp": [],
+   "fix": "Do not check out PR head code in `pull_request_target` workflows; use `pull_request` or split into an unprivileged job.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_ci_pwn_request",
+   "nist_csf": [
+    "GV.SC-07",
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Workflow review: no `ref: ${{ github.event.pull_request.head.sha }}` under `pull_request_target`."
+  },
+  {
+   "attack": [
+    "T1059",
+    "T1195.002"
+   ],
+   "attack_names": [
+    "Command and Scripting Interpreter",
+    "Supply Chain Compromise: Compromise Software Supply Chain"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-94",
+    "CWE-78"
+   ],
+   "cwe_names": [
+    "Improper Control of Generation of Code ('Code Injection')",
+    "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+   ],
+   "dasp": [],
+   "fix": "Pass untrusted event fields (titles, branch names, bodies) through `env:` and quote them; never interpolate `${{ }}` directly in `run:`.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_ci_script_injection",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Workflow lint (actionlint) clean; `truent scan` clean."
+  },
+  {
+   "attack": [
+    "T1552"
+   ],
+   "attack_names": [
+    "Unsecured Credentials"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-532"
+   ],
+   "cwe_names": [
+    "Insertion of Sensitive Information into Log File"
+   ],
+   "dasp": [],
+   "fix": "Never echo secrets or pass them to untrusted actions; use `::add-mask::` and least-privilege `permissions:`.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_ci_secret_exposed",
+   "nist_csf": [
+    "PR.DS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "local",
+   "verify": "Workflow logs contain no secret values; scan clean."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-829"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere"
+   ],
+   "dasp": [],
+   "fix": "Pin every action to a full commit SHA (`uses: owner/repo@<sha> # vX`) and let Dependabot update it.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_ci_unpinned_action",
+   "nist_csf": [
+    "GV.SC-07",
+    "PR.PS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent harden` dependabot config present; scan clean."
+  },
+  {
+   "attack": [
+    "T1195.002"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Supply Chain"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-347",
+    "CWE-494"
+   ],
+   "cwe_names": [
+    "Improper Verification of Cryptographic Signature",
+    "Download of Code Without Integrity Check"
+   ],
+   "dasp": [],
+   "fix": "Sign artifacts and publish provenance (cosign, npm --provenance with id-token: write, gh attest, SLSA generator).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_ci_unsigned_release",
+   "nist_csf": [
+    "GV.SC-07"
+   ],
+   "owasp_sc": [],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "`cosign verify` / `npm audit signatures` succeeds on the released artifact."
+  },
+  {
+   "attack": [
+    "T1059",
+    "T1190"
+   ],
+   "attack_names": [
+    "Command and Scripting Interpreter",
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-94"
+   ],
+   "cwe_names": [
+    "Improper Control of Generation of Code ('Code Injection')"
+   ],
+   "dasp": [],
+   "fix": "Remove `eval`/`exec`/`new Function` on any input-derived string; use a parser or an allowlisted dispatch table.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_code_injection",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Taint test: source\u2192eval flow no longer present."
+  },
+  {
+   "attack": [
+    "T1059",
+    "T1190"
+   ],
+   "attack_names": [
+    "Command and Scripting Interpreter",
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-78"
+   ],
+   "cwe_names": [
+    "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+   ],
+   "dasp": [],
+   "fix": "Invoke programs with an argument array (no shell); if a shell is unavoidable, quote with `shlex.quote` and allowlist inputs. Download-then-verify (checksum/signature) instead of piping to sh.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_command_injection",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Taint test: source\u2192shell flow no longer present."
+  },
+  {
+   "attack": [
+    "T1611",
+    "T1610"
+   ],
+   "attack_names": [
+    "Escape to Host",
+    "Deploy Container"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-250",
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Execution with Unnecessary Privileges",
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [],
+   "fix": "Remove `privileged: true`, host namespaces and dangerous capabilities; set `allowPrivilegeEscalation: false`, `runAsNonRoot: true`.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_container_privileged",
+   "nist_csf": [
+    "PR.AA-05",
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "local",
+   "verify": "Admission policy (Pod Security Standards: restricted) passes."
+  },
+  {
+   "attack": [
+    "T1611"
+   ],
+   "attack_names": [
+    "Escape to Host"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-250"
+   ],
+   "cwe_names": [
+    "Execution with Unnecessary Privileges"
+   ],
+   "dasp": [],
+   "fix": "Add a non-root `USER` after installing dependencies; use read-only root filesystem where possible.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_docker_root_user",
+   "nist_csf": [
+    "PR.AA-05",
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "local",
+   "verify": "`docker run --rm image id` shows a non-zero uid."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-829"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere"
+   ],
+   "dasp": [],
+   "fix": "Pin base images by digest (`FROM image@sha256:\u2026`) and update via Dependabot/Renovate.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_docker_unpinned_base",
+   "nist_csf": [
+    "GV.SC-07",
+    "PR.PS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Dockerfile references digests; scan clean."
+  },
+  {
+   "attack": [
+    "T1592"
+   ],
+   "attack_names": [
+    "Gather Victim Host Information"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-209",
+    "CWE-200"
+   ],
+   "cwe_names": [
+    "Generation of Error Message Containing Sensitive Information",
+    "Exposure of Sensitive Information to an Unauthorized Actor"
+   ],
+   "dasp": [],
+   "fix": "Return a generic message and a correlation id to the client; log the exception with the id server-side.",
+   "impact": "information",
+   "interaction": "none",
+   "invariant_id": "gen_error_detail_exposed",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Trigger an error: the response carries no stack, path or query text."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-400",
+    "CWE-200"
+   ],
+   "cwe_names": [
+    "Uncontrolled Resource Consumption",
+    "Exposure of Sensitive Information to an Unauthorized Actor"
+   ],
+   "dasp": [],
+   "fix": "Disable introspection in production; add depth and complexity limits (graphql-depth-limit, graphql-armor); consider persisted queries only.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_graphql_unrestricted",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a 20-level nested query is rejected; introspection returns an error in production."
+  },
+  {
+   "attack": [
+    "T1552.001"
+   ],
+   "attack_names": [
+    "Unsecured Credentials: Credentials In Files"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-798"
+   ],
+   "cwe_names": [
+    "Use of Hard-coded Credentials"
+   ],
+   "dasp": [],
+   "fix": "Rotate the credential now (assume it is compromised), move it to a secret manager or environment, and add the file pattern to `.gitignore`. Purge it from git history if pushed.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_hardcoded_secret",
+   "nist_csf": [
+    "PR.DS-01",
+    "PR.AA-05"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "local",
+   "verify": "`truent scan --chain general` is clean; the old credential is revoked at the provider."
+  },
+  {
+   "attack": [
+    "T1133",
+    "T1210"
+   ],
+   "attack_names": [
+    "External Remote Services",
+    "Exploitation of Remote Services"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-668",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Exposure of Resource to Wrong Sphere",
+    "Improper Access Control"
+   ],
+   "dasp": [],
+   "fix": "Restrict ingress CIDRs to known ranges; never expose admin/database ports to 0.0.0.0/0 \u2014 use a bastion or VPN.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_iac_open_ingress",
+   "nist_csf": [
+    "PR.IR-01",
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` from the internet shows no rt_open_port on admin/db ports."
+  },
+  {
+   "attack": [
+    "T1133"
+   ],
+   "attack_names": [
+    "External Remote Services"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-668",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Exposure of Resource to Wrong Sphere",
+    "Improper Access Control"
+   ],
+   "dasp": [],
+   "fix": "Set `publicly_accessible = false`, place the database in private subnets, and allow only the application security group.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_iac_public_database",
+   "nist_csf": [
+    "PR.IR-01",
+    "PR.DS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Connection from outside the VPC times out."
+  },
+  {
+   "attack": [
+    "T1530"
+   ],
+   "attack_names": [
+    "Data from Cloud Storage"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-668",
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Exposure of Resource to Wrong Sphere",
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [],
+   "fix": "Enable Block Public Access, remove public ACLs/policies, and serve public assets through a CDN with a restricted origin.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_iac_public_storage",
+   "nist_csf": [
+    "PR.DS-01",
+    "PR.AA-05"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Anonymous `GET` on the bucket returns 403."
+  },
+  {
+   "attack": [
+    "T1530"
+   ],
+   "attack_names": [
+    "Data from Cloud Storage"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-311"
+   ],
+   "cwe_names": [
+    "Missing Encryption of Sensitive Data"
+   ],
+   "dasp": [],
+   "fix": "Enable encryption at rest (KMS-managed keys) on storage, databases and volumes.",
+   "impact": "information",
+   "interaction": "none",
+   "invariant_id": "gen_iac_unencrypted_storage",
+   "nist_csf": [
+    "PR.DS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "local",
+   "verify": "Resource attributes show encryption enabled."
+  },
+  {
+   "attack": [
+    "T1078.004"
+   ],
+   "attack_names": [
+    "Valid Accounts: Cloud Accounts"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-732",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Incorrect Permission Assignment for Critical Resource",
+    "Improper Access Control"
+   ],
+   "dasp": [],
+   "fix": "Replace `Action: *` / `Resource: *` with the specific actions and ARNs the workload uses; use IAM Access Analyzer.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_iac_wildcard_iam",
+   "nist_csf": [
+    "PR.AA-05"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "network",
+   "verify": "Policy simulation shows no unintended allow."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [],
+   "fix": "Set the least permission that works (0644 files, 0755 dirs, 0600 for secrets); never 777/666.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_insecure_file_permissions",
+   "nist_csf": [
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "local",
+   "verify": "`find -perm -o+w` on the deployed tree returns nothing."
+  },
+  {
+   "attack": [
+    "T1110.002"
+   ],
+   "attack_names": [
+    "Brute Force: Password Cracking"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-330"
+   ],
+   "cwe_names": [
+    "Use of Insufficiently Random Values"
+   ],
+   "dasp": [],
+   "fix": "Generate tokens/keys/nonces with a CSPRNG: `secrets`, `crypto.randomBytes`/`crypto.randomUUID`, `crypto/rand`.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_insecure_randomness",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Scan clean; tokens are >=128 bits from a CSPRNG."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-377"
+   ],
+   "cwe_names": [
+    "Insecure Temporary File"
+   ],
+   "dasp": [],
+   "fix": "Use mkstemp / os.CreateTemp / fs.mkdtemp, which create the file atomically with a random name and 0600.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_insecure_temp_file",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "local",
+   "verify": "Scan clean; temp files are created with mode 0600."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-117"
+   ],
+   "cwe_names": [
+    "Improper Output Neutralization for Logs"
+   ],
+   "dasp": [],
+   "fix": "Log user input as a structured field, not inside the message string; strip CR/LF or encode before logging.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_log_injection",
+   "nist_csf": [
+    "DE.CM-09"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: input containing `\\n` does not create a forged log line."
+  },
+  {
+   "attack": [
+    "T1552"
+   ],
+   "attack_names": [
+    "Unsecured Credentials"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-532"
+   ],
+   "cwe_names": [
+    "Insertion of Sensitive Information into Log File"
+   ],
+   "dasp": [],
+   "fix": "Never log credentials, tokens or card data; log an identifier or a masked form; add a redaction filter to the logger.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_log_sensitive_data",
+   "nist_csf": [
+    "PR.DS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "local",
+   "verify": "Grep logs for the sensitive field names: nothing appears in clear."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-915",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Improperly Controlled Modification of Dynamically-Determined Object Attributes",
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Bind only an explicit allowlist of fields from the request (a DTO / serializer with declared fields); never pass the raw body to create/update.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_mass_assignment",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a request setting `role`/`is_admin`/`balance` leaves them unchanged."
+  },
+  {
+   "attack": [
+    "T1110.002"
+   ],
+   "attack_names": [
+    "Brute Force: Password Cracking"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-307"
+   ],
+   "cwe_names": [
+    "Improper Restriction of Excessive Authentication Attempts"
+   ],
+   "dasp": [],
+   "fix": "Rate-limit login, reset, token and OTP routes per IP and per account; lock out or add friction after repeated failures.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_missing_rate_limit",
+   "nist_csf": [
+    "PR.AA-03"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: the 11th login attempt in a minute is rejected with 429."
+  },
+  {
+   "attack": [
+    "T1110.002"
+   ],
+   "attack_names": [
+    "Brute Force: Password Cracking"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-778"
+   ],
+   "cwe_names": [
+    "Insufficient Logging"
+   ],
+   "dasp": [],
+   "fix": "Log every authentication outcome, authorization denial and privileged change with actor, target, result and source IP; ship to a SIEM.",
+   "impact": "information",
+   "interaction": "none",
+   "invariant_id": "gen_missing_security_logging",
+   "nist_csf": [
+    "DE.CM-09"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "A failed login appears in the log with actor and IP within seconds."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-362",
+    "CWE-662"
+   ],
+   "cwe_names": [
+    "Concurrent Execution using Shared Resource with Improper Synchronization",
+    "Improper Synchronization"
+   ],
+   "dasp": [],
+   "fix": "Wrap the writes in one database transaction; use SELECT \u2026 FOR UPDATE or optimistic versioning for the balance rows.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_non_atomic_multi_write",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a failure after the first write rolls back; two concurrent transfers cannot double-spend."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-639",
+    "CWE-285"
+   ],
+   "cwe_names": [
+    "Authorization Bypass Through User-Controlled Key",
+    "Improper Authorization"
+   ],
+   "dasp": [],
+   "fix": "Scope the query by the caller (`owner: req.user.id`, `user=request.user`) or check ownership before use; enforce in a shared repository layer, not per handler.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_object_level_auth_missing",
+   "nist_csf": [
+    "PR.AA-05"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: user A requesting user B's object id gets 403/404."
+  },
+  {
+   "attack": [
+    "T1189"
+   ],
+   "attack_names": [
+    "Drive-by Compromise"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-601"
+   ],
+   "cwe_names": [
+    "URL Redirection to Untrusted Site ('Open Redirect')"
+   ],
+   "dasp": [],
+   "fix": "Only redirect to relative paths or to hosts on an allowlist; validate with is_safe_url / url_has_allowed_host_and_scheme.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "gen_open_redirect",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: `?next=https://evil.example` redirects to `/`."
+  },
+  {
+   "attack": [
+    "T1105",
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Ingress Tool Transfer",
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-494"
+   ],
+   "cwe_names": [
+    "Download of Code Without Integrity Check"
+   ],
+   "dasp": [],
+   "fix": "Invoke programs with an argument array (no shell); if a shell is unavoidable, quote with `shlex.quote` and allowlist inputs. Download-then-verify (checksum/signature) instead of piping to sh.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_pipe_to_shell",
+   "nist_csf": [
+    "GV.SC-07",
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Taint test: source\u2192shell flow no longer present."
+  },
+  {
+   "attack": [
+    "T1552.004"
+   ],
+   "attack_names": [
+    "Unsecured Credentials: Private Keys"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-321",
+    "CWE-798"
+   ],
+   "cwe_names": [
+    "Use of Hard-coded Cryptographic Key",
+    "Use of Hard-coded Credentials"
+   ],
+   "dasp": [],
+   "fix": "Revoke and regenerate the key; remove the file; store keys in a secret manager; add `*.pem`/`*.key` to `.gitignore`.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_private_key_committed",
+   "nist_csf": [
+    "PR.DS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "local",
+   "verify": "Old key rejected by the service; scan clean."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-1333",
+    "CWE-400"
+   ],
+   "cwe_names": [
+    "Inefficient Regular Expression Complexity",
+    "Uncontrolled Resource Consumption"
+   ],
+   "dasp": [],
+   "fix": "Rewrite the pattern without a quantifier on a group that contains a quantifier, bound input length, or use a linear-time engine (RE2, `regex` crate).",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_regex_dos",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a 50 KB adversarial input matches or fails in milliseconds."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-89"
+   ],
+   "cwe_names": [
+    "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+   ],
+   "dasp": [],
+   "fix": "Use parameterized queries / prepared statements; never concatenate input into SQL. Use an ORM query builder for dynamic filters.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_sql_injection",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Taint test: source\u2192query flow no longer present."
+  },
+  {
+   "attack": [
+    "T1557"
+   ],
+   "attack_names": [
+    "Adversary-in-the-Middle"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-295"
+   ],
+   "cwe_names": [
+    "Improper Certificate Validation"
+   ],
+   "dasp": [],
+   "fix": "Remove `verify=False` / `rejectUnauthorized: false` / `InsecureSkipVerify`; trust the proper CA bundle or pin the certificate.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_tls_verification_disabled",
+   "nist_csf": [
+    "PR.DS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "adjacent",
+   "verify": "Test against an invalid certificate: the client refuses."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-367"
+   ],
+   "cwe_names": [
+    "Time-of-check Time-of-use (TOCTOU) Race Condition"
+   ],
+   "dasp": [],
+   "fix": "Open the file and handle the error instead of checking first; use O_EXCL/O_NOFOLLOW or atomic rename for writes.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_toctou_file",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "local",
+   "verify": "Review: no exists()/stat() immediately followed by open() on the same path."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-770",
+    "CWE-400"
+   ],
+   "cwe_names": [
+    "Allocation of Resources Without Limits or Throttling",
+    "Uncontrolled Resource Consumption"
+   ],
+   "dasp": [],
+   "fix": "Clamp the page size (`Math.min(limit, MAX)`); reject or default values above the cap.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_unbounded_query_limit",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: `?limit=1000000` returns at most MAX rows."
+  },
+  {
+   "attack": [
+    "T1059",
+    "T1190"
+   ],
+   "attack_names": [
+    "Command and Scripting Interpreter",
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-502"
+   ],
+   "cwe_names": [
+    "Deserialization of Untrusted Data"
+   ],
+   "dasp": [],
+   "fix": "Replace pickle/yaml.load/marshal with JSON or `yaml.safe_load`; if binary formats are required, sign and verify payloads.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_unsafe_deserialization",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: crafted payload is rejected."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-434"
+   ],
+   "cwe_names": [
+    "Unrestricted Upload of File with Dangerous Type"
+   ],
+   "dasp": [],
+   "fix": "Validate uploads: allowlist extensions and MIME by content sniffing, cap size (multer limits / MAX_CONTENT_LENGTH / MaxBytesReader), rename to a generated name, store outside the web root.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_upload_unvalidated",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: an `.html`/`.php` upload and a 1 GB upload are both rejected."
+  },
+  {
+   "attack": [
+    "T1110.002"
+   ],
+   "attack_names": [
+    "Brute Force: Password Cracking"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-328"
+   ],
+   "cwe_names": [
+    "Use of Weak Hash"
+   ],
+   "dasp": [],
+   "fix": "Use SHA-256+ for integrity and Argon2id/bcrypt/scrypt for passwords; keep MD5/SHA-1 only for non-security checksums and say so.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_weak_hash",
+   "nist_csf": [
+    "PR.DS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Scan clean; password hashes verified with a modern KDF."
+  },
+  {
+   "attack": [
+    "T1539"
+   ],
+   "attack_names": [
+    "Steal Web Session Cookie"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-942"
+   ],
+   "cwe_names": [
+    "Permissive Cross-domain Policy with Untrusted Domains"
+   ],
+   "dasp": [],
+   "fix": "Set `Access-Control-Allow-Origin` to an explicit origin allowlist; never combine `*` or reflected origin with credentials.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "gen_web_cors_wildcard",
+   "nist_csf": [
+    "PR.AA-03",
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: cross-origin request with credentials from an unlisted origin is refused."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-352"
+   ],
+   "cwe_names": [
+    "Cross-Site Request Forgery (CSRF)"
+   ],
+   "dasp": [],
+   "fix": "Re-enable CSRF protection (framework middleware) and use SameSite=Lax/Strict cookies; exempt only token-authenticated APIs.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "gen_web_csrf_disabled",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "authenticated",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: state-changing POST without the CSRF token is rejected."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-489"
+   ],
+   "cwe_names": [
+    "Active Debug Code"
+   ],
+   "dasp": [],
+   "fix": "Turn debug off in production (`DEBUG=False`, no `debug=True` in `app.run`); drive it from the environment.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_web_debug_enabled",
+   "nist_csf": [
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` shows no stack traces; scan clean."
+  },
+  {
+   "attack": [
+    "T1539"
+   ],
+   "attack_names": [
+    "Steal Web Session Cookie"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-614"
+   ],
+   "cwe_names": [
+    "Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+   ],
+   "dasp": [],
+   "fix": "Set `Secure`, `HttpOnly` and `SameSite=Lax` (or Strict) on session and CSRF cookies.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "gen_web_insecure_cookie",
+   "nist_csf": [
+    "PR.AA-03",
+    "PR.DS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` reports no rt_insecure_cookie."
+  },
+  {
+   "attack": [
+    "T1606"
+   ],
+   "attack_names": [
+    "Forge Web Credentials"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-347"
+   ],
+   "cwe_names": [
+    "Improper Verification of Cryptographic Signature"
+   ],
+   "dasp": [],
+   "fix": "Verify signature and algorithm on every token (`jwt.verify` with an explicit `algorithms` list); reject `alg: none`.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_web_jwt_unverified",
+   "nist_csf": [
+    "PR.AA-03"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: tampered or unsigned token is rejected."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-22"
+   ],
+   "cwe_names": [
+    "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+   ],
+   "dasp": [],
+   "fix": "Resolve the joined path and verify it stays under the base directory; use `secure_filename`/`path.basename` for user-supplied names.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "gen_web_path_traversal",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: `../../etc/passwd` is rejected."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-918"
+   ],
+   "cwe_names": [
+    "Server-Side Request Forgery (SSRF)"
+   ],
+   "dasp": [],
+   "fix": "Allowlist destination hosts/schemes, resolve and block private/link-local ranges, and disable redirects for server-side fetches.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_web_ssrf",
+   "nist_csf": [
+    "PR.PS-06",
+    "PR.IR-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: request to 169.254.169.254 / 127.0.0.1 is refused."
+  },
+  {
+   "attack": [
+    "T1539"
+   ],
+   "attack_names": [
+    "Steal Web Session Cookie"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-346"
+   ],
+   "cwe_names": [
+    "Origin Validation Error"
+   ],
+   "dasp": [],
+   "fix": "Verify the Origin header against an allowlist in verifyClient / CheckOrigin / origins=.",
+   "impact": "full",
+   "interaction": "required",
+   "invariant_id": "gen_websocket_no_origin_check",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a connection with a foreign Origin is refused."
+  },
+  {
+   "attack": [
+    "T1189",
+    "T1190"
+   ],
+   "attack_names": [
+    "Drive-by Compromise",
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-79"
+   ],
+   "cwe_names": [
+    "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+   ],
+   "dasp": [],
+   "fix": "Set text with `textContent`, or sanitize HTML with DOMPurify before `innerHTML`; enable a CSP.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "gen_xss_sink",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: `<script>` in input is rendered inert."
+  },
+  {
+   "attack": [
+    "T1190"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-611"
+   ],
+   "cwe_names": [
+    "Improper Restriction of XML External Entity Reference"
+   ],
+   "dasp": [],
+   "fix": "Disable external entities and DTD loading (defusedxml, `XMLParser(resolve_entities=False)`, `noent: false`).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "gen_xxe",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a document with an external entity referencing /etc/passwd is rejected."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-284",
+    "CWE-862"
+   ],
+   "cwe_names": [
+    "Improper Access Control",
+    "Missing Authorization"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require `&signer` for privileged entry functions and check `signer::address_of` against the stored admin/capability holder.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_access_control",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: call from a non-admin signer aborts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-862",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require `&signer` for privileged entry functions and check `signer::address_of` against the stored admin/capability holder.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_access_control_missing",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: call from a non-admin signer aborts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-654",
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Reliance on a Single Factor in a Security Decision",
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Route admin actions through a timelock resource with a published delay and a multisig account.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_admin_no_timelock",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Config review: admin is a multisig; delay enforced in code."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-190"
+   ],
+   "cwe_names": [
+    "Integer Overflow or Wraparound"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Rely on Move's abort-on-overflow and remove manual wraparound; use u128/u256 intermediates for products.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_integer_overflow",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test boundary values; operations abort instead of wrapping."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation"
+   ],
+   "dasp": [],
+   "fix": "Assert reserve conservation (k invariant / total supply == sum of balances) at the end of every swap/mint/burn.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_liquidity_conservation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Invariant test over random sequences holds."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-190",
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Integer Overflow or Wraparound",
+    "Incorrect Calculation"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Rely on Move's abort-on-overflow and remove manual wraparound; use u128/u256 intermediates for products.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_manual_overflow_check",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test boundary values; operations abort instead of wrapping."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-807",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Use a TWAP or external oracle with staleness checks instead of instantaneous pool reserves.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_oracle_spot_price",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: same-transaction manipulation does not change the price used."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-404",
+    "CWE-772"
+   ],
+   "cwe_names": [
+    "Improper Resource Shutdown or Release",
+    "Missing Release of Resource after Effective Lifetime"
+   ],
+   "dasp": [],
+   "fix": "Ensure every resource is either stored, returned, or explicitly destroyed by its declaring module; never drop coins by unpacking.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "move_resource_destruction",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Move Prover / unit tests cover every destroy path."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-772",
+    "CWE-404"
+   ],
+   "cwe_names": [
+    "Missing Release of Resource after Effective Lifetime",
+    "Improper Resource Shutdown or Release"
+   ],
+   "dasp": [],
+   "fix": "Ensure every resource is either stored, returned, or explicitly destroyed by its declaring module; never drop coins by unpacking.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "move_resource_leaks",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Move Prover / unit tests cover every destroy path."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-862",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require `&signer` for privileged entry functions and check `signer::address_of` against the stored admin/capability holder.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_signer_requirement",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: call from a non-admin signer aborts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-843"
+   ],
+   "cwe_names": [
+    "Access of Resource Using Incompatible Type ('Type Confusion')"
+   ],
+   "dasp": [],
+   "fix": "Restrict struct abilities (`key`, `store`, `copy`, `drop`) to what is needed and validate generic type arguments against an allowlist.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_type_safety",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: calling with an unexpected type argument aborts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-843"
+   ],
+   "cwe_names": [
+    "Access of Resource Using Incompatible Type ('Type Confusion')"
+   ],
+   "dasp": [],
+   "fix": "Restrict struct abilities (`key`, `store`, `copy`, `drop`) to what is needed and validate generic type arguments against an allowlist.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_type_safety_violation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: calling with an unexpected type argument aborts."
+  },
+  {
+   "attack": [
+    "T1190",
+    "T1592"
+   ],
+   "attack_names": [
+    "Exploit Public-Facing Application",
+    "Gather Victim Host Information"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-200",
+    "CWE-668"
+   ],
+   "cwe_names": [
+    "Exposure of Sensitive Information to an Unauthorized Actor",
+    "Exposure of Resource to Wrong Sphere"
+   ],
+   "dasp": [],
+   "fix": "Deny access to dotfiles and VCS/config paths at the web server (`location ~ /\\.(git|env|aws) { deny all; }`), stop deploying them, and rotate anything they contained.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "rt_exposed_sensitive_path",
+   "nist_csf": [
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` shows no rt_exposed_sensitive_path; credentials rotated."
+  },
+  {
+   "attack": [
+    "T1539"
+   ],
+   "attack_names": [
+    "Steal Web Session Cookie"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-614"
+   ],
+   "cwe_names": [
+    "Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+   ],
+   "dasp": [],
+   "fix": "Set `Secure`, `HttpOnly` and `SameSite=Lax` (or Strict) on session and CSRF cookies.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "rt_insecure_cookie",
+   "nist_csf": [
+    "PR.DS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` reports no rt_insecure_cookie."
+  },
+  {
+   "attack": [
+    "T1189"
+   ],
+   "attack_names": [
+    "Drive-by Compromise"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-79"
+   ],
+   "cwe_names": [
+    "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+   ],
+   "dasp": [],
+   "fix": "Send `X-Content-Type-Options: nosniff` on every response.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "rt_missing_content_type_options",
+   "nist_csf": [
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` shows no rt_missing_content_type_options."
+  },
+  {
+   "attack": [
+    "T1189"
+   ],
+   "attack_names": [
+    "Drive-by Compromise"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-79"
+   ],
+   "cwe_names": [
+    "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+   ],
+   "dasp": [],
+   "fix": "Add a Content-Security-Policy (`default-src 'self'`; nonce-based scripts; `frame-ancestors 'none'`; a `report-to` endpoint). Start in report-only mode.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "rt_missing_csp",
+   "nist_csf": [
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` shows no rt_missing_csp."
+  },
+  {
+   "attack": [
+    "T1189"
+   ],
+   "attack_names": [
+    "Drive-by Compromise"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-1021"
+   ],
+   "cwe_names": [
+    "Improper Restriction of Rendered UI Layers or Frames"
+   ],
+   "dasp": [],
+   "fix": "Send `X-Frame-Options: DENY` (or `SAMEORIGIN`) or `frame-ancestors` in the CSP.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "rt_missing_frame_options",
+   "nist_csf": [
+    "PR.PS-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` shows no rt_missing_frame_options."
+  },
+  {
+   "attack": [
+    "T1557"
+   ],
+   "attack_names": [
+    "Adversary-in-the-Middle"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-311"
+   ],
+   "cwe_names": [
+    "Missing Encryption of Sensitive Data"
+   ],
+   "dasp": [],
+   "fix": "Send `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` on every HTTPS response.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "rt_missing_hsts",
+   "nist_csf": [
+    "PR.DS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "adjacent",
+   "verify": "`truent probe` shows no rt_missing_hsts."
+  },
+  {
+   "attack": [
+    "T1557"
+   ],
+   "attack_names": [
+    "Adversary-in-the-Middle"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-311"
+   ],
+   "cwe_names": [
+    "Missing Encryption of Sensitive Data"
+   ],
+   "dasp": [],
+   "fix": "Redirect all HTTP to HTTPS with 301 at the edge and enable HSTS.",
+   "impact": "full",
+   "interaction": "required",
+   "invariant_id": "rt_no_https_redirect",
+   "nist_csf": [
+    "PR.DS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "adjacent",
+   "verify": "`truent probe http://host` shows a 301 to https://."
+  },
+  {
+   "attack": [
+    "T1595",
+    "T1133"
+   ],
+   "attack_names": [
+    "Active Scanning",
+    "External Remote Services"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-668"
+   ],
+   "cwe_names": [
+    "Exposure of Resource to Wrong Sphere"
+   ],
+   "dasp": [],
+   "fix": "Bind the service to localhost or a private interface, put it behind a firewall/security group, and require authentication.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "rt_open_port",
+   "nist_csf": [
+    "ID.RA-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe --ports` shows the port closed from outside."
+  },
+  {
+   "attack": [
+    "T1592"
+   ],
+   "attack_names": [
+    "Gather Victim Host Information"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-200"
+   ],
+   "cwe_names": [
+    "Exposure of Sensitive Information to an Unauthorized Actor"
+   ],
+   "dasp": [],
+   "fix": "Suppress version strings (`server_tokens off`, `ServerTokens Prod`, remove `X-Powered-By`).",
+   "impact": "information",
+   "interaction": "none",
+   "invariant_id": "rt_server_banner",
+   "nist_csf": [
+    "ID.RA-01"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent probe` shows no rt_server_banner."
+  },
+  {
+   "attack": [
+    "T1557"
+   ],
+   "attack_names": [
+    "Adversary-in-the-Middle"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-295"
+   ],
+   "cwe_names": [
+    "Improper Certificate Validation"
+   ],
+   "dasp": [],
+   "fix": "Renew the certificate and automate renewal (ACME / certbot / managed certificates) with expiry monitoring.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "rt_tls_expired",
+   "nist_csf": [
+    "PR.DS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "adjacent",
+   "verify": "`truent probe` shows no rt_tls_expired."
+  },
+  {
+   "attack": [
+    "T1557"
+   ],
+   "attack_names": [
+    "Adversary-in-the-Middle"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-295"
+   ],
+   "cwe_names": [
+    "Improper Certificate Validation"
+   ],
+   "dasp": [],
+   "fix": "Serve a certificate from a trusted CA for the exact hostname (or wildcard) with the full intermediate chain.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "rt_tls_untrusted_cert",
+   "nist_csf": [
+    "PR.DS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "adjacent",
+   "verify": "`truent probe` reports chain verified: true."
+  },
+  {
+   "attack": [
+    "T1557"
+   ],
+   "attack_names": [
+    "Adversary-in-the-Middle"
+   ],
+   "chain": "runtime",
+   "cwe": [
+    "CWE-326"
+   ],
+   "cwe_names": [
+    "Inadequate Encryption Strength"
+   ],
+   "dasp": [],
+   "fix": "Enable TLS 1.2 and 1.3 with AEAD cipher suites only; disable SSLv3/TLS 1.0/1.1 and RC4/3DES.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "rt_tls_weak_protocol",
+   "nist_csf": [
+    "PR.DS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "adjacent",
+   "verify": "`truent probe` completes a TLS 1.3 handshake."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "supply-chain",
+   "cwe": [
+    "CWE-427",
+    "CWE-829"
+   ],
+   "cwe_names": [
+    "Uncontrolled Search Path Element",
+    "Inclusion of Functionality from Untrusted Control Sphere"
+   ],
+   "dasp": [],
+   "fix": "Serve private packages through one proxy registry (`--index-url`, `.npmrc` scope mapping) and register the private names publicly as placeholders; pin with hashes.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sca_dependency_confusion",
+   "nist_csf": [
+    "GV.SC-07"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`pip download` / `npm view` for the private name resolves only from the private registry."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "supply-chain",
+   "cwe": [
+    "CWE-829",
+    "CWE-494"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere",
+    "Download of Code Without Integrity Check"
+   ],
+   "dasp": [],
+   "fix": "Review each install script; install with `--ignore-scripts` and allowlist the few that are required (e.g. native builds).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sca_install_script_dependency",
+   "nist_csf": [
+    "GV.SC-07"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "local",
+   "verify": "CI install runs with `--ignore-scripts`; the allowlist is documented."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "supply-chain",
+   "cwe": [
+    "CWE-494"
+   ],
+   "cwe_names": [
+    "Download of Code Without Integrity Check"
+   ],
+   "dasp": [],
+   "fix": "Regenerate the lockfile with a current toolchain so every entry carries an integrity hash / checksum; install with `npm ci` / `--locked`.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sca_lockfile_missing_integrity",
+   "nist_csf": [
+    "GV.SC-07"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Every lockfile entry has integrity; `npm ci` refuses a modified tarball."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "supply-chain",
+   "cwe": [
+    "CWE-829"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere"
+   ],
+   "dasp": [],
+   "fix": "Commit the lockfile (`Cargo.lock`, `package-lock.json`, `poetry.lock`, \u2026) and use `--frozen`/`npm ci` in CI.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sca_missing_lockfile",
+   "nist_csf": [
+    "GV.SC-07",
+    "PR.PS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Lockfile present; CI install uses it."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "supply-chain",
+   "cwe": [
+    "CWE-829"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere"
+   ],
+   "dasp": [],
+   "fix": "Confirm the package is the intended one; if it is a typo, replace it and rotate anything the wrong package could have read.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sca_typosquat_candidate",
+   "nist_csf": [
+    "GV.SC-07"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "The dependency name matches the upstream project exactly."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "supply-chain",
+   "cwe": [
+    "CWE-1104"
+   ],
+   "cwe_names": [
+    "Use of Unmaintained Third Party Components"
+   ],
+   "dasp": [],
+   "fix": "Migrate to a maintained alternative; unmaintained crates receive no security fixes.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sca_unmaintained_dependency",
+   "nist_csf": [
+    "GV.SC-07",
+    "PR.PS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent deps` shows no sca_unmaintained_dependency."
+  },
+  {
+   "attack": [
+    "T1195.001"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+   ],
+   "chain": "supply-chain",
+   "cwe": [
+    "CWE-829"
+   ],
+   "cwe_names": [
+    "Inclusion of Functionality from Untrusted Control Sphere"
+   ],
+   "dasp": [],
+   "fix": "Pin versions (exact or with a lockfile committed) so builds are reproducible and a hijacked release cannot enter silently.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sca_unpinned_dependency",
+   "nist_csf": [
+    "GV.SC-07",
+    "PR.PS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Lockfile committed; scan clean."
+  },
+  {
+   "attack": [
+    "T1195.001",
+    "T1190"
+   ],
+   "attack_names": [
+    "Supply Chain Compromise: Compromise Software Dependencies and Development Tools",
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "supply-chain",
+   "cwe": [
+    "CWE-1395"
+   ],
+   "cwe_names": [
+    "Dependency on Vulnerable Third-Party Component"
+   ],
+   "dasp": [],
+   "fix": "Upgrade to the fixed version named in the advisory; if none exists, remove or replace the dependency, or document a reachability-based exception.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sca_vulnerable_dependency",
+   "nist_csf": [
+    "ID.RA-01",
+    "PR.PS-02"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "`truent deps --advisory-db` shows no sca_vulnerable_dependency."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-20",
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Improper Input Validation",
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [],
+   "fix": "Validate every account: owner program, discriminator/type, PDA seeds+bump re-derived in program, sysvar by address (`Sysvar<'info, T>`), token account mint/owner.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_account_validation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: passing a fake account (wrong owner/seeds/mint) fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-654",
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Reliance on a Single Factor in a Security Decision",
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Put the upgrade/treasury authority behind a multisig (Squads) and a timelock; publish the delay.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_admin_no_timelock",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Config review: authority is a multisig PDA, not a single keypair."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-294",
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Authentication Bypass by Capture-replay",
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [],
+   "fix": "Reject or specially handle durable-nonce transactions where replay timing matters; check `recent_blockhash` expectations.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sol_durable_nonce_validation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: durable-nonce transaction does not bypass expiry logic."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-345",
+    "CWE-610"
+   ],
+   "cwe_names": [
+    "Insufficient Verification of Data Authenticity",
+    "Externally Controlled Reference to a Resource in Another Sphere"
+   ],
+   "dasp": [],
+   "fix": "Validate every account: owner program, discriminator/type, PDA seeds+bump re-derived in program, sysvar by address (`Sysvar<'info, T>`), token account mint/owner.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_fake_sysvar_instruction_account",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: passing a fake account (wrong owner/seeds/mint) fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Deserialize instruction data with a schema (Borsh/Anchor) and reject trailing or malformed bytes.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sol_instruction_parsing",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Fuzz instruction data; malformed inputs error rather than misparse."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-190"
+   ],
+   "cwe_names": [
+    "Integer Overflow or Wraparound"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Use `checked_*` / `saturating_*` arithmetic and enable `overflow-checks = true` in release profile.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_integer_overflow",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test boundary values; overflow errors rather than wraps."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation"
+   ],
+   "dasp": [],
+   "fix": "Check rent exemption after any lamport transfer and never leave an account below the exempt minimum; validate lamport arithmetic.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sol_lamport_balance",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: withdrawal that would drop below rent-exempt minimum fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-862",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Mark the authority account `Signer<'info>` (Anchor) or check `is_signer` explicitly before any privileged action.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_missing_signer",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: instruction without the signer fails with MissingRequiredSignature."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-807",
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [],
+   "fix": "Validate every account: owner program, discriminator/type, PDA seeds+bump re-derived in program, sysvar by address (`Sysvar<'info, T>`), token account mint/owner.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_oracle_rate_account",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: passing a fake account (wrong owner/seeds/mint) fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-807",
+    "CWE-349"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Acceptance of Extraneous Untrusted Data With Trusted Data"
+   ],
+   "dasp": [],
+   "fix": "Read prices from an oracle account (Pyth/Switchboard) with staleness and confidence checks, not from pool reserves in the same transaction.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_oracle_self_trade",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: same-slot swap does not move the price used."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-863",
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Incorrect Authorization",
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Validate every account: owner program, discriminator/type, PDA seeds+bump re-derived in program, sysvar by address (`Sysvar<'info, T>`), token account mint/owner.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_pda_authority_validation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: passing a fake account (wrong owner/seeds/mint) fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-345",
+    "CWE-610"
+   ],
+   "cwe_names": [
+    "Insufficient Verification of Data Authenticity",
+    "Externally Controlled Reference to a Resource in Another Sphere"
+   ],
+   "dasp": [],
+   "fix": "Validate every account: owner program, discriminator/type, PDA seeds+bump re-derived in program, sysvar by address (`Sysvar<'info, T>`), token account mint/owner.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_pda_derivation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: passing a fake account (wrong owner/seeds/mint) fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-404",
+    "CWE-672"
+   ],
+   "cwe_names": [
+    "Improper Resource Shutdown or Release",
+    "Operation on a Resource after Expiration or Release"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Check rent exemption after any lamport transfer and never leave an account below the exempt minimum; validate lamport arithmetic.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sol_rent_exemption",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: withdrawal that would drop below rent-exempt minimum fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-404",
+    "CWE-672"
+   ],
+   "cwe_names": [
+    "Improper Resource Shutdown or Release",
+    "Operation on a Resource after Expiration or Release"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Check rent exemption after any lamport transfer and never leave an account below the exempt minimum; validate lamport arithmetic.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sol_rent_exemption_check",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: withdrawal that would drop below rent-exempt minimum fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-862",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Mark the authority account `Signer<'info>` (Anchor) or check `is_signer` explicitly before any privileged action.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_signer_checks",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: instruction without the signer fails with MissingRequiredSignature."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-345",
+    "CWE-610"
+   ],
+   "cwe_names": [
+    "Insufficient Verification of Data Authenticity",
+    "Externally Controlled Reference to a Resource in Another Sphere"
+   ],
+   "dasp": [],
+   "fix": "Validate every account: owner program, discriminator/type, PDA seeds+bump re-derived in program, sysvar by address (`Sysvar<'info, T>`), token account mint/owner.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_sysvar_account_validation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: passing a fake account (wrong owner/seeds/mint) fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-654"
+   ],
+   "cwe_names": [
+    "Reliance on a Single Factor in a Security Decision"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Put the upgrade/treasury authority behind a multisig (Squads) and a timelock; publish the delay.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_treasury_single_authority",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Config review: authority is a multisig PDA, not a single keypair."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "solana",
+   "cwe": [
+    "CWE-843",
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Access of Resource Using Incompatible Type ('Type Confusion')",
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [],
+   "fix": "Validate every account: owner program, discriminator/type, PDA seeds+bump re-derived in program, sysvar by address (`Sysvar<'info, T>`), token account mint/owner.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sol_unchecked_token_account_type",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: passing a fake account (wrong owner/seeds/mint) fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-190",
+    "CWE-191"
+   ],
+   "cwe_names": [
+    "Integer Overflow or Wraparound",
+    "Integer Underflow (Wrap or Wraparound)"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Use `checked_add/sub/mul` and handle `None`; enable overflow checks in release.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_checked_arithmetic",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test boundary values; overflow errors."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-665",
+    "CWE-862"
+   ],
+   "cwe_names": [
+    "Improper Initialization",
+    "Missing Authorization"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Guard `initialize` with an instance-storage flag and panic on re-entry.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_init_guard",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: second initialize panics."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-862",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Call `address.require_auth()` on the acting address before any state change on its behalf.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_missing_require_auth",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: invocation without authorization fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-841",
+    "CWE-663"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Use of a Non-reentrant Function in a Concurrent Context"
+   ],
+   "dasp": [
+    "DASP-1"
+   ],
+   "fix": "Update state before cross-contract calls; Soroban forbids reentrancy by default \u2014 do not re-enable it and do not rely on post-call state.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_no_reentrancy",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC05"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test with a malicious callee: state is consistent."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-862",
+    "CWE-494"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Download of Code Without Integrity Check"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require admin authorization (`admin.require_auth()`) in `upgrade` and consider a timelock.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_no_unprotected_upgrade",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: upgrade from a non-admin fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-841",
+    "CWE-663"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Use of a Non-reentrant Function in a Concurrent Context"
+   ],
+   "dasp": [
+    "DASP-1"
+   ],
+   "fix": "Update state before cross-contract calls; Soroban forbids reentrancy by default \u2014 do not re-enable it and do not rely on post-call state.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_reentrancy_external_call",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC05"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test with a malicious callee: state is consistent."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-665",
+    "CWE-862"
+   ],
+   "cwe_names": [
+    "Improper Initialization",
+    "Missing Authorization"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Guard `initialize` with an instance-storage flag and panic on re-entry.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_reinitialization",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: second initialize panics."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-862",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Call `address.require_auth()` on the acting address before any state change on its behalf.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_require_auth_checks",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: invocation without authorization fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-672",
+    "CWE-404"
+   ],
+   "cwe_names": [
+    "Operation on a Resource after Expiration or Release",
+    "Improper Resource Shutdown or Release"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Keep critical state in persistent/instance storage and extend TTL (`extend_ttl`) on every access; never in temporary storage.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_storage_ttl_extended",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: state survives ledger expiry simulation."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-672",
+    "CWE-404"
+   ],
+   "cwe_names": [
+    "Operation on a Resource after Expiration or Release",
+    "Improper Resource Shutdown or Release"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Keep critical state in persistent/instance storage and extend TTL (`extend_ttl`) on every access; never in temporary storage.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_storage_ttl_not_extended",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: state survives ledger expiry simulation."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-672",
+    "CWE-404"
+   ],
+   "cwe_names": [
+    "Operation on a Resource after Expiration or Release",
+    "Improper Resource Shutdown or Release"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Keep critical state in persistent/instance storage and extend TTL (`extend_ttl`) on every access; never in temporary storage.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_temporary_storage_critical_state",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: state survives ledger expiry simulation."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-807",
+    "CWE-349"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Acceptance of Extraneous Untrusted Data With Trusted Data"
+   ],
+   "dasp": [],
+   "fix": "Source prices from an oracle contract with liquidity/staleness thresholds instead of thin pool reserves.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_thin_liquidity_oracle_price",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: manipulation within one ledger does not change the price used."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-190",
+    "CWE-191"
+   ],
+   "cwe_names": [
+    "Integer Overflow or Wraparound",
+    "Integer Underflow (Wrap or Wraparound)"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Use `checked_add/sub/mul` and handle `None`; enable overflow checks in release.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_unchecked_arithmetic",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test boundary values; overflow errors."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-703",
+    "CWE-754"
+   ],
+   "cwe_names": [
+    "Improper Check or Handling of Exceptional Conditions",
+    "Improper Check for Unusual or Exceptional Conditions"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Return typed errors (`Result<_, Error>`) instead of panicking on user input.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "sor_unhandled_panic",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: bad input returns an error code, not a trap."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "soroban",
+   "cwe": [
+    "CWE-862",
+    "CWE-494"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Download of Code Without Integrity Check"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require admin authorization (`admin.require_auth()`) in `upgrade` and consider a timelock.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "sor_unprotected_upgrade",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: upgrade from a non-admin fails."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": null,
+   "cwe": [
+    "CWE-862",
+    "CWE-284"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Improper Access Control"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Restrict every state-mutating privileged function to an authenticated admin role.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "unauthorized_privileged_mutation",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: unauthorized caller is rejected."
+  }
+ ],
+ "pathways": [
+  {
+   "id": "api-security",
+   "name": "API Security",
+   "purpose": "Protect application interfaces",
+   "stage": "build",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_object_level_auth_missing"
+    },
+    {
+     "kind": "native",
+     "value": "gen_mass_assignment"
+    },
+    {
+     "kind": "native",
+     "value": "gen_missing_rate_limit"
+    },
+    {
+     "kind": "native",
+     "value": "gen_unbounded_query_limit"
+    },
+    {
+     "kind": "native",
+     "value": "gen_graphql_unrestricted"
+    },
+    {
+     "kind": "native",
+     "value": "gen_websocket_no_origin_check"
+    },
+    {
+     "kind": "native",
+     "value": "gen_open_redirect"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_jwt_unverified"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_cors_wildcard"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_ssrf"
+    },
+    {
+     "kind": "native",
+     "value": "gen_sql_injection"
+    },
+    {
+     "kind": "native",
+     "value": "gen_hardcoded_secret"
+    },
+    {
+     "kind": "hosted",
+     "value": "api-security"
+    },
+    {
+     "kind": "assess",
+     "value": "Object-level authorization is enforced on every resource route"
+    },
+    {
+     "kind": "assess",
+     "value": "Rate limits and quotas are applied per principal"
+    },
+    {
+     "kind": "assess",
+     "value": "Webhooks and inter-service requests are signed and replay-protected"
+    },
+    {
+     "kind": "assess",
+     "value": "An API inventory exists and unknown routes are alerted on"
+    }
+   ]
+  },
+  {
+   "id": "application-security",
+   "name": "Application Security",
+   "purpose": "Protect application code and behaviour",
+   "stage": "build",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_upload_unvalidated"
+    },
+    {
+     "kind": "native",
+     "value": "gen_xxe"
+    },
+    {
+     "kind": "native",
+     "value": "gen_regex_dos"
+    },
+    {
+     "kind": "native",
+     "value": "gen_error_detail_exposed"
+    },
+    {
+     "kind": "native",
+     "value": "gen_toctou_file"
+    },
+    {
+     "kind": "native",
+     "value": "gen_insecure_temp_file"
+    },
+    {
+     "kind": "native",
+     "value": "gen_insecure_file_permissions"
+    },
+    {
+     "kind": "native",
+     "value": "gen_non_atomic_multi_write"
+    },
+    {
+     "kind": "native",
+     "value": "gen_command_injection"
+    },
+    {
+     "kind": "native",
+     "value": "gen_code_injection"
+    },
+    {
+     "kind": "native",
+     "value": "gen_sql_injection"
+    },
+    {
+     "kind": "native",
+     "value": "gen_xss_sink"
+    },
+    {
+     "kind": "native",
+     "value": "gen_unsafe_deserialization"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_path_traversal"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_ssrf"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_csrf_disabled"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_insecure_cookie"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_debug_enabled"
+    },
+    {
+     "kind": "native",
+     "value": "gen_weak_hash"
+    },
+    {
+     "kind": "native",
+     "value": "gen_insecure_randomness"
+    },
+    {
+     "kind": "native",
+     "value": "gen_hardcoded_secret"
+    },
+    {
+     "kind": "hosted",
+     "value": "application-security"
+    },
+    {
+     "kind": "hosted",
+     "value": "web-application-security"
+    },
+    {
+     "kind": "assess",
+     "value": "File uploads are validated by type, size and content and stored outside the web root"
+    },
+    {
+     "kind": "assess",
+     "value": "Error handling never returns stack traces or internal identifiers to clients"
+    }
+   ]
+  },
+  {
+   "id": "architecture-security",
+   "name": "Architecture Security",
+   "purpose": "Build secure systems by design",
+   "stage": "design",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_container_privileged"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_open_ingress"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_wildcard_iam"
+    },
+    {
+     "kind": "hosted",
+     "value": "zero-trust-architecture"
+    },
+    {
+     "kind": "hosted",
+     "value": "zero-trust"
+    },
+    {
+     "kind": "assess",
+     "value": "Trust boundaries are drawn and every crossing authenticates and authorizes (truent threat-model)"
+    },
+    {
+     "kind": "assess",
+     "value": "Blast radius is bounded: one compromised component cannot reach the data store directly"
+    },
+    {
+     "kind": "assess",
+     "value": "Defaults fail closed; a missing config denies rather than allows"
+    }
+   ]
+  },
+  {
+   "id": "attack-surface-management",
+   "name": "Attack Surface Management",
+   "purpose": "Find exposed assets",
+   "stage": "runtime",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_iac_open_ingress"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_public_storage"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_public_database"
+    },
+    {
+     "kind": "native",
+     "value": "rt_open_port"
+    },
+    {
+     "kind": "native",
+     "value": "rt_exposed_sensitive_path"
+    },
+    {
+     "kind": "native",
+     "value": "rt_server_banner"
+    },
+    {
+     "kind": "hosted",
+     "value": "vulnerability-management"
+    },
+    {
+     "kind": "hosted",
+     "value": "network-security"
+    },
+    {
+     "kind": "assess",
+     "value": "Internet-facing assets, subdomains and certificates are enumerated continuously and diffed"
+    },
+    {
+     "kind": "assess",
+     "value": "Shadow infrastructure is reconciled against the asset inventory"
+    }
+   ]
+  },
+  {
+   "id": "backup-recovery",
+   "name": "Backup and Recovery",
+   "purpose": "Restore systems and data",
+   "stage": "recovery",
+   "controls": [
+    {
+     "kind": "hosted",
+     "value": "ransomware-defense"
+    },
+    {
+     "kind": "assess",
+     "value": "Backups are automated, immutable, versioned and geographically separated"
+    },
+    {
+     "kind": "assess",
+     "value": "Restores are tested on a schedule and the last test date is recorded"
+    },
+    {
+     "kind": "assess",
+     "value": "Database snapshots are taken before every migration"
+    }
+   ]
+  },
+  {
+   "id": "cloud-security",
+   "name": "Cloud Security",
+   "purpose": "Protect cloud environments",
+   "stage": "deploy",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_iac_public_storage"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_open_ingress"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_unencrypted_storage"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_wildcard_iam"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_public_database"
+    },
+    {
+     "kind": "native",
+     "value": "gen_hardcoded_secret"
+    },
+    {
+     "kind": "hosted",
+     "value": "cloud-security"
+    },
+    {
+     "kind": "assess",
+     "value": "CSPM continuously evaluates the live account against a benchmark (CIS); IaC findings here are the pre-deploy half"
+    },
+    {
+     "kind": "assess",
+     "value": "Cloud IAM permissions are reviewed for excess and unused grants (CIEM)"
+    },
+    {
+     "kind": "assess",
+     "value": "Cloud audit logging is enabled in every account and region and shipped off-account"
+    }
+   ]
+  },
+  {
+   "id": "container-security",
+   "name": "Container Security",
+   "purpose": "Protect containerized workloads",
+   "stage": "deploy",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_docker_root_user"
+    },
+    {
+     "kind": "native",
+     "value": "gen_docker_unpinned_base"
+    },
+    {
+     "kind": "native",
+     "value": "gen_pipe_to_shell"
+    },
+    {
+     "kind": "native",
+     "value": "gen_container_privileged"
+    },
+    {
+     "kind": "hosted",
+     "value": "container-security"
+    },
+    {
+     "kind": "assess",
+     "value": "Images are scanned for CVEs and signed before admission (cosign/sigstore)"
+    },
+    {
+     "kind": "assess",
+     "value": "Runtime profiles (seccomp, AppArmor) and read-only root filesystems are enforced"
+    }
+   ]
+  },
+  {
+   "id": "data-security",
+   "name": "Data Security",
+   "purpose": "Protect sensitive information",
+   "stage": "build",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_iac_unencrypted_storage"
+    },
+    {
+     "kind": "native",
+     "value": "gen_tls_verification_disabled"
+    },
+    {
+     "kind": "native",
+     "value": "gen_weak_hash"
+    },
+    {
+     "kind": "native",
+     "value": "gen_private_key_committed"
+    },
+    {
+     "kind": "hosted",
+     "value": "data-protection"
+    },
+    {
+     "kind": "hosted",
+     "value": "cryptography"
+    },
+    {
+     "kind": "hosted",
+     "value": "privacy-compliance"
+    },
+    {
+     "kind": "assess",
+     "value": "Data is classified and the classification drives encryption, retention and access"
+    },
+    {
+     "kind": "assess",
+     "value": "Field-level encryption or tokenization covers regulated fields"
+    },
+    {
+     "kind": "assess",
+     "value": "DLP controls cover endpoints, email and cloud storage for classified data"
+    }
+   ]
+  },
+  {
+   "id": "database-security",
+   "name": "Database Security",
+   "purpose": "Protect stored application data",
+   "stage": "build",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_sql_injection"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_public_database"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_unencrypted_storage"
+    },
+    {
+     "kind": "native",
+     "value": "gen_hardcoded_secret"
+    },
+    {
+     "kind": "assess",
+     "value": "Database roles follow least privilege; the application role cannot alter schema"
+    },
+    {
+     "kind": "assess",
+     "value": "Row-level security or tenant scoping is enforced in the database, not only the application"
+    },
+    {
+     "kind": "assess",
+     "value": "Database activity is audited and backups are encrypted"
+    }
+   ]
+  },
+  {
+   "id": "detection-engineering",
+   "name": "Detection Engineering",
+   "purpose": "Identify malicious activity",
+   "stage": "runtime",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_missing_security_logging"
+    },
+    {
+     "kind": "native",
+     "value": "gen_log_sensitive_data"
+    },
+    {
+     "kind": "native",
+     "value": "gen_log_injection"
+    },
+    {
+     "kind": "hosted",
+     "value": "threat-detection"
+    },
+    {
+     "kind": "hosted",
+     "value": "threat-hunting"
+    },
+    {
+     "kind": "hosted",
+     "value": "soc-operations"
+    },
+    {
+     "kind": "hosted",
+     "value": "security-operations"
+    },
+    {
+     "kind": "hosted",
+     "value": "threat-intelligence"
+    },
+    {
+     "kind": "assess",
+     "value": "Detections exist for suspicious login, privilege escalation, credential abuse, exfiltration, persistence and lateral movement, each mapped to ATT&CK"
+    },
+    {
+     "kind": "assess",
+     "value": "Every detection has a tested, documented response"
+    }
+   ]
+  },
+  {
+   "id": "devsecops",
+   "name": "DevSecOps",
+   "purpose": "Integrate security into development",
+   "stage": "build",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_ci_pwn_request"
+    },
+    {
+     "kind": "native",
+     "value": "gen_ci_script_injection"
+    },
+    {
+     "kind": "native",
+     "value": "gen_ci_secret_exposed"
+    },
+    {
+     "kind": "native",
+     "value": "gen_ci_unpinned_action"
+    },
+    {
+     "kind": "native",
+     "value": "gen_hardcoded_secret"
+    },
+    {
+     "kind": "native",
+     "value": "sca_vulnerable_dependency"
+    },
+    {
+     "kind": "native",
+     "value": "sca_missing_lockfile"
+    },
+    {
+     "kind": "hosted",
+     "value": "devsecops"
+    },
+    {
+     "kind": "assess",
+     "value": "truent scan --chain auto, truent deps and truent gate run on every pull request and block on Critical/High"
+    },
+    {
+     "kind": "assess",
+     "value": "Branch protection requires review and passing checks; force-push to protected branches is disabled"
+    }
+   ]
+  },
+  {
+   "id": "identity-security",
+   "name": "Identity and Access Management",
+   "purpose": "Protect users and machine identities",
+   "stage": "design",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_missing_rate_limit"
+    },
+    {
+     "kind": "native",
+     "value": "gen_object_level_auth_missing"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_jwt_unverified"
+    },
+    {
+     "kind": "native",
+     "value": "gen_hardcoded_secret"
+    },
+    {
+     "kind": "native",
+     "value": "gen_iac_wildcard_iam"
+    },
+    {
+     "kind": "native",
+     "value": "evm_single_eoa_admin"
+    },
+    {
+     "kind": "native",
+     "value": "evm_insufficient_multisig_threshold"
+    },
+    {
+     "kind": "hosted",
+     "value": "identity-access-management"
+    },
+    {
+     "kind": "hosted",
+     "value": "identity-and-access-management"
+    },
+    {
+     "kind": "hosted",
+     "value": "identity-security"
+    },
+    {
+     "kind": "assess",
+     "value": "MFA or passkeys are required for every human account; privileged access is just-in-time"
+    },
+    {
+     "kind": "assess",
+     "value": "Service accounts and workload identities use short-lived credentials, not static keys"
+    },
+    {
+     "kind": "assess",
+     "value": "RBAC/ABAC policies are reviewed quarterly for excess privilege"
+    }
+   ]
+  },
+  {
+   "id": "incident-response",
+   "name": "Incident Response",
+   "purpose": "Contain and recover from attacks",
+   "stage": "response",
+   "controls": [
+    {
+     "kind": "hosted",
+     "value": "incident-response"
+    },
+    {
+     "kind": "hosted",
+     "value": "digital-forensics"
+    },
+    {
+     "kind": "hosted",
+     "value": "malware-analysis"
+    },
+    {
+     "kind": "assess",
+     "value": "Isolation, credential revocation and attacker blocking each have a rehearsed runbook and an owner"
+    },
+    {
+     "kind": "assess",
+     "value": "Evidence is preserved before remediation (logs, images, traces)"
+    },
+    {
+     "kind": "assess",
+     "value": "truent-ir covers on-chain incidents; SOAR playbooks cover accounts, endpoints and containers"
+    }
+   ]
+  },
+  {
+   "id": "kubernetes-security",
+   "name": "Kubernetes Security",
+   "purpose": "Protect orchestrated workloads",
+   "stage": "deploy",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_container_privileged"
+    },
+    {
+     "kind": "hosted",
+     "value": "container-security"
+    },
+    {
+     "kind": "assess",
+     "value": "Pod Security Standards (restricted) are enforced by an admission controller"
+    },
+    {
+     "kind": "assess",
+     "value": "NetworkPolicies default-deny between namespaces"
+    },
+    {
+     "kind": "assess",
+     "value": "Kubernetes RBAC grants no cluster-admin to workloads; service-account tokens are not auto-mounted"
+    },
+    {
+     "kind": "assess",
+     "value": "Secrets are stored in an external manager, not in plain Secret objects"
+    }
+   ]
+  },
+  {
+   "id": "network-security",
+   "name": "Network Security",
+   "purpose": "Protect network communication",
+   "stage": "runtime",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_iac_open_ingress"
+    },
+    {
+     "kind": "native",
+     "value": "gen_tls_verification_disabled"
+    },
+    {
+     "kind": "native",
+     "value": "rt_tls_expired"
+    },
+    {
+     "kind": "native",
+     "value": "rt_tls_untrusted_cert"
+    },
+    {
+     "kind": "native",
+     "value": "rt_tls_weak_protocol"
+    },
+    {
+     "kind": "native",
+     "value": "rt_missing_hsts"
+    },
+    {
+     "kind": "native",
+     "value": "rt_no_https_redirect"
+    },
+    {
+     "kind": "hosted",
+     "value": "network-security"
+    },
+    {
+     "kind": "hosted",
+     "value": "zero-trust-architecture"
+    },
+    {
+     "kind": "assess",
+     "value": "Egress is restricted by allowlist; workloads cannot reach arbitrary internet hosts"
+    },
+    {
+     "kind": "assess",
+     "value": "Service-to-service traffic is mutually authenticated (mTLS / service mesh)"
+    },
+    {
+     "kind": "assess",
+     "value": "IDS/IPS or flow monitoring covers every network segment"
+    }
+   ]
+  },
+  {
+   "id": "penetration-testing",
+   "name": "Penetration Testing",
+   "purpose": "Simulate attacks",
+   "stage": "runtime",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "rt_exposed_sensitive_path"
+    },
+    {
+     "kind": "native",
+     "value": "rt_tls_untrusted_cert"
+    },
+    {
+     "kind": "native",
+     "value": "rt_tls_weak_protocol"
+    },
+    {
+     "kind": "native",
+     "value": "rt_open_port"
+    },
+    {
+     "kind": "native",
+     "value": "rt_no_https_redirect"
+    },
+    {
+     "kind": "hosted",
+     "value": "penetration-testing"
+    },
+    {
+     "kind": "hosted",
+     "value": "red-teaming"
+    },
+    {
+     "kind": "hosted",
+     "value": "red-team"
+    },
+    {
+     "kind": "hosted",
+     "value": "offensive-security"
+    },
+    {
+     "kind": "hosted",
+     "value": "purple-team"
+    },
+    {
+     "kind": "assess",
+     "value": "Web, API, cloud and internal tests are performed at least annually and after major changes; findings feed the regression corpus"
+    }
+   ]
+  },
+  {
+   "id": "resilience",
+   "name": "Availability and Resilience",
+   "purpose": "Keep systems available",
+   "stage": "runtime",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "evm_unbounded_loop"
+    },
+    {
+     "kind": "native",
+     "value": "evm_push_payment_in_loop"
+    },
+    {
+     "kind": "native",
+     "value": "evm_missing_pause_mechanism"
+    },
+    {
+     "kind": "native",
+     "value": "gen_regex_dos"
+    },
+    {
+     "kind": "native",
+     "value": "gen_missing_rate_limit"
+    },
+    {
+     "kind": "native",
+     "value": "evm_division_by_zero"
+    },
+    {
+     "kind": "native",
+     "value": "sor_unhandled_panic"
+    },
+    {
+     "kind": "native",
+     "value": "sol_rent_exemption_check"
+    },
+    {
+     "kind": "assess",
+     "value": "Rate limiting, circuit breakers and backpressure protect every public entry point"
+    },
+    {
+     "kind": "assess",
+     "value": "DDoS protection (CDN/anycast/scrubbing) fronts public services"
+    },
+    {
+     "kind": "assess",
+     "value": "Failover is automated and RTO/RPO are measured, not assumed"
+    }
+   ]
+  },
+  {
+   "id": "runtime-security",
+   "name": "Runtime Security",
+   "purpose": "Detect attacks during execution",
+   "stage": "runtime",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "rt_missing_csp"
+    },
+    {
+     "kind": "native",
+     "value": "rt_missing_frame_options"
+    },
+    {
+     "kind": "native",
+     "value": "rt_missing_content_type_options"
+    },
+    {
+     "kind": "native",
+     "value": "rt_insecure_cookie"
+    },
+    {
+     "kind": "hosted",
+     "value": "endpoint-security"
+    },
+    {
+     "kind": "hosted",
+     "value": "container-security"
+    },
+    {
+     "kind": "hosted",
+     "value": "soc-operations"
+    },
+    {
+     "kind": "assess",
+     "value": "EDR covers servers and developer machines; container runtime security (Falco/Tetragon) alerts on shells, unexpected processes and outbound connections"
+    },
+    {
+     "kind": "assess",
+     "value": "WAF/RASP fronts web applications with rules tuned to the application"
+    }
+   ]
+  },
+  {
+   "id": "supply-chain-security",
+   "name": "Supply-Chain Security",
+   "purpose": "Protect dependencies and build pipelines",
+   "stage": "build",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "sca_dependency_confusion"
+    },
+    {
+     "kind": "native",
+     "value": "sca_typosquat_candidate"
+    },
+    {
+     "kind": "native",
+     "value": "sca_lockfile_missing_integrity"
+    },
+    {
+     "kind": "native",
+     "value": "sca_install_script_dependency"
+    },
+    {
+     "kind": "native",
+     "value": "gen_ci_unsigned_release"
+    },
+    {
+     "kind": "native",
+     "value": "sca_vulnerable_dependency"
+    },
+    {
+     "kind": "native",
+     "value": "sca_unmaintained_dependency"
+    },
+    {
+     "kind": "native",
+     "value": "sca_unpinned_dependency"
+    },
+    {
+     "kind": "native",
+     "value": "sca_missing_lockfile"
+    },
+    {
+     "kind": "native",
+     "value": "gen_ci_unpinned_action"
+    },
+    {
+     "kind": "native",
+     "value": "gen_docker_unpinned_base"
+    },
+    {
+     "kind": "native",
+     "value": "gen_pipe_to_shell"
+    },
+    {
+     "kind": "native",
+     "value": "gen_ci_pwn_request"
+    },
+    {
+     "kind": "hosted",
+     "value": "supply-chain-security"
+    },
+    {
+     "kind": "hosted",
+     "value": "devsecops"
+    },
+    {
+     "kind": "assess",
+     "value": "Artifacts are signed and carry build provenance (SLSA); an SBOM ships with every release (truent deps --sbom)"
+    },
+    {
+     "kind": "assess",
+     "value": "Commits are signed and builds are reproducible"
+    }
+   ]
+  },
+  {
+   "id": "vulnerability-management",
+   "name": "Vulnerability Management",
+   "purpose": "Find and remediate weaknesses",
+   "stage": "runtime",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "sca_vulnerable_dependency"
+    },
+    {
+     "kind": "native",
+     "value": "gen_docker_unpinned_base"
+    },
+    {
+     "kind": "native",
+     "value": "rt_server_banner"
+    },
+    {
+     "kind": "native",
+     "value": "rt_tls_expired"
+    },
+    {
+     "kind": "hosted",
+     "value": "vulnerability-management"
+    },
+    {
+     "kind": "assess",
+     "value": "Findings are prioritized by exploitability (EPSS/KEV) and tracked to closure with SLAs by severity"
+    },
+    {
+     "kind": "assess",
+     "value": "Patches are verified by re-scan, not by ticket state"
+    }
+   ]
+  },
+  {
+   "id": "web-security",
+   "name": "Web Security",
+   "purpose": "Protect browser-facing applications",
+   "stage": "build",
+   "controls": [
+    {
+     "kind": "native",
+     "value": "gen_xss_sink"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_cors_wildcard"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_insecure_cookie"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_csrf_disabled"
+    },
+    {
+     "kind": "native",
+     "value": "gen_web_debug_enabled"
+    },
+    {
+     "kind": "native",
+     "value": "gen_tls_verification_disabled"
+    },
+    {
+     "kind": "hosted",
+     "value": "web-application-security"
+    },
+    {
+     "kind": "assess",
+     "value": "HSTS, CSP and the standard security headers are set and verified in production responses"
+    },
+    {
+     "kind": "assess",
+     "value": "A WAF and bot/DDoS protection front the site"
+    }
+   ]
+  }
+ ],
+ "attack_chains": [
+  {
+   "id": "session-hijack-cleartext",
+   "name": "Session hijack over cleartext",
+   "narrative": "An attacker on the path (public Wi-Fi, a compromised router) waits for the victim to load the site over plain HTTP, which is served without redirecting; the session cookie, lacking Secure, is sent in the clear and replayed.",
+   "tactics": [
+    "Credential Access",
+    "Defense Evasion"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "rt_no_https_redirect",
+      "rt_missing_hsts"
+     ],
+     "role": "cleartext reachable"
+    },
+    {
+     "any_of": [
+      "rt_insecure_cookie",
+      "gen_web_insecure_cookie"
+     ],
+     "role": "cookie leaks"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "credential-file-exposure",
+   "name": "Credentials served to the internet",
+   "narrative": "A configuration or repository file is fetched anonymously from the web root; it contains credentials that the attacker uses directly against the database, cloud account or third-party API.",
+   "tactics": [
+    "Reconnaissance",
+    "Credential Access",
+    "Initial Access"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "rt_exposed_sensitive_path"
+     ],
+     "role": "file exposed"
+    },
+    {
+     "any_of": [
+      "gen_hardcoded_secret",
+      "gen_private_key_committed"
+     ],
+     "role": "credentials in files"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "injection-to-data-exfiltration",
+   "name": "Injection reaching a reachable database",
+   "narrative": "Untrusted input reaches a query; the database it runs against is publicly addressable or unencrypted, so the injection turns into bulk read of the store rather than a single-row leak.",
+   "tactics": [
+    "Initial Access",
+    "Collection",
+    "Exfiltration"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "gen_sql_injection"
+     ],
+     "role": "injection"
+    },
+    {
+     "any_of": [
+      "gen_iac_public_database",
+      "gen_iac_unencrypted_storage"
+     ],
+     "role": "data store exposed"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "ci-takeover-to-supply-chain",
+   "name": "CI takeover becomes a supply-chain compromise",
+   "narrative": "A pull request from a fork runs with repository secrets (pwn request / script injection); the attacker exfiltrates the publishing token, or edits an unpinned action, and ships a poisoned release to every downstream user.",
+   "tactics": [
+    "Initial Access",
+    "Credential Access",
+    "Persistence",
+    "Impact"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "gen_ci_pwn_request",
+      "gen_ci_script_injection"
+     ],
+     "role": "CI code execution"
+    },
+    {
+     "any_of": [
+      "gen_ci_secret_exposed",
+      "gen_ci_unpinned_action",
+      "gen_hardcoded_secret"
+     ],
+     "role": "secrets or publish path in reach"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "xss-to-account-takeover",
+   "name": "Stored/reflected XSS to account takeover",
+   "narrative": "Script injected through an HTML sink runs in the victim's browser unrestricted by a CSP; the session cookie is readable by script (no HttpOnly) and is sent to the attacker.",
+   "tactics": [
+    "Execution",
+    "Credential Access"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "gen_xss_sink"
+     ],
+     "role": "script injection"
+    },
+    {
+     "any_of": [
+      "rt_missing_csp"
+     ],
+     "role": "no CSP"
+    },
+    {
+     "any_of": [
+      "rt_insecure_cookie",
+      "gen_web_insecure_cookie"
+     ],
+     "role": "cookie readable"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "ssrf-to-cloud-credentials",
+   "name": "SSRF to cloud metadata credentials",
+   "narrative": "A server-side fetch of an attacker-chosen URL is pointed at the cloud metadata service; the returned role credentials are used with a wildcard IAM policy to take over the account.",
+   "tactics": [
+    "Initial Access",
+    "Credential Access",
+    "Privilege Escalation"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "gen_web_ssrf"
+     ],
+     "role": "SSRF"
+    },
+    {
+     "any_of": [
+      "gen_iac_wildcard_iam"
+     ],
+     "role": "over-broad cloud role"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "container-escape",
+   "name": "Command injection to host compromise",
+   "narrative": "A command injection gives code execution inside the container; the container runs as root and privileged (or with host namespaces), so the process escapes to the node.",
+   "tactics": [
+    "Execution",
+    "Privilege Escalation",
+    "Lateral Movement"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "gen_command_injection",
+      "gen_code_injection",
+      "gen_unsafe_deserialization"
+     ],
+     "role": "code execution"
+    },
+    {
+     "any_of": [
+      "gen_container_privileged",
+      "gen_docker_root_user"
+     ],
+     "role": "privileged container"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "exposed-service-no-auth",
+   "name": "Unauthenticated service reachable from the internet",
+   "narrative": "A database or cache port is open to the world (observed live) and the infrastructure code that allowed it is in the repository; default-unauthenticated services are read and written directly.",
+   "tactics": [
+    "Reconnaissance",
+    "Initial Access",
+    "Collection"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "rt_open_port"
+     ],
+     "role": "port open"
+    },
+    {
+     "any_of": [
+      "gen_iac_open_ingress",
+      "gen_iac_public_database"
+     ],
+     "role": "ingress allowed by IaC"
+    }
+   ],
+   "break_at": 1
+  },
+  {
+   "id": "mitm-to-credential-theft",
+   "name": "Adversary-in-the-middle on a client that skips TLS verification",
+   "narrative": "A client disables certificate verification; an on-path attacker presents any certificate, terminates TLS, and reads the credentials or tokens the client sends.",
+   "tactics": [
+    "Credential Access",
+    "Collection"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "gen_tls_verification_disabled"
+     ],
+     "role": "verification disabled"
+    },
+    {
+     "any_of": [
+      "gen_hardcoded_secret",
+      "gen_web_jwt_unverified",
+      "rt_tls_untrusted_cert"
+     ],
+     "role": "secrets in transit"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "oracle-manipulation-drain",
+   "name": "Flash-loan oracle manipulation to protocol drain",
+   "narrative": "A flash loan moves the spot price the contract reads in the same transaction; with no post-state solvency check, the attacker borrows or mints against the inflated value and repays the loan with the protocol's funds.",
+   "tactics": [
+    "Impact"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "evm_oracle_spot_price",
+      "evm_oracle_self_trade",
+      "evm_token_balance_manipulation",
+      "sol_oracle_self_trade",
+      "move_oracle_spot_price",
+      "sor_thin_liquidity_oracle_price"
+     ],
+     "role": "manipulable price"
+    },
+    {
+     "any_of": [
+      "evm_missing_post_state_health_check",
+      "evm_conservation_check_absent",
+      "evm_unbacked_synthetic_mint",
+      "move_liquidity_conservation"
+     ],
+     "role": "no solvency guard"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "reentrancy-drain",
+   "name": "Reentrancy with unchecked external calls",
+   "narrative": "An external call is made before state is updated and its return value is not checked; a malicious receiver re-enters and withdraws repeatedly.",
+   "tactics": [
+    "Impact"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "evm_reentrancy_classic",
+      "evm_reentrancy_erc20",
+      "evm_reentrancy_via_whitelisted",
+      "evm_readonly_reentrancy",
+      "sor_reentrancy_external_call"
+     ],
+     "role": "reentrant call"
+    },
+    {
+     "any_of": [
+      "evm_unchecked_returns",
+      "evm_state_mutation_ordering"
+     ],
+     "role": "unchecked result or ordering"
+    }
+   ],
+   "break_at": 0
+  },
+  {
+   "id": "admin-key-takeover",
+   "name": "Single admin key to full protocol control",
+   "narrative": "One externally-owned key controls upgrades or privileged functions with no timelock; the key is phished or leaked (it may already be in the repository) and the attacker upgrades to a draining implementation instantly.",
+   "tactics": [
+    "Credential Access",
+    "Persistence",
+    "Impact"
+   ],
+   "steps": [
+    {
+     "any_of": [
+      "evm_single_eoa_admin",
+      "evm_insufficient_multisig_threshold",
+      "sol_admin_no_timelock",
+      "sol_treasury_single_authority",
+      "move_admin_no_timelock"
+     ],
+     "role": "single key / no delay"
+    },
+    {
+     "any_of": [
+      "evm_upgrade_path_verification",
+      "evm_unprotected_initializer",
+      "sor_unprotected_upgrade",
+      "sor_no_unprotected_upgrade",
+      "unauthorized_privileged_mutation",
+      "gen_private_key_committed"
+     ],
+     "role": "upgrade or privileged path"
+    }
+   ],
+   "break_at": 0
+  }
+ ]
+}

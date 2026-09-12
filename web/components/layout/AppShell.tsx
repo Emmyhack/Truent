@@ -2,11 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { signOut } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import {
   LayoutDashboard,
   Shield,
-  BookOpen,
   Settings,
   HelpCircle,
   BookMarked,
@@ -22,20 +21,22 @@ import clsx from 'clsx'
 interface AppShellProps {
   children: React.ReactNode
   rightPanel?: React.ReactNode
-  currentPage?: 'dashboard' | 'audits' | 'library' | 'settings' | 'support'
+  currentPage?: 'dashboard' | 'audits' | 'settings' | 'support'
   onNewScan?: () => void
 }
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard, href: '/dashboard' },
   { id: 'audits',    label: 'Audits',      icon: Shield,           href: '/dashboard' },
-  { id: 'library',   label: 'Library',     icon: BookOpen,         href: '/library' },
   { id: 'settings',  label: 'Settings',    icon: Settings,         href: '/dashboard/settings' },
   { id: 'support',   label: 'Support',     icon: HelpCircle,       href: '/dashboard/support' },
 ]
 
 export function AppShell({ children, rightPanel, currentPage = 'dashboard', onNewScan }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { data: session } = useSession()
+  const displayName = session?.user?.name || session?.user?.email || 'Signed in'
+  const initial = displayName.trim().charAt(0).toUpperCase() || 'T'
 
   return (
     <div className="flex h-screen bg-bg overflow-hidden">
@@ -55,7 +56,7 @@ export function AppShell({ children, rightPanel, currentPage = 'dashboard', onNe
           </Link>
           <div className="mt-3 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-low animate-pulse-dot" />
-            <span className="text-xs text-low font-[600]">All systems operational</span>
+            <span className="text-xs text-low font-[600]">Engine online</span>
           </div>
         </div>
 
@@ -124,11 +125,11 @@ export function AppShell({ children, rightPanel, currentPage = 'dashboard', onNe
         <div className="border-t border-hair p-3">
           <div className="flex items-center gap-3 px-2 py-2">
             <div className="w-7 h-7 rounded-full bg-brand/20 border border-brand/30 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-[700] text-acc-text">A</span>
+              <span className="text-xs font-[700] text-acc-text">{initial}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-body-md font-[500] text-text truncate">Alex Developer</p>
-              <p className="text-xs text-sec truncate">Pro Plan</p>
+              <p className="text-body-md font-[500] text-text truncate">{displayName}</p>
+              <p className="text-xs text-sec truncate">{session?.user?.email && session.user.name ? session.user.email : 'Truent account'}</p>
             </div>
             <ChevronRight size={14} className="text-sec flex-shrink-0" />
           </div>
