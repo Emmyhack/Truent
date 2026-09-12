@@ -117,7 +117,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 assert_cmd = "2.0"
 predicates = "3.1"
 insta = { version = "1.34", features = ["json"] }
-criterion = { version = "0.5" }
+criterion = { version = "0.8" }
 tempfile = "3.8"
 # serde_yaml is unmaintained (RUSTSEC-2024-0370). serde_yaml_ng is the
 # maintained drop-in fork with the same API.
