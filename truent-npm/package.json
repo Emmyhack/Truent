@@ -54,6 +54,6 @@
     "https-proxy-agent": "^7.0.0"
   },
   "devDependencies": {
-    "jest": "^29.0.0"
+    "jest": "^30.5.1"
   }
 }
