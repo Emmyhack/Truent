@@ -1,0 +1,8 @@
+# truent harden: security-sensitive paths need a named reviewer.
+# Owner: the repository maintainer (edit to a team once one exists).
+/.github/workflows/      @geekstrancend
+/security/               @geekstrancend
+/crates/                 @geekstrancend
+/examples/foundry/       @geekstrancend
+/**/migrations/          @geekstrancend
+/SECURITY.md             @geekstrancend

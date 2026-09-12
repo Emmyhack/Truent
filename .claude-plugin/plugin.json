@@ -1,0 +1,5 @@
+{
+  "name": "truent",
+  "description": "Deterministic-first smart-contract security skills for EVM, Solana, Move, and Soroban. Backed by Truent's compiled engine — static detectors plus a revm-backed invariant fuzzer — so findings are machine-verified and reproducible, not an LLM's opinion.",
+  "version": "0.6.0"
+}

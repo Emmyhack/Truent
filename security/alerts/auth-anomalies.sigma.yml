@@ -1,0 +1,20 @@
+# truent harden: Sigma rule — authentication anomalies. Convert with sigma-cli
+# for your SIEM (Splunk, Elastic, Sentinel, Chronicle).
+title: Burst of failed logins for one account or from one source
+id: 7f3c2d1e-truent-auth-burst
+status: experimental
+description: More than 10 failed authentication events in 5 minutes for the same user or source IP.
+logsource:
+  category: application
+  product: webapp
+detection:
+  selection:
+    event: 'auth.failed'
+  timeframe: 5m
+  condition: selection | count() by user > 10 or selection | count() by src_ip > 10
+falsepositives:
+  - Load tests (exclude the load-test source range)
+level: high
+tags:
+  - attack.credential_access
+  - attack.t1110

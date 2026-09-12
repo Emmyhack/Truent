@@ -13,6 +13,7 @@ pub mod config;
 pub mod dvn_fuzzer;
 pub mod error;
 pub mod evaluator;
+pub mod exposure;
 pub mod finding;
 pub mod fuzzer;
 pub mod generated;
@@ -24,7 +25,9 @@ pub mod oz_integration;
 pub mod registry;
 pub mod security_validator;
 pub mod synthetic_mint_fuzzer;
+pub mod taxonomy;
 pub mod test_infrastructure;
+pub mod text;
 pub mod threat_model;
 pub mod traits;
 pub mod type_checker;
@@ -50,6 +53,7 @@ pub use model::{FunctionModel, Invariant, ProgramModel, StateVar};
 pub use oz_integration::{EnrichedFinding, OZMappingRegistry, OZVulnerabilityType};
 pub use registry::{Exploit, ExploitRegistry, EXPLOIT_REGISTRY};
 pub use security_validator::{IssueSeverity, SecurityIssue, SecurityReport, SecurityValidator};
+pub use taxonomy::{taxonomy_for, Cwe, Dasp, OwaspSc, Swc, Taxonomy};
 pub use test_infrastructure::{DetectorTestCase, DetectorTestResult, DetectorTestSuite};
 pub use threat_model::{
     DSLSandbox, InjectionVerifier, SimulationIsolation, StrictModeAnalyzer, TamperDetector,

@@ -268,8 +268,9 @@ pub fn detect_unhandled_panic(functions: &[ContractFunction], file_path: &str) -
                 f.line,
                 0,
                 format!(
-                    "Function '{}' calls unwrap()/expect() {} time(s); prefer returning a \
-                     #[contracterror] Result over aborting the invocation",
+                    "Function '{}' calls a bare unwrap() {} time(s): a missing storage key or \
+                     failed conversion aborts with no reason; use expect(\"why\") or return a \
+                     #[contracterror] Result",
                     f.name, f.unwrap_count
                 ),
                 f.name.clone(),

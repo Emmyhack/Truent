@@ -17,14 +17,19 @@ use std::time::Instant;
 mod ui;
 use ui::*;
 
+mod skills_cmd;
+
 // Import analyzers
 use truent_analyzer_evm::EvmAnalyzer;
+use truent_analyzer_general as general;
 use truent_analyzer_move::MoveAnalyzer;
 use truent_analyzer_solana::SolanaAnalyzer;
 use truent_analyzer_soroban::SorobanAnalyzer;
+use truent_core::taxonomy::taxonomy_for;
 use truent_core::traits::ChainAnalyzer;
 use truent_core::{CodeFuzzer, Finding};
 use truent_library::InvariantLibrary;
+use truent_report::html_escape;
 
 // ============================================================================
 // CLI STRUCTURE
@@ -69,6 +74,251 @@ enum Commands {
     Invariants(InvariantsArgs),
     /// Run fuzzer on contract invariants.
     Fuzz(FuzzArgs),
+    /// Show how detectors map to CWE, SWC, OWASP SC Top 10 and DASP.
+    Taxonomy(TaxonomyArgs),
+    /// Discover, inspect and run external security skill libraries.
+    Skills(skills_cmd::SkillsArgs),
+    /// Dependency analysis: vulnerable, unpinned and unlocked dependencies; SBOM.
+    Deps(DepsArgs),
+    /// The security-pathway map: how every class of security is covered.
+    Pathways(PathwaysArgs),
+    /// Assess a repository against the whole security model.
+    Assess(AssessArgs),
+    /// Generate a STRIDE threat model from discovered structure.
+    ThreatModel(ThreatModelArgs),
+    /// Probe a live target you are authorized to test: TLS, security headers, exposed paths, open ports.
+    Probe(ProbeArgs),
+    /// How exploitable each finding is, which findings compose into attack chains, and the fix for each.
+    Exposure(ExposureArgs),
+    /// Generate preventive controls for this repository (gitignore, Dependabot, pre-commit, CI gate, security headers).
+    Harden(HardenArgs),
+    /// Walk the 33-section codebase safety & security checklist and report what is verified, what is missing, and what needs a person.
+    ReleaseCheck(ReleaseCheckArgs),
+    /// Symbolic execution: drive halmos / hevm / Mythril on a Foundry project; counterexamples become proven findings.
+    Symbolic(SymbolicArgs),
+}
+
+/// Arguments for `deps`.
+#[derive(Parser)]
+struct DepsArgs {
+    /// Repository root.
+    #[arg(default_value = ".")]
+    path: PathBuf,
+    /// Directory of OSV JSON and/or RustSec advisories for vulnerability matching.
+    #[arg(long, value_name = "DIR")]
+    advisory_db: Option<PathBuf>,
+    /// Write a CycloneDX 1.5 SBOM here.
+    #[arg(long, value_name = "FILE")]
+    sbom: Option<PathBuf>,
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+    /// Fail if findings at or above this severity exist.
+    #[arg(long, value_enum, default_value = "critical")]
+    fail_on: SeverityArg,
+}
+
+/// Arguments for `pathways`.
+#[derive(Parser)]
+struct PathwaysArgs {
+    /// Show one pathway by id (e.g. api-security).
+    id: Option<String>,
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+}
+
+/// Arguments for `probe`.
+#[derive(Parser)]
+struct ProbeArgs {
+    /// Target: `example.com`, `https://example.com:8443`, `http://10.0.0.5`.
+    target: String,
+    /// Assert that you are authorized to test this target. Required: the probe
+    /// refuses to send anything without it.
+    #[arg(long)]
+    authorized: bool,
+    /// Per-connection timeout in seconds.
+    #[arg(long, default_value_t = 8)]
+    timeout: u64,
+    /// Comma-separated ports to check (default: 20 common ports); `none` disables.
+    #[arg(long, value_name = "LIST")]
+    ports: Option<String>,
+    /// Skip the exposed-path checks (/.git/config, /.env, …).
+    #[arg(long)]
+    no_paths: bool,
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+    /// Also write a SARIF 2.1.0 report here.
+    #[arg(long, value_name = "FILE")]
+    sarif: Option<PathBuf>,
+    /// Fail if findings at or above this severity exist.
+    #[arg(long, value_enum, default_value = "critical")]
+    fail_on: SeverityArg,
+}
+
+/// Arguments for `exposure`.
+#[derive(Parser)]
+struct ExposureArgs {
+    /// Repository root.
+    #[arg(default_value = ".")]
+    path: PathBuf,
+    /// Advisory database for the dependency half.
+    #[arg(long, value_name = "DIR")]
+    advisory_db: Option<PathBuf>,
+    /// A `truent probe --format json` report to fold in (live findings raise exploitability).
+    #[arg(long, value_name = "FILE")]
+    probe_report: Option<PathBuf>,
+    /// Only findings rated at or above this exploitability.
+    #[arg(long, value_enum, default_value = "theoretical")]
+    min: ExploitabilityArg,
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+    /// Write the report here (default: stdout).
+    #[arg(long, value_name = "FILE")]
+    out: Option<PathBuf>,
+}
+
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum ExploitabilityArg {
+    Theoretical,
+    Unlikely,
+    Possible,
+    Likely,
+}
+
+/// Arguments for `release-check`.
+#[derive(Parser)]
+struct ReleaseCheckArgs {
+    /// Repository root.
+    #[arg(default_value = ".")]
+    path: PathBuf,
+    /// Advisory database for the dependency half.
+    #[arg(long, value_name = "DIR")]
+    advisory_db: Option<PathBuf>,
+    /// A `truent probe --format json` report; resolves the DAST/header/cookie items.
+    #[arg(long, value_name = "FILE")]
+    probe_report: Option<PathBuf>,
+    /// A `truent symbolic --format json` report; resolves the symbolic-execution item.
+    #[arg(long, value_name = "FILE")]
+    symbolic_report: Option<PathBuf>,
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+    /// Write the report here (default: stdout).
+    #[arg(long, value_name = "FILE")]
+    out: Option<PathBuf>,
+    /// Exit non-zero unless the verdict is READY.
+    #[arg(long)]
+    strict: bool,
+}
+
+/// Arguments for `symbolic`.
+#[derive(Parser)]
+struct SymbolicArgs {
+    /// Foundry project root (has foundry.toml and check_*/prove_* tests).
+    #[arg(default_value = ".")]
+    path: PathBuf,
+    /// Executor to use (default: the first of halmos, hevm, mythril found on PATH).
+    #[arg(long, value_enum)]
+    tool: Option<SymbolicToolArg>,
+    /// Overall timeout in seconds.
+    #[arg(long, default_value_t = 900)]
+    timeout: u64,
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+    /// Write the report here (default: stdout).
+    #[arg(long, value_name = "FILE")]
+    out: Option<PathBuf>,
+    /// Fail if a proven counterexample is found.
+    #[arg(long)]
+    strict: bool,
+}
+
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum SymbolicToolArg {
+    Halmos,
+    Hevm,
+    Mythril,
+}
+
+/// Arguments for `harden`.
+#[derive(Parser)]
+struct HardenArgs {
+    /// Repository root.
+    #[arg(default_value = ".")]
+    path: PathBuf,
+    /// Write the files (never overwrites; `.gitignore` gets missing lines appended). Default: print the plan.
+    #[arg(long)]
+    write: bool,
+    /// Output format for the plan.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+}
+
+/// Arguments for `assess`.
+#[derive(Parser)]
+struct AssessArgs {
+    /// Repository root.
+    #[arg(default_value = ".")]
+    path: PathBuf,
+    /// Advisory database for the dependency half.
+    #[arg(long, value_name = "DIR")]
+    advisory_db: Option<PathBuf>,
+    /// Write the Markdown report here (default: stdout).
+    #[arg(long, value_name = "FILE")]
+    out: Option<PathBuf>,
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+}
+
+/// Arguments for `threat-model`.
+#[derive(Parser)]
+struct ThreatModelArgs {
+    /// Repository root.
+    #[arg(default_value = ".")]
+    path: PathBuf,
+    /// Write the Markdown report here (default: stdout).
+    #[arg(long, value_name = "FILE")]
+    out: Option<PathBuf>,
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: FormatArg,
+}
+
+/// Arguments for the `taxonomy` subcommand.
+#[derive(Parser)]
+struct TaxonomyArgs {
+    /// Output format.
+    #[arg(long, value_enum, default_value = "text")]
+    format: TaxonomyFormat,
+
+    /// Only show detectors for this chain.
+    #[arg(long, value_enum)]
+    chain: Option<ChainArg>,
+
+    /// Only show detectors mapped to this taxonomy ID (e.g. CWE-841, SWC-107,
+    /// SC01, DASP-1). Matched case-insensitively against every registry.
+    #[arg(long)]
+    id: Option<String>,
+
+    /// Output file.
+    #[arg(long)]
+    output: Option<PathBuf>,
+}
+
+/// Output formats for `truent taxonomy`.
+#[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
+enum TaxonomyFormat {
+    /// Human-readable table.
+    Text,
+    /// Machine-readable JSON.
+    Json,
+    /// Markdown table, as committed to `docs/COVERAGE.md`.
+    Markdown,
 }
 
 /// Arguments for the `doctor` subcommand.
@@ -112,6 +362,15 @@ struct CheckArgs {
     #[arg(long)]
     output: Option<PathBuf>,
 
+    /// Write a SARIF 2.1.0 report to this path, in addition to the normal
+    /// output.
+    ///
+    /// SARIF is what GitHub code scanning ingests. Truent's findings carry a
+    /// real CWE taxonomy, so uploading this file makes them filterable by
+    /// weakness class alongside every other scanner's results.
+    #[arg(long, value_name = "PATH")]
+    sarif: Option<PathBuf>,
+
     /// Configuration file.
     #[arg(long)]
     config: Option<PathBuf>,
@@ -138,6 +397,15 @@ struct ScanArgs {
     /// Output file (for non-text formats).
     #[arg(long)]
     file: Option<PathBuf>,
+
+    /// Write a SARIF 2.1.0 report to this path, in addition to the normal
+    /// output.
+    ///
+    /// SARIF is what GitHub code scanning ingests. Truent's findings carry a
+    /// real CWE taxonomy, so uploading this file makes them filterable by
+    /// weakness class alongside every other scanner's results.
+    #[arg(long, value_name = "PATH")]
+    sarif: Option<PathBuf>,
 
     /// Minimum severity to report.
     #[arg(long, value_enum)]
@@ -340,6 +608,10 @@ enum ChainArg {
     Move,
     /// Soroban (Stellar).
     Soroban,
+    /// Any repository: secrets, CI workflows, containers, application code.
+    General,
+    /// Every applicable engine, chosen per file by content and path.
+    Auto,
 }
 
 /// Violation severity levels.
@@ -387,6 +659,17 @@ fn main() -> Result<()> {
         Commands::Registry(args) => cmd_registry(args, cli.quiet)?,
         Commands::Invariants(args) => cmd_invariants(args, cli.quiet)?,
         Commands::Fuzz(args) => cmd_fuzz(args, cli.quiet, cli.verbose)?,
+        Commands::Taxonomy(args) => cmd_taxonomy(args)?,
+        Commands::Skills(args) => skills_cmd::run(args, cli.quiet)?,
+        Commands::Deps(args) => cmd_deps(args, cli.quiet)?,
+        Commands::Pathways(args) => cmd_pathways(args)?,
+        Commands::Assess(args) => cmd_assess(args, cli.quiet)?,
+        Commands::ThreatModel(args) => cmd_threat_model(args)?,
+        Commands::Probe(args) => cmd_probe(args, cli.quiet)?,
+        Commands::Exposure(args) => cmd_exposure(args, cli.quiet)?,
+        Commands::Harden(args) => cmd_harden(args, cli.quiet)?,
+        Commands::ReleaseCheck(args) => cmd_release_check(args, cli.quiet)?,
+        Commands::Symbolic(args) => cmd_symbolic(args, cli.quiet)?,
     }
 
     Ok(())
@@ -411,6 +694,8 @@ fn cmd_check(args: CheckArgs, quiet: bool, verbose: bool) -> Result<()> {
         ChainArg::Solana => "Solana",
         ChainArg::Move => "Move",
         ChainArg::Soroban => "Soroban",
+        ChainArg::General => "General",
+        ChainArg::Auto => "Auto",
     };
 
     // Convert config path to String for header
@@ -443,9 +728,10 @@ fn cmd_check(args: CheckArgs, quiet: bool, verbose: bool) -> Result<()> {
         None
     };
 
-    // Run actual analysis
-    let violations = match run_analysis(&args.path, &args.chain, verbose) {
-        Ok(vios) => vios,
+    // Run actual analysis. Findings are kept alongside the display-shaped
+    // violations because SARIF needs the raw form.
+    let findings = match run_analysis_findings(&args.path, &args.chain, verbose) {
+        Ok(f) => f,
         Err(e) => {
             if let Some(s) = spinner {
                 s.stop_with_failure(&e.to_string());
@@ -453,6 +739,16 @@ fn cmd_check(args: CheckArgs, quiet: bool, verbose: bool) -> Result<()> {
             return Err(e);
         }
     };
+    let total_findings = findings.len();
+    let violations: Vec<Violation> = findings
+        .iter()
+        .enumerate()
+        .map(|(i, f)| finding_to_violation(f, i + 1, total_findings))
+        .collect();
+
+    if let Some(sarif_path) = &args.sarif {
+        write_sarif(&findings, sarif_path, quiet)?;
+    }
 
     let duration_secs = start_time.elapsed().as_secs_f64();
 
@@ -465,6 +761,8 @@ fn cmd_check(args: CheckArgs, quiet: bool, verbose: bool) -> Result<()> {
         ChainArg::Solana => 11,
         ChainArg::Move => 7,
         ChainArg::Soroban => 9,
+        ChainArg::General => 18,
+        ChainArg::Auto => 100,
     };
     let total_checks = detector_count.max(violations.len());
     let passed = total_checks.saturating_sub(violations.len());
@@ -608,16 +906,54 @@ fn cmd_check(args: CheckArgs, quiet: bool, verbose: bool) -> Result<()> {
 }
 
 /// Generate an HTML report of the security analysis.
+/// Render a violation's registry citations as HTML badges.
+///
+/// Empty when the invariant has no mapping, so the cell is blank rather than
+/// showing a class Truent cannot stand behind.
+fn violation_taxonomy_html(v: &Violation) -> String {
+    let mut badges: Vec<String> = Vec::new();
+    if let Some(cwe) = &v.cwe {
+        // The label is "CWE-841 · Name"; the badge shows the ID, the tooltip
+        // carries the full name.
+        let id = cwe.split(' ').next().unwrap_or(cwe);
+        badges.push(format!(
+            "<span class=\"tax\" title=\"{}\">{}</span>",
+            html_escape(cwe),
+            html_escape(id)
+        ));
+    }
+    for values in [&v.swc, &v.owasp_sc, &v.dasp] {
+        for label in values {
+            let id = label.split(' ').next().unwrap_or(label);
+            badges.push(format!(
+                "<span class=\"tax\" title=\"{}\">{}</span>",
+                html_escape(label),
+                html_escape(id)
+            ));
+        }
+    }
+    badges.join(" ")
+}
+
 fn generate_html_report(summary: &AnalysisSummary, violations: &[Violation]) -> String {
+    // Every value below is attacker-influenceable — `location` carries a file
+    // path, `message` can quote contract source — and a report is a document
+    // people open in a browser and forward. Escape all of them with the same
+    // helper the report crate uses; the previous hand-rolled `<`/`>` pass on
+    // `message` alone left `&`, quotes, and every other column raw.
     let violation_rows = violations
         .iter()
         .map(|v| {
+            let taxonomy = violation_taxonomy_html(v);
             format!(
-                "<tr><td>{}</td><td>{}</td><td>{}</td><td><code>{}</code></td></tr>",
-                v.invariant_id,
-                v.severity,
-                v.location,
-                v.message.replace("<", "&lt;").replace(">", "&gt;")
+                "<tr><td><code>{}</code></td><td class=\"severity-{}\">{}</td>\
+                 <td>{}</td><td>{}</td><td>{}</td></tr>",
+                html_escape(&v.invariant_id),
+                html_escape(&v.severity),
+                html_escape(&v.severity.to_uppercase()),
+                html_escape(&v.location),
+                taxonomy,
+                html_escape(&v.message),
             )
         })
         .collect::<Vec<_>>()
@@ -721,6 +1057,18 @@ fn generate_html_report(summary: &AnalysisSummary, violations: &[Violation]) -> 
             color: #6f42c1;
             font-weight: 600;
         }}
+        .tax {{
+            display: inline-block;
+            background: #eef2f7;
+            border: 1px solid #d6dde6;
+            border-radius: 4px;
+            padding: 1px 6px;
+            margin: 1px 2px 1px 0;
+            font-size: 11px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            color: #3a4652;
+            white-space: nowrap;
+        }}
         .timestamp {{
             color: #6a737d;
             font-size: 12px;
@@ -759,6 +1107,7 @@ fn generate_html_report(summary: &AnalysisSummary, violations: &[Violation]) -> 
                     <th>Invariant</th>
                     <th>Severity</th>
                     <th>Location</th>
+                    <th>Classification</th>
                     <th>Message</th>
                 </tr>
             </thead>
@@ -773,8 +1122,8 @@ fn generate_html_report(summary: &AnalysisSummary, violations: &[Violation]) -> 
     </div>
 </body>
 </html>"#,
-        summary.target,
-        summary.chain,
+        html_escape(&summary.target),
+        html_escape(&summary.chain),
         summary.duration_secs,
         summary.total_checks,
         summary.violations,
@@ -801,7 +1150,81 @@ fn chain_extension(chain: &ChainArg) -> &'static str {
         ChainArg::Solana => "rs",
         ChainArg::Move => "move",
         ChainArg::Soroban => "rs",
+        // General and Auto do not select by a single extension; see
+        // `engines_for_file`.
+        ChainArg::General | ChainArg::Auto => "",
     }
+}
+
+/// Which engines should run over `path`, given the requested chain.
+///
+/// A single chain runs its engine over files with its extension. `General`
+/// runs the repository analyzer over everything it applies to. `Auto` does
+/// both, sniffing `.rs` files for Anchor or Soroban markers so a mixed
+/// repository gets every engine that is relevant to each file.
+fn engines_for_file(chain: &ChainArg, path: &Path, source: &str) -> Vec<ChainArg> {
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+    let file = path.to_string_lossy().to_string();
+    let mut out = Vec::new();
+    match chain {
+        ChainArg::Evm | ChainArg::Solana | ChainArg::Move | ChainArg::Soroban => {
+            if ext == chain_extension(chain) {
+                out.push(chain.clone());
+            }
+        }
+        ChainArg::General => {
+            if general::applies_to(&file) {
+                out.push(ChainArg::General);
+            }
+        }
+        ChainArg::Auto => {
+            match ext {
+                "sol" => out.push(ChainArg::Evm),
+                "move" => out.push(ChainArg::Move),
+                "rs" if source.contains("anchor_lang") || source.contains("#[program]") => {
+                    out.push(ChainArg::Solana)
+                }
+                "rs" if source.contains("soroban_sdk") => out.push(ChainArg::Soroban),
+                _ => {}
+            }
+            if general::applies_to(&file) {
+                out.push(ChainArg::General);
+            }
+        }
+    }
+    out
+}
+
+/// Recursively collect every regular file under `dir`, skipping dependency
+/// and build trees. Binary-looking files are dropped when read.
+fn collect_all_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
+    for entry in std::fs::read_dir(dir)
+        .with_context(|| format!("Failed to read directory {}", dir.display()))?
+    {
+        let path = entry?.path();
+        if path.is_dir() {
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if matches!(
+                name,
+                "node_modules"
+                    | "target"
+                    | ".git"
+                    | "build"
+                    | "dist"
+                    | "out"
+                    | "vendor"
+                    | ".venv"
+                    | "venv"
+                    | "__pycache__"
+            ) {
+                continue;
+            }
+            collect_all_files(&path, out)?;
+        } else {
+            out.push(path);
+        }
+    }
+    Ok(())
 }
 
 /// Recursively collect source files matching the chain's extension under `dir`.
@@ -828,20 +1251,18 @@ fn collect_source_files(dir: &Path, extension: &str, out: &mut Vec<PathBuf>) -> 
     Ok(())
 }
 
-/// Run every live pattern detector for `chain` against a single file's source text.
-fn run_detectors_on_file(chain: &ChainArg, path: &Path) -> Result<Vec<Finding>> {
-    let source = std::fs::read_to_string(path)
-        .with_context(|| format!("Failed to read {}", path.display()))?;
+/// Run every live pattern detector for `chain` against one file's source text.
+fn run_detectors_on_source(chain: &ChainArg, source: &str, path: &Path) -> Vec<Finding> {
     let file_path = path.to_string_lossy().to_string();
-
-    let findings = match chain {
-        ChainArg::Evm => truent_analyzer_evm::detectors::run_all_detectors(&source, &file_path),
-        ChainArg::Solana => truent_analyzer_solana::run_all_detectors(&source, &file_path),
-        ChainArg::Move => truent_analyzer_move::run_all_detectors(&source, &file_path),
-        ChainArg::Soroban => truent_analyzer_soroban::run_all_detectors(&source, &file_path),
-    };
-
-    Ok(findings)
+    match chain {
+        ChainArg::Evm => truent_analyzer_evm::detectors::run_all_detectors(source, &file_path),
+        ChainArg::Solana => truent_analyzer_solana::run_all_detectors(source, &file_path),
+        ChainArg::Move => truent_analyzer_move::run_all_detectors(source, &file_path),
+        ChainArg::Soroban => truent_analyzer_soroban::run_all_detectors(source, &file_path),
+        ChainArg::General => general::run_all_detectors(source, &file_path),
+        // Auto never reaches here: it is expanded per file by `engines_for_file`.
+        ChainArg::Auto => Vec::new(),
+    }
 }
 
 /// Convert a title-cased, human-readable name out of a detector's invariant_id,
@@ -866,22 +1287,65 @@ fn invariant_id_to_title(invariant_id: &str) -> String {
         .join(" ")
 }
 
+/// Pull one registry's labels out of an invariant's taxonomy entry.
+///
+/// Empty when the invariant is unmapped, or when the registry genuinely has no
+/// entry for it (SWC is Solidity-only, so Move and Solana findings carry none).
+fn taxonomy_labels(
+    invariant_id: &str,
+    pick: impl Fn(&truent_core::Taxonomy) -> Vec<String>,
+) -> Vec<String> {
+    taxonomy_for(invariant_id).map(pick).unwrap_or_default()
+}
+
 /// Convert a detector `Finding` into a display/report-ready `Violation`.
 fn finding_to_violation(finding: &Finding, index: usize, total: usize) -> Violation {
     let reference = get_vulnerability_reference(&finding.invariant_id);
+    let exposure = finding.exposure();
+    let rating = finding.exploitability();
+    let taxonomy = truent_core::taxonomy::taxonomy_for(&finding.invariant_id);
     Violation {
+        file: finding.file.clone(),
+        line: finding.line,
+        chain: taxonomy.and_then(|t| t.chain()).map(str::to_string),
+        exploitability: rating
+            .as_ref()
+            .map(|r| r.exploitability.label().to_ascii_lowercase()),
+        exploit_reasons: rating.map(|r| r.reasons).unwrap_or_default(),
+        fix: exposure.map(|e| e.fix.to_string()),
+        verify: exposure.map(|e| e.verify.to_string()),
+        attack: taxonomy
+            .map(|t| t.attack.iter().map(|a| a.id.to_string()).collect())
+            .unwrap_or_default(),
+        nist_csf: taxonomy
+            .map(|t| t.nist_csf.iter().map(|n| n.id.to_string()).collect())
+            .unwrap_or_default(),
         index,
         total,
         severity: finding.severity.name().to_lowercase(),
         title: invariant_id_to_title(&finding.invariant_id),
         invariant_id: finding.invariant_id.clone(),
         location: format!("{}:{}", finding.file, finding.line),
-        cwe: map_invariant_to_cwe(&finding.invariant_id),
+        cwe: cwe_label(&finding.invariant_id),
+        swc: taxonomy_labels(&finding.invariant_id, |t| {
+            t.swc.iter().map(|s| s.label()).collect()
+        }),
+        owasp_sc: taxonomy_labels(&finding.invariant_id, |t| {
+            t.owasp_sc.iter().map(|o| o.label()).collect()
+        }),
+        dasp: taxonomy_labels(&finding.invariant_id, |t| {
+            t.dasp.iter().map(|d| d.label()).collect()
+        }),
         message: finding.message.clone(),
-        recommendation: format!(
-            "Review this finding and apply the recommended fix. Details: {}",
-            reference
-        ),
+        // The exposure table's fix is the recommendation; the generic search
+        // link is only the fallback for a user-authored `.sinv` rule.
+        recommendation: match exposure {
+            Some(e) => e.fix.to_string(),
+            None => format!(
+                "Review this finding and apply the recommended fix. Details: {}",
+                reference
+            ),
+        },
         reference,
         code_snippet: finding
             .source_fragment
@@ -893,6 +1357,25 @@ fn finding_to_violation(finding: &Finding, index: usize, total: usize) -> Violat
 
 /// Run actual analysis on the source file or directory, returning display-ready violations.
 fn run_analysis(source_path: &Path, chain: &ChainArg, verbose: bool) -> Result<Vec<Violation>> {
+    let findings = run_analysis_findings(source_path, chain, verbose)?;
+    let total = findings.len();
+    Ok(findings
+        .iter()
+        .enumerate()
+        .map(|(i, f)| finding_to_violation(f, i + 1, total))
+        .collect())
+}
+
+/// Run the detectors and return the raw [`Finding`]s.
+///
+/// SARIF output needs these rather than display-shaped `Violation`s: the
+/// taxonomy is keyed on `invariant_id`, and SARIF wants a deduplicated rule
+/// catalogue, which the flattened per-finding view cannot reconstruct.
+fn run_analysis_findings(
+    source_path: &Path,
+    chain: &ChainArg,
+    verbose: bool,
+) -> Result<Vec<Finding>> {
     // Check if path exists
     if !source_path.exists() {
         return Err(anyhow::anyhow!("Path not found: {}", source_path.display()));
@@ -901,7 +1384,11 @@ fn run_analysis(source_path: &Path, chain: &ChainArg, verbose: bool) -> Result<V
     let extension = chain_extension(chain);
     let files = if source_path.is_dir() {
         let mut files = Vec::new();
-        collect_source_files(source_path, extension, &mut files)?;
+        if extension.is_empty() {
+            collect_all_files(source_path, &mut files)?;
+        } else {
+            collect_source_files(source_path, extension, &mut files)?;
+        }
         files
     } else {
         vec![source_path.to_path_buf()]
@@ -919,8 +1406,24 @@ fn run_analysis(source_path: &Path, chain: &ChainArg, verbose: bool) -> Result<V
     }
 
     let mut findings = Vec::new();
+    // Sources the general analyzer applies to, kept for the repository-level
+    // pass that looks across files.
+    let mut general_sources: Vec<(String, String)> = Vec::new();
     for file in &files {
-        findings.extend(run_detectors_on_file(chain, file)?);
+        // Non-UTF-8 content is binary; nothing here reads binaries.
+        let Ok(source) = std::fs::read_to_string(file) else {
+            continue;
+        };
+        let engines = engines_for_file(chain, file, &source);
+        if engines.iter().any(|e| matches!(e, ChainArg::General)) {
+            general_sources.push((file.to_string_lossy().to_string(), source.clone()));
+        }
+        for engine in engines {
+            findings.extend(run_detectors_on_source(&engine, &source, file));
+        }
+    }
+    if !general_sources.is_empty() {
+        findings.extend(general::run_repo_detectors(&general_sources));
     }
 
     if verbose {
@@ -936,19 +1439,26 @@ fn run_analysis(source_path: &Path, chain: &ChainArg, verbose: bool) -> Result<V
     // since the detectors above operate on raw source text and don't need it.
     if verbose {
         if let Some(first_file) = files.first() {
+            // The repository analyzer has no program model; contract chains do.
             let structural = match chain {
-                ChainArg::Evm => EvmAnalyzer.analyze(first_file),
-                ChainArg::Solana => SolanaAnalyzer.analyze(first_file),
-                ChainArg::Move => MoveAnalyzer.analyze(first_file),
-                ChainArg::Soroban => SorobanAnalyzer.analyze(first_file),
+                ChainArg::Evm => Some(EvmAnalyzer.analyze(first_file)),
+                ChainArg::Solana => Some(SolanaAnalyzer.analyze(first_file)),
+                ChainArg::Move => Some(MoveAnalyzer.analyze(first_file)),
+                ChainArg::Soroban => Some(SorobanAnalyzer.analyze(first_file)),
+                ChainArg::General | ChainArg::Auto => None,
             };
             match structural {
-                Ok(program) => eprintln!(
+                Some(Ok(program)) => eprintln!(
                     "✓ Structural analysis: {} functions in {}",
                     program.functions.len(),
                     first_file.display()
                 ),
-                Err(e) => eprintln!("⚠ Structural analysis unavailable ({e}); detectors still ran"),
+                Some(Err(e)) => {
+                    eprintln!("⚠ Structural analysis unavailable ({e}); detectors still ran")
+                }
+                None => eprintln!(
+                    "ℹ Structural analysis is per-chain; skipped for the repository analyzer"
+                ),
             }
         }
 
@@ -959,6 +1469,8 @@ fn run_analysis(source_path: &Path, chain: &ChainArg, verbose: bool) -> Result<V
             ChainArg::Solana => "solana",
             ChainArg::Move => "move",
             ChainArg::Soroban => "soroban",
+            ChainArg::General => "general",
+            ChainArg::Auto => "auto",
         };
         let lib = InvariantLibrary::with_defaults(chain_name);
         eprintln!(
@@ -968,14 +1480,7 @@ fn run_analysis(source_path: &Path, chain: &ChainArg, verbose: bool) -> Result<V
         );
     }
 
-    let total = findings.len();
-    let violations: Vec<Violation> = findings
-        .iter()
-        .enumerate()
-        .map(|(i, f)| finding_to_violation(f, i + 1, total))
-        .collect();
-
-    Ok(violations)
+    Ok(findings)
 }
 
 /// Generate detailed violation information with actionable recommendations.
@@ -1649,28 +2154,1005 @@ fn calculate_violation_confidence(
     confidence.min(1.0)
 }
 
-/// Map internal invariant names to CWE IDs.
-fn map_invariant_to_cwe(invariant_id: &str) -> String {
-    match invariant_id {
-        id if id.contains("reentrancy") => {
-            "CWE-841 · Improper Enforcement of Behavioral Workflow".to_string()
-        }
-        id if id.contains("overflow") => "CWE-190 · Integer Overflow".to_string(),
-        id if id.contains("underflow") => "CWE-191 · Integer Underflow".to_string(),
-        id if id.contains("return") => "CWE-252 · Unchecked Return Value".to_string(),
-        id if id.contains("delegatecall") => "CWE-758 · Reliance on Undefined Behavior".to_string(),
-        id if id.contains("access") => "CWE-269 · Improper Input Validation".to_string(),
-        id if id.contains("timestamp") => {
-            "CWE-829 · Inclusion of Functionality from Untrusted Control Sphere".to_string()
-        }
-        id if id.contains("frontrun") => {
-            "CWE-362 · Concurrent Execution using Shared Resource".to_string()
-        }
-        id if id.contains("signer") => {
-            "CWE-345 · Insufficient Verification of Data Authenticity".to_string()
-        }
-        _ => "CWE-676 · Use of Potentially Dangerous Function".to_string(),
+/// Write a SARIF 2.1.0 report to `path`.
+///
+/// Emitted alongside the normal output rather than instead of it: a CI job
+/// usually wants both the human-readable result in the log and the SARIF
+/// artifact to upload.
+fn write_sarif(findings: &[Finding], path: &Path, quiet: bool) -> Result<()> {
+    let sarif = truent_report::format_sarif(findings, env!("CARGO_PKG_VERSION"));
+    let rendered = serde_json::to_string_pretty(&sarif)?;
+    std::fs::write(path, rendered)
+        .with_context(|| format!("writing SARIF report to {}", path.display()))?;
+    if !quiet {
+        eprintln!("✓ SARIF report written to {}", path.display());
     }
+    Ok(())
+}
+
+/// Handle `deps`.
+fn cmd_deps(args: DepsArgs, quiet: bool) -> Result<()> {
+    let db = match &args.advisory_db {
+        Some(dir) => Some(
+            truent_sca::AdvisoryDb::load_dir(dir)
+                .with_context(|| format!("loading advisories from {}", dir.display()))?,
+        ),
+        None => None,
+    };
+    let report = truent_sca::analyze(&args.path, db.as_ref());
+
+    if let Some(out) = &args.sbom {
+        let name = args
+            .path
+            .canonicalize()
+            .ok()
+            .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
+            .unwrap_or_else(|| "project".into());
+        let doc = truent_sca::sbom::cyclonedx(&report.packages, &name, env!("CARGO_PKG_VERSION"));
+        std::fs::write(out, serde_json::to_string_pretty(&doc)?)
+            .with_context(|| format!("writing {}", out.display()))?;
+        if !quiet {
+            eprintln!(
+                "✓ SBOM written to {} ({} components)",
+                out.display(),
+                report.packages.len()
+            );
+        }
+    }
+
+    match args.format {
+        FormatArg::Json => {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&json!({
+                    "lockfiles": report.lockfiles,
+                    "packages": report.packages.len(),
+                    "advisory_source": report.advisory_source,
+                    "advisory_count": report.advisory_count,
+                    "findings": report.findings,
+                }))?
+            );
+        }
+        _ => {
+            println!(
+                "Dependencies: {} package(s) from {} lockfile(s)",
+                report.packages.len(),
+                report.lockfiles.len()
+            );
+            for l in &report.lockfiles {
+                println!("  {l}");
+            }
+            match &report.advisory_source {
+                Some(src) => println!("Advisories: {} from {src}", report.advisory_count),
+                None => println!("Advisories: none loaded — pass --advisory-db to match against OSV/RustSec. No vulnerability claims are made without one."),
+            }
+            println!();
+            if report.findings.is_empty() {
+                println!("No dependency findings.");
+            } else {
+                for f in &report.findings {
+                    println!(
+                        "[{}] {}  {}:{}",
+                        f.severity.name(),
+                        f.invariant_id,
+                        f.file,
+                        f.line
+                    );
+                    println!("    {}", f.message);
+                }
+            }
+        }
+    }
+
+    let fail_rank = severity_arg_rank(&args.fail_on);
+    if report
+        .findings
+        .iter()
+        .any(|f| severity_rank(f.severity.name()) >= fail_rank)
+    {
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+/// Handle `exposure`.
+fn cmd_exposure(args: ExposureArgs, quiet: bool) -> Result<()> {
+    use truent_core::exposure::Exploitability;
+    let mut findings = all_native_findings(&args.path, args.advisory_db.as_deref())?;
+    if let Some(p) = &args.probe_report {
+        let text = std::fs::read_to_string(p)
+            .with_context(|| format!("reading probe report {}", p.display()))?;
+        let v: serde_json::Value = serde_json::from_str(&text)?;
+        let live: Vec<Finding> = serde_json::from_value(v["findings"].clone())
+            .context("probe report has no `findings` array")?;
+        findings.extend(live);
+    }
+    let min = match args.min {
+        ExploitabilityArg::Theoretical => Exploitability::Theoretical,
+        ExploitabilityArg::Unlikely => Exploitability::Unlikely,
+        ExploitabilityArg::Possible => Exploitability::Possible,
+        ExploitabilityArg::Likely => Exploitability::Likely,
+    };
+    let acceptances =
+        truent_pathways::load_acceptances(&args.path).map_err(|e| anyhow::anyhow!(e))?;
+    let (findings, accepted, _expired) = truent_pathways::apply_acceptances(findings, &acceptances);
+    let chains = truent_pathways::detect_chains(&findings);
+    let mut rated: Vec<(Finding, truent_core::exposure::Rating)> = findings
+        .into_iter()
+        .filter_map(|f| f.exploitability().map(|r| (f, r)))
+        .filter(|(_, r)| r.exploitability >= min)
+        .collect();
+    rated.sort_by(|a, b| {
+        b.1.exploitability
+            .cmp(&a.1.exploitability)
+            .then(b.0.severity.cmp(&a.0.severity))
+    });
+
+    let rendered = match args.format {
+        FormatArg::Json => serde_json::to_string_pretty(&json!({
+            "target": args.path.display().to_string(),
+            "chains": chains,
+            // The full catalogue of chains the engine knows, so a consumer can
+            // show what is checked as well as what fired.
+            "known_chains": truent_pathways::chains(),
+            "accepted": accepted,
+            "findings": rated.iter().map(|(f, r)| json!({
+                "finding": f,
+                "exploitability": r.exploitability,
+                "reasons": r.reasons,
+                "fix": f.exposure().map(|e| e.fix),
+                "verify": f.exposure().map(|e| e.verify),
+            })).collect::<Vec<_>>(),
+        }))?,
+        _ => {
+            let mut s = String::new();
+            s.push_str(&format!(
+                "# Exposure — {}
+
+",
+                args.path.display()
+            ));
+            s.push_str("How possible each finding is to exploit, judged from its attack profile and evidence — never by exploiting it — and what closes it.
+
+");
+            if chains.is_empty() {
+                s.push_str(
+                    "## Attack chains
+
+No known attack chain is completed by these findings.
+
+",
+                );
+            } else {
+                s.push_str(&format!(
+                    "## Attack chains ({})
+
+",
+                    chains.len()
+                ));
+                for h in &chains {
+                    s.push_str(&format!(
+                        "### {} `{}`{}
+
+{}
+
+",
+                        h.chain.name,
+                        h.chain.id,
+                        h.exploitability
+                            .map(|e| format!(" — {}", e.label()))
+                            .unwrap_or_default(),
+                        h.chain.narrative
+                    ));
+                    for (i, step) in h.chain.steps.iter().enumerate() {
+                        let by: Vec<String> = h.satisfied_by[i]
+                            .iter()
+                            .map(|(id, n)| format!("`{id}` ×{n}"))
+                            .collect();
+                        let brk = if i == h.chain.break_at {
+                            "  ← break here"
+                        } else {
+                            ""
+                        };
+                        s.push_str(&format!(
+                            "{}. {} — {}{brk}
+",
+                            i + 1,
+                            step.role,
+                            by.join(", ")
+                        ));
+                    }
+                    if let Some(id) = h.chain.steps[h.chain.break_at].any_of.first() {
+                        if let Some(e) = truent_core::exposure::exposure_for(id) {
+                            s.push_str(&format!(
+                                "
+**Prevent:** {}
+",
+                                e.fix
+                            ));
+                        }
+                    }
+                    s.push_str(&format!(
+                        "
+ATT&CK: {}
+
+",
+                        h.chain.tactics.join(" → ")
+                    ));
+                }
+            }
+            if !accepted.is_empty() {
+                s.push_str(&format!("## Accepted ({})\n\n", accepted.len()));
+                for a in &accepted {
+                    s.push_str(&format!(
+                        "- `{}` {}:{} — until {} ({}): {}\n",
+                        a.finding.invariant_id,
+                        a.finding.file,
+                        a.finding.line,
+                        a.acceptance.until,
+                        a.acceptance.owner,
+                        a.acceptance.reason
+                    ));
+                }
+                s.push('\n');
+            }
+            s.push_str(&format!(
+                "## Findings ({})
+
+",
+                rated.len()
+            ));
+            let mut last: Option<Exploitability> = None;
+            for (f, r) in &rated {
+                if last != Some(r.exploitability) {
+                    s.push_str(&format!(
+                        "### {}
+
+",
+                        r.exploitability.label()
+                    ));
+                    last = Some(r.exploitability);
+                }
+                s.push_str(&format!(
+                    "- **{}** [{}] {}:{}{}
+  {}
+  - why: {}
+",
+                    f.invariant_id,
+                    f.severity.name(),
+                    f.file,
+                    f.line,
+                    if f.is_proven() { " (proven)" } else { "" },
+                    f.message,
+                    r.reasons.join("; ")
+                ));
+                if let Some(e) = f.exposure() {
+                    s.push_str(&format!(
+                        "  - fix: {}
+  - verify: {}
+",
+                        e.fix, e.verify
+                    ));
+                }
+            }
+            s
+        }
+    };
+    match &args.out {
+        Some(p) => {
+            std::fs::write(p, &rendered)?;
+            if !quiet {
+                eprintln!("✓ Exposure report written to {}", p.display());
+            }
+        }
+        None => println!("{rendered}"),
+    }
+    Ok(())
+}
+
+/// Handle `symbolic`.
+fn cmd_symbolic(args: SymbolicArgs, quiet: bool) -> Result<()> {
+    use truent_symbolic::{run, Tool};
+    let prefer = args.tool.map(|t| match t {
+        SymbolicToolArg::Halmos => Tool::Halmos,
+        SymbolicToolArg::Hevm => Tool::Hevm,
+        SymbolicToolArg::Mythril => Tool::Mythril,
+    });
+    let report = run(
+        &args.path,
+        prefer,
+        std::time::Duration::from_secs(args.timeout),
+    );
+    let rendered = match args.format {
+        FormatArg::Json => serde_json::to_string_pretty(&report)?,
+        _ => {
+            let mut s = String::new();
+            s.push_str(&format!("Symbolic execution — {}\n", report.project));
+            match (&report.tool, &report.version) {
+                (Some(t), Some(v)) => s.push_str(&format!("  tool     {} {}\n", t.name(), v)),
+                _ => s.push_str("  tool     none found\n"),
+            }
+            s.push_str(&format!(
+                "  ran      {}   checks {}  passed {}  counterexamples {}  unresolved {}   ({} ms)\n",
+                report.ran, report.stats.checks, report.stats.passed, report.stats.failed, report.stats.unresolved, report.duration_ms
+            ));
+            for e in &report.errors {
+                s.push_str(&format!("  !        {e}\n"));
+            }
+            s.push('\n');
+            if report.findings.is_empty() {
+                s.push_str(if report.ran {
+                    "Every check passed.\n"
+                } else {
+                    "No result: the executor did not run.\n"
+                });
+            } else {
+                for f in &report.findings {
+                    s.push_str(&format!(
+                        "[{}] {}  {}{}\n    {}\n    witness: {}\n",
+                        f.severity.name(),
+                        f.invariant_id,
+                        f.file,
+                        if f.is_proven() { "  (PROVEN)" } else { "" },
+                        f.message,
+                        f.snippet
+                    ));
+                }
+            }
+            s
+        }
+    };
+    match &args.out {
+        Some(p) => {
+            std::fs::write(p, &rendered)?;
+            if !quiet {
+                eprintln!("✓ Symbolic report written to {}", p.display());
+            }
+        }
+        None => println!("{rendered}"),
+    }
+    if args.strict && report.findings.iter().any(|f| f.is_proven()) {
+        std::process::exit(1);
+    }
+    if !report.ran {
+        std::process::exit(2);
+    }
+    Ok(())
+}
+
+/// Handle `release-check`.
+fn cmd_release_check(args: ReleaseCheckArgs, quiet: bool) -> Result<()> {
+    let root = &args.path;
+    let mut findings = all_native_findings(root, args.advisory_db.as_deref())?;
+    let probe_loaded = if let Some(p) = &args.probe_report {
+        let text = std::fs::read_to_string(p)
+            .with_context(|| format!("reading probe report {}", p.display()))?;
+        let v: serde_json::Value = serde_json::from_str(&text)?;
+        let live: Vec<Finding> = serde_json::from_value(v["findings"].clone())
+            .context("probe report has no `findings` array")?;
+        findings.extend(live);
+        true
+    } else {
+        false
+    };
+    let symbolic_loaded = if let Some(p) = &args.symbolic_report {
+        let text = std::fs::read_to_string(p)
+            .with_context(|| format!("reading symbolic report {}", p.display()))?;
+        let v: serde_json::Value = serde_json::from_str(&text)?;
+        if v["ran"].as_bool() != Some(true) {
+            anyhow::bail!(
+                "symbolic report {} records a run that did not complete: {}",
+                p.display(),
+                v["errors"]
+            );
+        }
+        let sym: Vec<Finding> = serde_json::from_value(v["findings"].clone())
+            .context("symbolic report has no `findings` array")?;
+        findings.extend(sym);
+        true
+    } else {
+        false
+    };
+    // Test corpora and fixtures are deliberately vulnerable; they are not
+    // the repository's exposure.
+    findings.retain(|f| !f.file.contains("/corpus/") && !f.file.contains("/fixtures/"));
+    // Risk acceptances: known, owned, dated. A malformed file is an error —
+    // a typo must not silently un-accept anything.
+    let acceptances = truent_pathways::load_acceptances(root).map_err(|e| anyhow::anyhow!(e))?;
+    let (findings, accepted, expired) = truent_pathways::apply_acceptances(findings, &acceptances);
+
+    let mut files = Vec::new();
+    collect_all_files(root, &mut files)?;
+    let rel: Vec<String> = files
+        .iter()
+        .map(|f| {
+            f.strip_prefix(root)
+                .unwrap_or(f)
+                .to_string_lossy()
+                .replace('\\', "/")
+        })
+        .collect();
+    let texts: Vec<(String, String)> = rel
+        .iter()
+        .filter(|p| {
+            p.starts_with(".github/workflows/")
+                || p.ends_with(".gitlab-ci.yml")
+                || p.ends_with("Jenkinsfile")
+                || p.ends_with(".circleci/config.yml")
+                || p.ends_with("package.json")
+                || p.ends_with("Cargo.toml")
+                || p.ends_with("pyproject.toml")
+                || p.ends_with("foundry.toml")
+                || p.contains("hardhat.config")
+                || p.ends_with("Makefile")
+                || p.ends_with("go.mod")
+                || p.contains("/migrations/")
+                || p.contains("alembic")
+                || p.ends_with(".tf")
+        })
+        .filter_map(|p| {
+            std::fs::read_to_string(root.join(p))
+                .ok()
+                .map(|t| (p.clone(), t))
+        })
+        .collect();
+    let signals = truent_pathways::repo_signals(&truent_pathways::RepoView {
+        files: &rel,
+        texts: &texts,
+    });
+    let scope = truent_pathways::RepoScope::from_files(&rel);
+    let report = truent_pathways::release_check(
+        &findings,
+        &signals,
+        &scope,
+        &truent_pathways::ReleaseInputs {
+            probe_loaded,
+            symbolic_loaded,
+            accepted,
+            expired,
+        },
+    );
+
+    let rendered = match args.format {
+        FormatArg::Json => serde_json::to_string_pretty(&json!({
+            "target": root.display().to_string(),
+            "scope": scope,
+            "signals": signals,
+            "report": report,
+        }))?,
+        _ => report.to_markdown(&root.display().to_string()),
+    };
+    match &args.out {
+        Some(p) => {
+            std::fs::write(p, &rendered)?;
+            if !quiet {
+                eprintln!("✓ Release check written to {}", p.display());
+            }
+        }
+        None => println!("{rendered}"),
+    }
+    if args.strict && !report.ready {
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+/// Handle `harden`.
+fn cmd_harden(args: HardenArgs, quiet: bool) -> Result<()> {
+    let root = &args.path;
+    let mut files = Vec::new();
+    collect_all_files(root, &mut files)?;
+    let rel: Vec<String> = files
+        .iter()
+        .map(|f| {
+            f.strip_prefix(root)
+                .unwrap_or(f)
+                .to_string_lossy()
+                .replace('\\', "/")
+        })
+        .collect();
+    let read = |p: &str| std::fs::read_to_string(root.join(p)).ok();
+    let profile = truent_pathways::harden_profile(&rel, &read);
+    let plan = truent_pathways::harden_plan(&profile);
+
+    if matches!(args.format, FormatArg::Json) && !args.write {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&json!({ "profile": profile, "artifacts": plan }))?
+        );
+        return Ok(());
+    }
+
+    println!(
+        "Harden — {}
+",
+        root.display()
+    );
+    let mut written = 0;
+    for a in &plan {
+        let target = root.join(&a.path);
+        let action = if a.append && target.exists() {
+            let existing = std::fs::read_to_string(&target).unwrap_or_default();
+            let missing = truent_pathways::harden::missing_lines(&existing, &a.content);
+            if missing.is_empty() {
+                "up to date".to_string()
+            } else if args.write {
+                let mut out = existing.clone();
+                if !out.ends_with('\n') && !out.is_empty() {
+                    out.push('\n');
+                }
+                out.push_str("\n# --- truent harden ---\n");
+                out.push_str(&missing.join("\n"));
+                out.push('\n');
+                std::fs::write(&target, out)?;
+                written += 1;
+                format!("appended {} line(s)", missing.len())
+            } else {
+                format!("would append {} line(s)", missing.len())
+            }
+        } else if target.exists() {
+            "exists — left untouched".to_string()
+        } else if args.write {
+            if let Some(dir) = target.parent() {
+                std::fs::create_dir_all(dir)?;
+            }
+            std::fs::write(&target, &a.content)?;
+            written += 1;
+            "written".to_string()
+        } else {
+            "would create".to_string()
+        };
+        println!("  {:<44} {action}", a.path);
+        println!("      {}", a.reason);
+        if !a.prevents.is_empty() {
+            println!("      prevents: {}", a.prevents.join(", "));
+        }
+    }
+    println!();
+    if args.write {
+        if !quiet {
+            eprintln!("✓ {written} file(s) written. Review and commit them; nothing existing was overwritten.");
+        }
+    } else {
+        println!("Dry run. Re-run with --write to create these files (existing files are never overwritten).");
+    }
+    Ok(())
+}
+
+/// Handle `probe`.
+fn cmd_probe(args: ProbeArgs, quiet: bool) -> Result<()> {
+    use truent_runtime::{ports::DEFAULT_PORTS, probe, ProbeOptions, Target};
+    let target = Target::parse(&args.target)?;
+    let ports = match args.ports.as_deref() {
+        None => DEFAULT_PORTS.to_vec(),
+        Some("none") => Vec::new(),
+        Some(list) => list
+            .split(',')
+            .map(|p| {
+                p.trim()
+                    .parse::<u16>()
+                    .with_context(|| format!("bad port `{p}`"))
+            })
+            .collect::<Result<Vec<_>>>()?,
+    };
+    let opts = ProbeOptions {
+        authorized: args.authorized,
+        timeout: std::time::Duration::from_secs(args.timeout),
+        ports,
+        check_paths: !args.no_paths,
+    };
+    let report = probe(&target, &opts)?;
+
+    if let Some(path) = &args.sarif {
+        write_sarif(&report.findings, path, quiet)?;
+    }
+
+    match args.format {
+        FormatArg::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+        _ => {
+            println!("Probe: {}", target.origin());
+            if let Some(t) = &report.tls {
+                println!(
+                    "  TLS    {} {}  chain verified: {}  expires in {} day(s)  subject: {}",
+                    t.protocol,
+                    t.cipher,
+                    t.chain_verified,
+                    (t.not_after - truent_runtime::unix_now()) / 86_400,
+                    t.subject
+                );
+            }
+            if let Some(h) = &report.http {
+                println!(
+                    "  HTTP   {} → {}  ({} header(s))",
+                    h.status,
+                    h.final_url,
+                    h.headers.len()
+                );
+            }
+            if !report.exposed.is_empty() {
+                println!(
+                    "  Paths  {} probed, {} exposed",
+                    report.exposed.len(),
+                    report.exposed.iter().filter(|p| p.matched).count()
+                );
+            }
+            if !report.ports.is_empty() {
+                let open: Vec<String> = report
+                    .ports
+                    .iter()
+                    .filter(|p| p.open)
+                    .map(|p| format!("{}/{}", p.port, p.service))
+                    .collect();
+                println!(
+                    "  Ports  {} checked, open: {}",
+                    report.ports.len(),
+                    if open.is_empty() {
+                        "none".to_string()
+                    } else {
+                        open.join(", ")
+                    }
+                );
+            }
+            for e in &report.errors {
+                println!("  !      {e}");
+            }
+            println!();
+            if report.findings.is_empty() {
+                println!("No runtime findings.");
+            } else {
+                for f in &report.findings {
+                    println!("[{}] {}  {}", f.severity.name(), f.invariant_id, f.file);
+                    println!("    {}", f.message);
+                    println!("    evidence: {}", f.snippet);
+                }
+                println!();
+                println!(
+                    "{} finding(s), all PROVEN — each records what the target returned.",
+                    report.findings.len()
+                );
+            }
+        }
+    }
+
+    let fail_rank = severity_arg_rank(&args.fail_on);
+    if report
+        .findings
+        .iter()
+        .any(|f| severity_rank(f.severity.name()) >= fail_rank)
+    {
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+/// Handle `pathways`.
+fn cmd_pathways(args: PathwaysArgs) -> Result<()> {
+    use truent_pathways::{pathway, pathways, Coverage};
+    let selected: Vec<&truent_pathways::Pathway> = match &args.id {
+        Some(id) => {
+            vec![pathway(id).with_context(|| format!("no pathway '{id}'. Try: truent pathways"))?]
+        }
+        None => pathways().iter().collect(),
+    };
+    if matches!(args.format, FormatArg::Json) {
+        println!("{}", serde_json::to_string_pretty(&selected)?);
+        return Ok(());
+    }
+    for p in selected {
+        let native = p
+            .controls
+            .iter()
+            .filter(|c| matches!(c, Coverage::Native(_)))
+            .count();
+        let hosted = p
+            .controls
+            .iter()
+            .filter(|c| matches!(c, Coverage::Hosted(_)))
+            .count();
+        let manual = p
+            .controls
+            .iter()
+            .filter(|c| matches!(c, Coverage::Assess(_)))
+            .count();
+        println!("{}  [{}]  — {}", p.name, p.id, p.purpose);
+        println!("  stage: {:?}   native detectors: {native}   hosted subdomains: {hosted}   manual controls: {manual}", p.stage);
+        if args.id.is_some() {
+            for c in p.controls {
+                match c {
+                    Coverage::Native(d) => println!("    native   {d}"),
+                    Coverage::Hosted(s) => {
+                        println!("    hosted   {s}  (truent skills search --subdomain {s})")
+                    }
+                    Coverage::Assess(t) => println!("    verify   {t}"),
+                }
+            }
+        }
+        println!();
+    }
+    Ok(())
+}
+
+/// Findings from every native engine over a tree, plus the dependency half.
+fn all_native_findings(root: &Path, advisory_db: Option<&Path>) -> Result<Vec<Finding>> {
+    let mut findings = run_analysis_findings(root, &ChainArg::Auto, false)?;
+    let db = match advisory_db {
+        Some(dir) => Some(truent_sca::AdvisoryDb::load_dir(dir)?),
+        None => None,
+    };
+    findings.extend(truent_sca::analyze(root, db.as_ref()).findings);
+    Ok(findings)
+}
+
+/// Installed skills per subdomain, when a catalog is reachable.
+fn installed_skills_by_subdomain() -> Option<std::collections::BTreeMap<String, usize>> {
+    let root = truent_skills::default_root();
+    let catalog =
+        truent_skills::Catalog::load(&root, truent_skills::builtin_skills_dir().as_deref()).ok()?;
+    let mut m = std::collections::BTreeMap::new();
+    for s in catalog.skills() {
+        if let Some(sd) = &s.subdomain {
+            *m.entry(sd.clone()).or_default() += 1;
+        }
+    }
+    Some(m)
+}
+
+/// Handle `assess`.
+fn cmd_assess(args: AssessArgs, quiet: bool) -> Result<()> {
+    let findings = all_native_findings(&args.path, args.advisory_db.as_deref())?;
+    let skills = installed_skills_by_subdomain();
+    let a = truent_pathways::assess(&findings, skills.as_ref());
+    let target = args.path.display().to_string();
+    let rendered = match args.format {
+        FormatArg::Json => serde_json::to_string_pretty(&a)?,
+        _ => a.to_markdown(&target),
+    };
+    match &args.out {
+        Some(p) => {
+            std::fs::write(p, &rendered)?;
+            if !quiet {
+                eprintln!("✓ Assessment written to {}", p.display());
+            }
+        }
+        None => println!("{rendered}"),
+    }
+    Ok(())
+}
+
+/// Handle `threat-model`.
+fn cmd_threat_model(args: ThreatModelArgs) -> Result<()> {
+    let mut files = Vec::new();
+    if args.path.is_dir() {
+        collect_all_files(&args.path, &mut files)?;
+    } else {
+        files.push(args.path.clone());
+    }
+    let mut pairs = Vec::new();
+    for f in files {
+        let rel = f
+            .strip_prefix(&args.path)
+            .unwrap_or(&f)
+            .to_string_lossy()
+            .replace('\\', "/");
+        if !general::applies_to(&rel) && !rel.ends_with(".sol") {
+            continue;
+        }
+        if let Ok(src) = std::fs::read_to_string(&f) {
+            pairs.push((rel, src));
+        }
+    }
+    let m = truent_pathways::threat_model(&pairs);
+    let rendered = match args.format {
+        FormatArg::Json => serde_json::to_string_pretty(&m)?,
+        _ => m.to_markdown(&args.path.display().to_string()),
+    };
+    match &args.out {
+        Some(p) => {
+            std::fs::write(p, &rendered)?;
+            eprintln!("✓ Threat model written to {}", p.display());
+        }
+        None => println!("{rendered}"),
+    }
+    Ok(())
+}
+
+/// Handle the `taxonomy` subcommand.
+///
+/// Answers "what does Truent actually detect, and what is it called elsewhere?"
+/// — the question a security lead asks before adopting a scanner, and the
+/// question `docs/COVERAGE.md` is generated from so the answer cannot go stale.
+fn cmd_taxonomy(args: TaxonomyArgs) -> Result<()> {
+    let chain_filter = args.chain.map(|c| match c {
+        ChainArg::Evm => "evm",
+        ChainArg::Solana => "solana",
+        ChainArg::Move => "move",
+        ChainArg::Soroban => "soroban",
+        ChainArg::General => "general",
+        ChainArg::Auto => "auto",
+    });
+
+    let needle = args.id.as_ref().map(|s| s.to_uppercase());
+
+    let entries: Vec<&truent_core::Taxonomy> = truent_core::taxonomy::all()
+        .iter()
+        .filter(|t| match chain_filter {
+            Some(c) => t.chain() == Some(c),
+            None => true,
+        })
+        .filter(|t| match &needle {
+            Some(n) => t.tags().iter().any(|tag| tag.to_uppercase() == *n),
+            None => true,
+        })
+        .collect();
+
+    let rendered = match args.format {
+        TaxonomyFormat::Json => serde_json::to_string_pretty(&json!({
+            "total": entries.len(),
+            "detectors": entries.iter().map(|t| {
+                let e = truent_core::exposure::exposure_for(t.invariant_id);
+                json!({
+                    "invariant_id": t.invariant_id,
+                    "chain": t.chain(),
+                    "cwe": t.cwe.iter().map(|c| c.id_str()).collect::<Vec<_>>(),
+                    "cwe_names": t.cwe.iter().map(|c| c.name).collect::<Vec<_>>(),
+                    "swc": t.swc.iter().map(|x| x.id_str()).collect::<Vec<_>>(),
+                    "owasp_sc": t.owasp_sc.iter().map(|o| o.id_str()).collect::<Vec<_>>(),
+                    "dasp": t.dasp.iter().map(|d| d.id_str()).collect::<Vec<_>>(),
+                    "attack": t.attack.iter().map(|a| a.id).collect::<Vec<_>>(),
+                    "attack_names": t.attack.iter().map(|a| a.name).collect::<Vec<_>>(),
+                    "nist_csf": t.nist_csf.iter().map(|n| n.id).collect::<Vec<_>>(),
+                    // Exposure profile: how the weakness is reached and closed.
+                    "vector": e.map(|e| e.vector),
+                    "prereq": e.map(|e| e.prereq),
+                    "interaction": e.map(|e| e.interaction),
+                    "impact": e.map(|e| e.impact),
+                    "fix": e.map(|e| e.fix),
+                    "verify": e.map(|e| e.verify),
+                })
+            }).collect::<Vec<_>>(),
+        }))?,
+        TaxonomyFormat::Markdown => render_taxonomy_markdown(&entries),
+        TaxonomyFormat::Text => render_taxonomy_text(&entries),
+    };
+
+    match args.output {
+        Some(path) => {
+            std::fs::write(&path, &rendered)
+                .with_context(|| format!("writing {}", path.display()))?;
+        }
+        None => println!("{rendered}"),
+    }
+    Ok(())
+}
+
+/// Render the coverage matrix as the Markdown committed to `docs/COVERAGE.md`.
+fn render_taxonomy_markdown(entries: &[&truent_core::Taxonomy]) -> String {
+    // A raw string: a backslash-continued literal bakes this function's own
+    // indentation into the generated Markdown.
+    let mut out = String::from(
+        r#"# Detector coverage
+
+<!-- Generated by `truent taxonomy --format markdown`. Do not edit by hand.
+     Regenerate with: truent taxonomy --format markdown --output docs/COVERAGE.md -->
+
+Every detector Truent ships, and the industry identifiers it maps to. A blank
+cell means no honest mapping exists — SWC, OWASP SC and DASP are contract
+registries, so repository rows leave them empty, and MITRE ATT&CK / NIST CSF
+are populated only for repository findings, where they are precise.
+
+"#,
+    );
+
+    out.push_str(&format!("**{} detectors.**\n\n", entries.len()));
+
+    for (chain, label) in [
+        (Some("evm"), "EVM"),
+        (Some("solana"), "Solana"),
+        (Some("move"), "Move"),
+        (Some("soroban"), "Soroban"),
+        (Some("general"), "General (any repository)"),
+        (Some("supply-chain"), "Supply chain (dependencies)"),
+        (Some("runtime"), "Runtime (live probe, proven)"),
+        (None, "Chain-agnostic"),
+    ] {
+        let rows: Vec<&&truent_core::Taxonomy> =
+            entries.iter().filter(|t| t.chain() == chain).collect();
+        if rows.is_empty() {
+            continue;
+        }
+        let noun = if rows.len() == 1 {
+            "detector"
+        } else {
+            "detectors"
+        };
+        out.push_str(&format!("## {label} ({} {noun})\n\n", rows.len()));
+        out.push_str(
+            "| Detector | CWE | SWC | OWASP SC Top 10 | DASP | MITRE ATT&CK | NIST CSF |\n",
+        );
+        out.push_str("|---|---|---|---|---|---|---|\n");
+        for t in rows {
+            out.push_str(&format!(
+                "| `{}` | {} | {} | {} | {} | {} | {} |\n",
+                t.invariant_id,
+                t.cwe
+                    .iter()
+                    .map(|c| format!("[{}]({})", c.id_str(), c.url()))
+                    .collect::<Vec<_>>()
+                    .join("<br>"),
+                t.swc
+                    .iter()
+                    .map(|x| format!("[{}]({})", x.id_str(), x.url()))
+                    .collect::<Vec<_>>()
+                    .join("<br>"),
+                t.owasp_sc
+                    .iter()
+                    .map(|o| o.id_str().to_string())
+                    .collect::<Vec<_>>()
+                    .join("<br>"),
+                t.dasp
+                    .iter()
+                    .map(|d| d.id_str())
+                    .collect::<Vec<_>>()
+                    .join("<br>"),
+                t.attack
+                    .iter()
+                    .map(|a| format!("[{}]({})", a.id, a.url()))
+                    .collect::<Vec<_>>()
+                    .join("<br>"),
+                t.nist_csf
+                    .iter()
+                    .map(|n| n.id.to_string())
+                    .collect::<Vec<_>>()
+                    .join("<br>"),
+            ));
+        }
+        out.push('\n');
+    }
+    out
+}
+
+/// Render the coverage matrix for a terminal.
+fn render_taxonomy_text(entries: &[&truent_core::Taxonomy]) -> String {
+    let mut out = format!("{} detector(s)\n\n", entries.len());
+    for t in entries {
+        out.push_str(&format!(
+            "{}  [{}]\n",
+            t.invariant_id,
+            t.chain().unwrap_or("all chains")
+        ));
+        for (label, values) in [
+            ("CWE  ", t.cwe.iter().map(|c| c.label()).collect::<Vec<_>>()),
+            ("SWC  ", t.swc.iter().map(|x| x.label()).collect::<Vec<_>>()),
+            (
+                "OWASP",
+                t.owasp_sc.iter().map(|o| o.label()).collect::<Vec<_>>(),
+            ),
+            (
+                "DASP ",
+                t.dasp.iter().map(|d| d.label()).collect::<Vec<_>>(),
+            ),
+        ] {
+            if !values.is_empty() {
+                out.push_str(&format!("  {label}  {}\n", values.join(", ")));
+            }
+        }
+        out.push('\n');
+    }
+    out
+}
+
+/// CWE label for an invariant, from the shared taxonomy table.
+///
+/// Previously this guessed by substring-matching the invariant ID and fell
+/// back to `CWE-676 · Use of Potentially Dangerous Function` for anything it
+/// did not recognise — which was most detectors, so most reports carried a
+/// wrong CWE. The mapping now lives in `truent_core::taxonomy`, where a test
+/// fails the build if a detector ships without one.
+///
+/// Returns `None` when there is genuinely no mapping (a user-authored `.sinv`
+/// invariant); the renderer omits the line rather than inventing a class.
+fn cwe_label(invariant_id: &str) -> Option<String> {
+    taxonomy_for(invariant_id).map(|t| t.primary_cwe().label())
 }
 
 /// Count violations by severity level.
@@ -1849,48 +3331,387 @@ enabled = ["evm"]
 }
 
 /// Handle the `doctor` subcommand.
-fn cmd_doctor(args: DoctorArgs, quiet: bool) -> Result<()> {
-    let checks = vec![
-        HealthCheck {
+/// Total built-in invariants across every supported chain.
+fn builtin_invariant_count() -> usize {
+    ["evm", "solana", "move", "soroban"]
+        .iter()
+        .map(|c| InvariantLibrary::with_defaults(c).all().len())
+        .sum()
+}
+
+/// Health of the skill runtime.
+///
+/// Reports what is actually registered rather than asserting success: having
+/// no sources is a perfectly healthy state, and saying so is more useful than
+/// a check that cannot fail.
+fn skills_health_check() -> HealthCheck {
+    let root = truent_skills::default_root();
+    match truent_skills::SourceRegistry::load(&root) {
+        Ok(reg) if reg.sources.is_empty() => HealthCheck {
+            component: "Skill runtime".to_string(),
+            passed: true,
+            message: "ready — no sources registered (truent skills source suggest)".to_string(),
+        },
+        Ok(reg) => {
+            let catalog = truent_skills::Catalog::load(&root, None)
+                .map(|c| c.len())
+                .unwrap_or(0);
+            HealthCheck {
+                component: "Skill runtime".to_string(),
+                passed: true,
+                message: format!(
+                    "{} source(s), {} skill(s) indexed",
+                    reg.sources.len(),
+                    catalog
+                ),
+            }
+        }
+        Err(e) => HealthCheck {
+            component: "Skill runtime".to_string(),
+            passed: false,
+            message: format!("source registry unreadable: {e}"),
+        },
+    }
+}
+
+/// Known-vulnerable snippets used to prove each analyzer actually detects.
+///
+/// A health check that constructs a struct and reports success proves only
+/// that the struct exists. These drive each chain's real detector pipeline and
+/// assert it finds the bug — so the check fails if detection regresses.
+///
+/// They are text-only: `run_all_detectors` works on source text, so no `solc`
+/// or other toolchain is needed and `doctor` cannot fail for want of one.
+mod doctor_fixtures {
+    /// Checks-effects-interactions violation: external call before the state
+    /// update.
+    pub const EVM: &str = r#"
+pragma solidity ^0.8.0;
+contract V {
+    mapping(address => uint256) public balanceOf;
+    function withdraw(uint256 a) public {
+        (bool ok, ) = msg.sender.call{value: a}("");
+        require(ok);
+        balanceOf[msg.sender] -= a;
+    }
+}
+"#;
+
+    /// Privileged lamport mutation with no signer check.
+    pub const SOLANA: &str = r#"
+use anchor_lang::prelude::*;
+#[program]
+pub mod p {
+    use super::*;
+    pub fn withdraw(ctx: Context<W>, amount: u64) -> Result<()> {
+        **ctx.accounts.vault.to_account_info().try_borrow_mut_lamports()? -= amount;
+        Ok(())
+    }
+}
+#[derive(Accounts)]
+pub struct W<'info> {
+    #[account(mut)]
+    pub vault: AccountInfo<'info>,
+}
+"#;
+
+    /// Global state mutated with no signer requirement, unchecked subtraction.
+    pub const MOVE: &str = r#"
+module demo::vault {
+    struct Coin has key { value: u64 }
+    public fun withdraw(amount: u64) acquires Coin {
+        let c = borrow_global_mut<Coin>(@demo);
+        c.value = c.value - amount;
+    }
+}
+"#;
+
+    /// A committed AWS key and a shell-injected subprocess call.
+    // The key is synthetic; the marker keeps a self-scan honest.
+    pub const GENERAL: &str = r#"
+import subprocess
+// truent:allow
+AWS_KEY = "AKIAJ4X7Z2K9M1P3Q5R7"  # synthetic
+def ping(host):
+    subprocess.run(f"ping -c 1 {host}", shell=True)
+"#;
+
+    /// Transfer with no `require_auth`, and an unprotected upgrade.
+    pub const SOROBAN: &str = r#"
+#![no_std]
+use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
+#[contract]
+pub struct C;
+#[contractimpl]
+impl C {
+    pub fn transfer(env: Env, to: Address, amount: i128) {
+        let b: i128 = env.storage().instance().get(&to).unwrap_or(0);
+        env.storage().instance().set(&to, &(b + amount));
+    }
+    pub fn upgrade(env: Env, hash: BytesN<32>) {
+        env.deployer().update_current_contract_wasm(hash);
+    }
+}
+"#;
+}
+
+/// Build a health check from a detector self-test.
+///
+/// Reports the number of findings rather than "initialized": a count of zero
+/// means the pipeline is wired but detecting nothing, which is a failure worth
+/// seeing rather than a silent pass.
+fn detector_health_check(component: &str, findings: usize) -> HealthCheck {
+    HealthCheck {
+        component: component.to_string(),
+        passed: findings > 0,
+        message: if findings > 0 {
+            format!("{findings} finding(s) on the built-in self-test")
+        } else {
+            "self-test produced no findings — detection is not working".to_string()
+        },
+    }
+}
+
+/// Health of `truent-core`: the compiled-in invariants and the finding type.
+fn core_health_check() -> HealthCheck {
+    let compiled = truent_core::invariant_count();
+    // Round-trip a finding through the taxonomy table: proves the type, the
+    // table and the lookup all agree.
+    let probe = Finding::new(
+        "evm_reentrancy_classic".to_string(),
+        truent_core::Severity::Critical,
+        "self-test".to_string(),
+        1,
+        0,
+        "self-test".to_string(),
+        String::new(),
+    );
+    let mapped = probe.taxonomy().map(|t| t.primary_cwe().id);
+
+    match mapped {
+        Some(841) => HealthCheck {
             component: "truent-core".to_string(),
             passed: true,
-            message: "Initialized successfully".to_string(),
+            message: format!("{compiled} compiled invariants, taxonomy lookup OK"),
         },
-        HealthCheck {
-            component: "EVM analyzer".to_string(),
-            passed: true,
-            message: "Initialized successfully".to_string(),
+        other => HealthCheck {
+            component: "truent-core".to_string(),
+            passed: false,
+            message: format!("taxonomy lookup returned {other:?}, expected CWE-841"),
         },
-        HealthCheck {
-            component: "Solana analyzer".to_string(),
-            passed: true,
-            message: "Initialized successfully".to_string(),
-        },
-        HealthCheck {
-            component: "Move analyzer".to_string(),
-            passed: true,
-            message: "Initialized successfully".to_string(),
-        },
-        HealthCheck {
-            component: "Soroban analyzer".to_string(),
-            passed: true,
-            message: "Initialized successfully".to_string(),
-        },
-        HealthCheck {
+    }
+}
+
+/// Health of the DSL parser: actually parse an invariant.
+fn dsl_health_check() -> HealthCheck {
+    const SOURCE: &str = "invariant BalancePositive { balance >= 0 }";
+    match truent_dsl_parser::parse_invariant(SOURCE) {
+        Ok(inv) if inv.name == "BalancePositive" => HealthCheck {
             component: "DSL parser".to_string(),
             passed: true,
-            message: "Parsed test invariant successfully".to_string(),
+            message: "parsed and named a test invariant".to_string(),
         },
-        HealthCheck {
-            component: "Invariant library".to_string(),
-            passed: true,
-            message: "28 built-in invariants loaded".to_string(),
+        Ok(inv) => HealthCheck {
+            component: "DSL parser".to_string(),
+            passed: false,
+            message: format!(
+                "parsed, but named it '{}' instead of 'BalancePositive'",
+                inv.name
+            ),
         },
-        HealthCheck {
+        Err(e) => HealthCheck {
+            component: "DSL parser".to_string(),
+            passed: false,
+            message: format!("failed to parse a test invariant: {e}"),
+        },
+    }
+}
+
+/// Health of the report generator: render a report and inspect it.
+fn report_health_check() -> HealthCheck {
+    let finding = Finding::new(
+        "evm_reentrancy_classic".to_string(),
+        truent_core::Severity::Critical,
+        "self-test.sol".to_string(),
+        1,
+        0,
+        "self-test".to_string(),
+        String::new(),
+    );
+    let report = truent_report::SecurityReport::new(
+        "self-test".to_string(),
+        vec!["self-test.sol".to_string()],
+        vec![finding],
+        "self-test".to_string(),
+    );
+    let json = report.generate(truent_report::ReportFormat::Json);
+
+    // The report must parse, and must carry the taxonomy — the part most
+    // likely to silently regress, since it is assembled rather than derived.
+    match serde_json::from_str::<serde_json::Value>(&json) {
+        Ok(v) if v["findings"][0]["taxonomy"]["cwe"][0]["id"] == "CWE-841" => HealthCheck {
             component: "Report generator".to_string(),
             passed: true,
-            message: "Initialized successfully".to_string(),
+            message: "rendered a report with taxonomy attached".to_string(),
         },
+        Ok(_) => HealthCheck {
+            component: "Report generator".to_string(),
+            passed: false,
+            message: "rendered a report, but the taxonomy is missing".to_string(),
+        },
+        Err(e) => HealthCheck {
+            component: "Report generator".to_string(),
+            passed: false,
+            message: format!("produced invalid JSON: {e}"),
+        },
+    }
+}
+
+/// Health of the SCA engine: parse a lockfile and match a known-bad pin.
+fn sca_health_check() -> HealthCheck {
+    let lock = "version = 4\n\n[[package]]\nname = \"lodash-rs\"\nversion = \"1.0.0\"\n";
+    let pkgs = truent_sca::parse_lockfile(std::path::Path::new("Cargo.lock"), lock);
+    let mut db = truent_sca::AdvisoryDb::default();
+    if let Some(a) = truent_sca::advisory::parse_osv(
+        r#"{"id":"SELF-1","affected":[{"package":{"ecosystem":"crates.io","name":"lodash-rs"},"ranges":[{"type":"SEMVER","events":[{"introduced":"0"},{"fixed":"1.0.1"}]}]}]}"#,
+    ) {
+        db.insert(a);
+    }
+    let hits = truent_sca::advisory::match_packages(&db, &pkgs, "Cargo.lock").len();
+    HealthCheck {
+        component: "Dependency analysis".to_string(),
+        passed: pkgs.len() == 1 && hits == 1,
+        message: if pkgs.len() == 1 && hits == 1 {
+            "parsed a lockfile and matched a known-vulnerable pin".to_string()
+        } else {
+            format!("self-test parsed {} package(s), matched {hits}", pkgs.len())
+        },
+    }
+}
+
+fn runtime_health_check() -> HealthCheck {
+    // Pure evaluators over fixtures — the probe's network layer is never
+    // touched by doctor.
+    let bare = truent_runtime::http::HttpObservation {
+        url: "https://self/".into(),
+        final_url: "https://self/".into(),
+        status: 200,
+        headers: vec![("content-type".into(), "text/html".into())],
+        first_hop_status: None,
+        first_hop_location: None,
+    };
+    let headers = truent_runtime::http::analyze(&bare, "https://self").len();
+    let weak = truent_runtime::tls::analyze_failure(
+        &truent_runtime::tls::TlsFailure::Incompatible("fixture".into()),
+        "self:443",
+    )
+    .len();
+    let passed = headers >= 4 && weak == 1;
+    HealthCheck {
+        component: "Runtime probe".to_string(),
+        passed,
+        message: if passed {
+            "header and TLS evaluators produce findings from fixtures (no network used)".to_string()
+        } else {
+            format!("self-test: {headers} header finding(s), {weak} TLS finding(s)")
+        },
+    }
+}
+
+fn cmd_doctor(args: DoctorArgs, quiet: bool) -> Result<()> {
+    use doctor_fixtures as fx;
+
+    let checks = vec![
+        core_health_check(),
+        detector_health_check(
+            "EVM analyzer",
+            truent_analyzer_evm::detectors::run_all_detectors(fx::EVM, "self-test.sol").len(),
+        ),
+        detector_health_check(
+            "Solana analyzer",
+            truent_analyzer_solana::run_all_detectors(fx::SOLANA, "self-test.rs").len(),
+        ),
+        detector_health_check(
+            "Move analyzer",
+            truent_analyzer_move::run_all_detectors(fx::MOVE, "self-test.move").len(),
+        ),
+        detector_health_check(
+            "Soroban analyzer",
+            truent_analyzer_soroban::run_all_detectors(fx::SOROBAN, "self-test.rs").len(),
+        ),
+        detector_health_check(
+            "General analyzer",
+            general::run_all_detectors(fx::GENERAL, "self-test.py").len(),
+        ),
+        sca_health_check(),
+        runtime_health_check(),
+        HealthCheck {
+            component: "Exposure & remediation".to_string(),
+            passed: truent_core::taxonomy::all()
+                .iter()
+                .all(|t| truent_core::exposure::exposure_for(t.invariant_id).is_some())
+                && !truent_pathways::chains().is_empty(),
+            message: format!(
+                "{} detectors have an attack profile, fix and verify step; {} attack chains known",
+                truent_core::exposure::all().len(),
+                truent_pathways::chains().len()
+            ),
+        },
+        HealthCheck {
+            component: "Symbolic execution".to_string(),
+            passed: {
+                let (f, s) = truent_symbolic::halmos::parse(
+                    r#"{"exitcode":1,"test_results":{"t/A.t.sol:A":[{"name":"check_x(uint256)","exitcode":1,"num_models":1,"models":[{"model":{"p":{"variable_name":"x","solidity_type":"uint256","value":1}},"is_valid":true}]}]}}"#,
+                    "p",
+                );
+                s.failed == 1 && f.len() == 1 && f[0].is_proven()
+            },
+            message: format!(
+                "halmos/hevm/mythril parsers turn counterexamples into proven findings; installed: {}",
+                {
+                    let t = truent_symbolic::detect();
+                    if t.is_empty() { "none (pip install halmos)".to_string() } else { t.iter().map(|i| format!("{} {}", i.tool.name(), i.version)).collect::<Vec<_>>().join(", ") }
+                }
+            ),
+        },
+        HealthCheck {
+            component: "Release checklist".to_string(),
+            passed: truent_pathways::SECTIONS.len() == 33
+                && truent_pathways::Signal::all().len() >= 20,
+            message: format!(
+                "{} sections, {} items, {} repository signals",
+                truent_pathways::SECTIONS.len(),
+                truent_pathways::SECTIONS
+                    .iter()
+                    .map(|s| s.items.len())
+                    .sum::<usize>(),
+                truent_pathways::Signal::all().len()
+            ),
+        },
+        HealthCheck {
+            component: "Security pathways".to_string(),
+            passed: truent_pathways::pathways().len() >= 21,
+            message: format!(
+                "{} pathways mapped to native detectors, hosted skills and assessment controls",
+                truent_pathways::pathways().len()
+            ),
+        },
+        dsl_health_check(),
+        HealthCheck {
+            component: "Invariant library".to_string(),
+            passed: builtin_invariant_count() > 0,
+            message: format!("{} built-in invariants loaded", builtin_invariant_count()),
+        },
+        HealthCheck {
+            component: "Detector taxonomy".to_string(),
+            passed: !truent_core::taxonomy::all().is_empty(),
+            message: format!(
+                "{} detectors mapped to CWE/SWC/OWASP/DASP",
+                truent_core::taxonomy::all().len()
+            ),
+        },
+        report_health_check(),
+        skills_health_check(),
     ];
 
     match args.format {
@@ -1942,6 +3763,16 @@ fn cmd_doctor(args: DoctorArgs, quiet: bool) -> Result<()> {
         }
     }
 
+    // Exit non-zero when a component is unhealthy.
+    //
+    // Every check used to be a hardcoded `passed: true`, so the return value
+    // was academic. Now that checks report real state, `truent doctor` is only
+    // usable as an install gate — which is exactly how the release workflow
+    // uses it — if a failure actually fails.
+    if checks.iter().any(|c| !c.passed) {
+        std::process::exit(1);
+    }
+
     Ok(())
 }
 
@@ -1974,6 +3805,8 @@ fn cmd_scan(args: ScanArgs, quiet: bool, verbose: bool) -> Result<()> {
         ChainArg::Solana => "Solana",
         ChainArg::Move => "Move",
         ChainArg::Soroban => "Soroban",
+        ChainArg::General => "General",
+        ChainArg::Auto => "Auto",
     };
 
     if !quiet {
@@ -1989,30 +3822,42 @@ fn cmd_scan(args: ScanArgs, quiet: bool, verbose: bool) -> Result<()> {
         }
     }
 
-    // Run detectors and convert to display-ready violations.
-    let mut violations = run_analysis(&args.path, &args.chain, verbose)?;
+    // Run detectors. Filters are applied to the findings rather than to the
+    // display-shaped violations, so every output — terminal, JSON, SARIF —
+    // describes exactly the same set. Filtering twice, once per shape, is how
+    // a SARIF artifact ends up disagreeing with the log above it.
+    let mut findings = run_analysis_findings(&args.path, &args.chain, verbose)?;
 
     // Apply minimum-severity filter.
     if let Some(min_severity) = &args.severity {
         let min_rank = severity_arg_rank(min_severity);
-        violations.retain(|v| severity_rank(&v.severity) >= min_rank);
+        // Rank through `severity_rank` rather than `Severity::value()`: the
+        // CLI's scale is 4-level (low..critical == 0..3) while the core enum's
+        // is 5-level (info..critical == 0..4), so comparing across them lets
+        // High pass a `--severity critical` filter.
+        findings.retain(|f| severity_rank(f.severity.name()) >= min_rank);
     }
 
     // Apply invariant ID filter (may be repeated on the CLI).
     if !args.invariant.is_empty() {
-        violations.retain(|v| {
+        findings.retain(|f| {
             args.invariant
                 .iter()
-                .any(|id| v.invariant_id.contains(id.as_str()))
+                .any(|id| f.invariant_id.contains(id.as_str()))
         });
     }
 
-    // Re-number after filtering so index/total stay consistent for display.
-    let total = violations.len();
-    for (i, v) in violations.iter_mut().enumerate() {
-        v.index = i + 1;
-        v.total = total;
+    if let Some(sarif_path) = &args.sarif {
+        write_sarif(&findings, sarif_path, quiet)?;
     }
+
+    // Index/total are assigned after filtering so they stay consistent.
+    let total = findings.len();
+    let violations: Vec<Violation> = findings
+        .iter()
+        .enumerate()
+        .map(|(i, f)| finding_to_violation(f, i + 1, total))
+        .collect();
 
     let duration_secs = start_time.elapsed().as_secs_f64();
     let (critical, high, medium, low) = count_violations_by_severity(&violations);
@@ -2215,7 +4060,13 @@ fn cmd_invariants(args: InvariantsArgs, quiet: bool) -> Result<()> {
         } => match format {
             FormatArg::Text => {
                 if !quiet {
-                    let count = invariant_count();
+                    // Count what is actually listed. Printing the global total
+                    // above a filtered list reads as "9 invariants" over six
+                    // rows.
+                    let count = match &chain {
+                        Some(c) => invariants_for_chain(c).len(),
+                        None => invariant_count(),
+                    };
                     println!("\n {} Compiled Invariants", count);
                     println!("{}", "=".repeat(80));
 
@@ -2618,6 +4469,8 @@ fn cmd_fuzz(args: FuzzArgs, quiet: bool, verbose: bool) -> Result<()> {
         ChainArg::Solana => "Solana",
         ChainArg::Move => "Move",
         ChainArg::Soroban => "Soroban",
+        ChainArg::General => "General",
+        ChainArg::Auto => "Auto",
     };
 
     if !quiet {
@@ -2686,6 +4539,7 @@ fn cmd_fuzz(args: FuzzArgs, quiet: bool, verbose: bool) -> Result<()> {
             ChainArg::Solana => truent_analyzer_solana::run_all_detectors(&mutated, file_path),
             ChainArg::Move => truent_analyzer_move::run_all_detectors(&mutated, file_path),
             ChainArg::Soroban => truent_analyzer_soroban::run_all_detectors(&mutated, file_path),
+            ChainArg::General | ChainArg::Auto => general::run_all_detectors(&mutated, file_path),
         });
 
         match result {

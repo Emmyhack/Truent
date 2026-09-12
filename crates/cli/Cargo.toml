@@ -34,10 +34,16 @@ truent-dsl-parser.workspace = true
 truent-utils.workspace = true
 truent-library.workspace = true
 truent-report.workspace = true
+truent-skills.workspace = true
 truent-analyzer-solana.workspace = true
 truent-analyzer-evm.workspace = true
 truent-analyzer-move.workspace = true
 truent-analyzer-soroban.workspace = true
+truent-analyzer-general.workspace = true
+truent-sca.workspace = true
+truent-pathways.workspace = true
+truent-runtime.workspace = true
+truent-symbolic.workspace = true
 truent-generator-solana.workspace = true
 truent-generator-evm.workspace = true
 truent-generator-move.workspace = true
@@ -47,9 +53,15 @@ truent-dynamic-solana.workspace = true
 hex.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
+criterion.workspace = true
 tempfile = "3.8"
 proptest.workspace = true
 regex.workspace = true
 assert_cmd.workspace = true
 predicates.workspace = true
 
+
+[[bench]]
+name = "scan"
+harness = false

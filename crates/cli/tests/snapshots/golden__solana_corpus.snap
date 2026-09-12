@@ -1,0 +1,48 @@
+---
+source: crates/cli/tests/golden.rs
+expression: rows(all)
+---
+[
+  [
+    "bad/drain_below_rent.rs",
+    "sol_rent_exemption_check",
+    8,
+    "MEDIUM"
+  ],
+  [
+    "bad/drain_below_rent.rs",
+    "sol_treasury_single_authority",
+    8,
+    "HIGH"
+  ],
+  [
+    "bad/missing_signer.rs",
+    "sol_missing_signer",
+    21,
+    "HIGH"
+  ],
+  [
+    "bad/missing_signer.rs",
+    "sol_rent_exemption_check",
+    10,
+    "MEDIUM"
+  ],
+  [
+    "bad/missing_signer.rs",
+    "unauthorized_privileged_mutation",
+    7,
+    "CRITICAL"
+  ],
+  [
+    "bad/raw_sysvar.rs",
+    "sol_sysvar_account_validation",
+    18,
+    "MEDIUM"
+  ],
+  [
+    "bad/single_authority_treasury.rs",
+    "sol_treasury_single_authority",
+    19,
+    "HIGH"
+  ]
+]

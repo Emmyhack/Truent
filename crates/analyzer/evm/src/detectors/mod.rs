@@ -37,11 +37,13 @@ pub mod arithmetic_rounding;
 pub mod bridge_address_cryptographic_verify;
 pub mod constructor_race_condition;
 pub mod cross_chain_replay_missing_chainid;
+pub mod division_by_zero;
 pub mod dvn_single_point;
 pub mod eip7702_eoa_assumption;
 pub mod erc4337_validation_side_effects;
 pub mod erc4626_inflation_protection;
 pub mod fee_on_transfer_incompatibility;
+pub mod gas_dos;
 // DEPRECATED: Old detector using legacy Violation struct, disabled for v0.3.0
 // pub mod flash_loan;
 pub mod health_check;
@@ -63,8 +65,11 @@ pub mod stale_oracle_price;
 pub mod state_mutation_ordering;
 pub mod synthetic_collateral_oracle;
 pub mod synthetic_mint;
+pub mod textutil;
+pub mod timestamp_dependence;
 pub mod token_balance_manipulation;
 pub mod unbounded_pricing_input;
+pub mod unchecked_returns;
 pub mod upgrade_path_verification;
 
 pub use aa_entropy_weakness::detect_aa_entropy_weakness;
@@ -108,6 +113,31 @@ pub use upgrade_path_verification::detect_upgrade_path_verification;
 /// This is the single entry point the CLI should use for EVM analysis: each detector
 /// operates directly on raw source text, so no solc/AST availability is required.
 pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Finding> {
+    // Foundry test contracts (`*.t.sol`) and scripts (`*.s.sol`) are never
+    // deployed: a `setUp()` that instantiates the contract under test, or a
+    // harness with no access control, is not a finding.
+    let lower = file_path.to_ascii_lowercase();
+    if lower.ends_with(".t.sol") || lower.ends_with(".s.sol") {
+        return Vec::new();
+    }
+    // Every detector below matches source text. Matching raw text means
+    // matching comments and revert strings too — the single largest source of
+    // false positives in this set (`"ERC20: transfer from the zero address"`
+    // used to read as an ERC-20 transfer). Normalise once here so every
+    // detector, present and future, sees code only.
+    let normalized = textutil::Normalized::new(source);
+    let mut findings = run_all_detectors_on_code(&normalized.code, file_path);
+    normalized.restore_snippets(&mut findings);
+
+    // The same invariant on the same line is one finding, however many code
+    // paths noticed it.
+    let mut seen = std::collections::HashSet::new();
+    findings.retain(|f| seen.insert(f.dedup_key()));
+    findings
+}
+
+/// Run every detector over already-normalised source.
+fn run_all_detectors_on_code(source: &str, file_path: &str) -> Vec<truent_core::Finding> {
     let mut findings = implementations::detect_all(source, file_path);
 
     findings.extend(aa_entropy_weakness::detect_aa_entropy_weakness(
@@ -187,6 +217,13 @@ pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Find
     ));
     findings
         .extend(synthetic_collateral_oracle::detect_synthetic_collateral_oracle(source, file_path));
+    findings.extend(unchecked_returns::detect_unchecked_returns(
+        source, file_path,
+    ));
+    findings.extend(timestamp_dependence::detect_timestamp_dependence(
+        source, file_path,
+    ));
+    findings.extend(division_by_zero::detect_division_by_zero(source, file_path));
     findings.extend(synthetic_mint::detect_unbacked_synthetic_mint(
         source, file_path,
     ));
@@ -195,6 +232,7 @@ pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Find
     findings.extend(upgrade_path_verification::detect_upgrade_path_verification(
         source, file_path,
     ));
+    findings.extend(gas_dos::detect_gas_dos(source, file_path));
 
     // Chain-agnostic shared-IR rule (Epic 6.1): flags privileged mutations
     // with no authorization guard, using the same rule Solana and Move share.

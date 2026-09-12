@@ -1,0 +1,218 @@
+# The tests only the owning team can run — fuzzing, stress, chaos, symbolic
+# execution, differential snapshots, benchmarks, mutation, a backup/restore
+# drill — wired so `truent release-check` can see them run, not just exist.
+name: harness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1"   # weekly: mutation testing and the DR drill
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build release binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - run: cargo build --release --bin truent
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: truent-bin
+          path: target/release/truent
+
+  fuzz:
+    name: Fuzzing (truent fuzz + property tests)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: truent-bin
+          path: target/release
+      - run: chmod +x target/release/truent
+      - name: Fuzz the detector engines with mutated contracts
+        run: |
+          ./target/release/truent fuzz examples/evm_token.sol --iterations 2000 --depth 12
+          ./target/release/truent fuzz crates/analyzer/evm/tests/corpus/bad --iterations 500
+      - name: Property-based tests (proptest)
+        run: cargo test -p truent-cli --test property -- --nocapture
+
+  stress:
+    name: Load / stress (3000-file repository under a time budget)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: truent-bin
+          path: target/release
+      - run: chmod +x target/release/truent tests/load/stress-scan.sh
+      - name: Stress scan
+        run: tests/load/stress-scan.sh ./target/release/truent
+        env:
+          STRESS_FILES: "3000"
+          STRESS_BUDGET_S: "120"
+
+  chaos:
+    name: Chaos / failure experiments
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: truent-bin
+          path: target/release
+      - run: chmod +x target/release/truent tests/chaos/run.sh
+      - name: Run experiments (network hang, refused connection, corrupt lockfiles, unreadable inputs, missing tools)
+        run: tests/chaos/run.sh ./target/release/truent
+
+  symbolic:
+    name: Symbolic execution (halmos on examples/foundry)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: truent-bin
+          path: target/release
+      - run: chmod +x target/release/truent
+      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 commit # v1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: pip install "halmos==0.3.3"
+      - name: Run halmos through truent and keep the report
+        run: |
+          # The example contains a deliberate bug: a counterexample is the expected result.
+          ./target/release/truent symbolic examples/foundry --format json --out symbolic.json || true
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open("symbolic.json"))
+          assert d["ran"], d["errors"]
+          ids = [f["invariant_id"] for f in d["findings"]]
+          assert "evm_symbolic_counterexample" in ids, ids
+          assert all(f["evidence"] == "proven" for f in d["findings"] if f["invariant_id"] == "evm_symbolic_counterexample")
+          print("halmos ran:", d["stats"])
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: symbolic-report
+          path: symbolic.json
+
+  differential:
+    name: Differential / snapshot tests (insta golden files)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - name: Golden snapshots must match exactly (no auto-update in CI)
+        run: cargo test -p truent-cli --test golden
+        env:
+          INSTA_UPDATE: "no"
+
+  benchmark:
+    name: Performance benchmarks (criterion, compared to the main baseline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: target/criterion
+          key: criterion-baseline-${{ runner.os }}
+      - name: Benchmark
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            cargo bench -p truent-cli --bench scan -- --save-baseline main --warm-up-time 1 --measurement-time 3
+          else
+            cargo bench -p truent-cli --bench scan -- --baseline main --warm-up-time 1 --measurement-time 3 || cargo bench -p truent-cli --bench scan -- --warm-up-time 1 --measurement-time 3
+          fi
+
+  mutation:
+    name: Mutation testing (cargo-mutants, weekly)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: taiki-e/install-action@9534c84618278caac52cb373bb164ed464dbd8af # v2
+        with:
+          tool: cargo-mutants
+      - name: Mutate the engines that decide findings; fail below the caught-rate floor
+        run: |
+          cargo mutants --in-place -j 2 --timeout 300 -p truent-core -p truent-analyzer-general -p truent-sca -p truent-pathways --json -o mutants.out || true
+          python3 - <<'PY'
+          import json
+          rows = json.load(open("mutants.out/outcomes.json"))["outcomes"]
+          tested = [r for r in rows if r["summary"] in ("CaughtMutant", "MissedMutant")]
+          caught = sum(1 for r in tested if r["summary"] == "CaughtMutant")
+          rate = caught / max(1, len(tested))
+          print(f"mutation score: {caught}/{len(tested)} = {rate:.0%}")
+          assert rate >= 0.60, "mutation score below the 60% floor — the tests do not catch enough injected bugs"
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: mutants
+          path: mutants.out
+
+  dr-drill:
+    name: Backup / restore drill (RTO, RPO recorded)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: truent
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/truent
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+      - run: sudo apt-get update -q && sudo apt-get install -y -q postgresql-client
+      - run: cd web && npm ci --ignore-scripts && npx prisma generate
+      - name: Drill — migrate, seed, backup, destroy, restore, verify; rollback to the pre-migration dump is exercised by the restore
+        run: chmod +x tests/dr/backup-restore-drill.sh && tests/dr/backup-restore-drill.sh | tee drill.log
+      - name: Record RTO/RPO in the job summary
+        run: grep -E "RTO:|RPO:" drill.log >> "$GITHUB_STEP_SUMMARY" || true

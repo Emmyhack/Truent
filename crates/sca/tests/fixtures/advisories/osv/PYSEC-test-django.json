@@ -1,0 +1,1 @@
+{"id":"PYSEC-test-2","summary":"SQL injection in Django","affected":[{"package":{"ecosystem":"PyPI","name":"django"},"ranges":[{"type":"ECOSYSTEM","events":[{"introduced":"4.2"},{"fixed":"4.2.7"}]}]}],"severity":[{"type":"CVSS_V3","score":"9.8"}]}

@@ -1,0 +1,15 @@
+# EXPECT: gen_container_privileged
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug
+spec:
+  hostNetwork: true
+  containers:
+    - name: shell
+      image: busybox
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /var/run/docker.sock
+          name: sock

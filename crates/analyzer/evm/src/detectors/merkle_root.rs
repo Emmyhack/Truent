@@ -32,8 +32,19 @@ pub fn detect_merkle_root_zero_default(source: &str, file_path: &str) -> Vec<Fin
             continue;
         }
 
-        // Pattern 2: Check if initialized to zero or not initialized
-        if is_zero_initialized(var_line) || is_uninitialized(var_line) {
+        // Pattern 2: Check if initialized to zero or not initialized.
+        //
+        // An `immutable` or `constant` root cannot be left at zero — the
+        // language requires assignment — and a root that is assigned under a
+        // non-zero check anywhere in the contract is guarded. Both used to be
+        // reported because the declaration line alone has no `=`.
+        let lower = var_line.to_lowercase();
+        if lower.contains("immutable") || lower.contains("constant") {
+            continue;
+        }
+        if (is_zero_initialized(var_line) || is_uninitialized(var_line))
+            && !assigned_with_nonzero_check(source, &extract_variable_name(var_line))
+        {
             let var_name = extract_variable_name(var_line);
 
             let message = format!(
@@ -78,15 +89,9 @@ pub fn detect_merkle_root_zero_default(source: &str, file_path: &str) -> Vec<Fin
 
         let func_name = extract_function_name(func_line);
 
-        // Extract function body (~40 lines)
-        let func_start = func_line_num;
-        let func_end = (func_line_num + 40).min(source.lines().count());
-        let func_body = source
-            .lines()
-            .skip(func_start)
-            .take(func_end - func_start)
-            .collect::<Vec<&str>>()
-            .join("\n");
+        // The actual function, delimited by brace depth — not a fixed window
+        // that bleeds into whatever follows.
+        let func_body = crate::detectors::textutil::enclosing_function_body(source, func_line_num);
 
         // Check if accepts zero root without validation
         if accepts_zero_merkle_root(&func_body) {
@@ -125,6 +130,23 @@ pub fn detect_merkle_root_zero_default(source: &str, file_path: &str) -> Vec<Fin
     }
 
     findings
+}
+
+/// Whether `var` is guarded by a non-zero requirement somewhere in the
+/// contract (`require(root != 0)`, `require(root != bytes32(0))`,
+/// `if (root == bytes32(0)) revert`).
+fn assigned_with_nonzero_check(source: &str, var: &str) -> bool {
+    if var.is_empty() {
+        return false;
+    }
+    let lower = source.to_lowercase();
+    let v = var.to_lowercase();
+    lower.contains(&format!("{v} != 0"))
+        || lower.contains(&format!("{v} != bytes32(0)"))
+        || lower.contains(&format!("{v} == 0"))
+        || lower.contains(&format!("{v} == bytes32(0)"))
+        || lower.contains(&format!("{v}) != 0"))
+        || lower.contains(&format!("{v}) != bytes32(0)"))
 }
 
 /// Check if a line is a merkle root variable declaration

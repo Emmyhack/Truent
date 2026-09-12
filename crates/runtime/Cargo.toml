@@ -1,0 +1,25 @@
+[package]
+name = "truent-runtime"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+description = "Truent: runtime probe — non-exploitative live checks of a target you are authorized to test: TLS certificate and protocol, HTTP security headers and cookies, exposed sensitive paths, open ports."
+
+keywords = ["truent", "dast", "tls", "security-headers", "probe"]
+categories = ["development-tools"]
+readme = "README.md"
+
+[dependencies]
+truent-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+ureq = { version = "2.12", default-features = false, features = ["tls"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+rustls-pki-types = "1"
+webpki-roots = "0.26"
+x509-parser = "0.14"

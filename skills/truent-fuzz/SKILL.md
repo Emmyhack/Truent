@@ -1,6 +1,35 @@
 ---
 name: truent-fuzz
 description: "Stateful invariant fuzzing for smart contracts. Default path runs Truent's native revm-backed fuzzer — auto-detected invariants, adversarial call sequences, and minimal-PoC shrinking in one binary, no external toolchain. Optionally emits an equivalent Echidna/Medusa harness for teams standardized on those runners (strict superset, not lock-in). Triggers on 'truent fuzz', 'fuzz this', 'invariant fuzzing', 'stateful fuzzing', 'build a fuzz harness', 'property testing', 'generate fuzz suite'."
+license: MIT
+metadata:
+  version: "0.1.0"
+  author: geekstrancend
+  homepage: https://github.com/geekstrancend/Truent
+  domain: smart-contract-security
+  subdomain: fuzzing
+  chains:
+    - evm
+    - solana
+    - move
+    - soroban
+  requires:
+    - "truent >= 0.6.0"
+  taxonomy:
+    - CWE
+    - SWC
+    - OWASP-SC-Top-10-2025
+    - DASP
+  tags:
+    - smart-contract
+    - fuzzing
+    - invariant-testing
+    - property-testing
+    - echidna
+    - medusa
+    - revm
+    - evm
+    - proof-of-concept
 ---
 
 # Truent Fuzz

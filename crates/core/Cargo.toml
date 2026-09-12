@@ -14,6 +14,11 @@ categories = ["development-tools", "development-tools::testing"]
 readme = "README.md"
 documentation = "https://docs.rs/truent-core"
 
+# Compiles the workspace's .sinv DSL files into src/generated/invariants.rs.
+# Lives at the workspace root, which is a *virtual* manifest — cargo never runs
+# a build script there, so it has to be attached to a real package to execute.
+build = "../../build.rs"
+
 [dependencies]
 anyhow.workspace = true
 thiserror.workspace = true

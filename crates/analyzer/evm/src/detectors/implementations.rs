@@ -6,11 +6,78 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use truent_core::{Finding, Severity};
 
+use crate::detectors::textutil;
+
 lazy_static! {
+    /// A quantity that is a price, rate, or valuation — the thing a spot-price
+    /// bug actually produces. Deliberately narrow: matching bare "amount"
+    /// flagged every token transfer in existence.
+    static ref PRICE_TARGET_REGEX: Regex = Regex::new(
+        // `price` matches as a substring so `getPrice`/`spotPrice`/`priceOf`
+        // are caught — a leading \b would miss all of them, since there is no
+        // word boundary inside `getPrice`. The looser words stay anchored so
+        // `rate` does not match `generate` or `accurate`.
+        r"(?i)(price|exchange_?rate|virtual_?price|per_?share|valuation|\brate\b|\bquote\b|\bworth\b)"
+    ).unwrap();
+
+    /// An external ERC-20 call: `token.transfer(...)`, `IERC20(x).transferFrom(...)`,
+    /// `safeTransfer(...)`. Requires a call, not the word "transfer".
+    static ref EXTERNAL_TOKEN_CALL_REGEX: Regex = Regex::new(
+        r"(?i)(\.\s*(safe)?transfer(from)?\s*\(|\bierc20\s*\([^)]*\)\s*\.\s*\w+\s*\()"
+    ).unwrap();
+
+    /// A real oracle feed — if a pricing function consults one of these, the
+    /// balance read beside it is not the price source.
+    static ref ORACLE_SOURCE_REGEX: Regex = Regex::new(
+        r"(?i)(oracle|chainlink|aggregator|latestrounddata|twap|pyth|band\b|uniswapv[23]oracle)"
+    ).unwrap();
+
+    /// A write to internal balance accounting.
+    static ref BALANCE_WRITE_REGEX: Regex = Regex::new(
+        r"(?i)_?balances?\s*\[[^\]]*\]\s*(=[^=]|\+=|-=)"
+    ).unwrap();
+
     /// `owner = msg.sender` — the admin role actually being assigned to the
     /// caller.
     static ref ADMIN_ASSIGNMENT: Regex = Regex::new(
         r"(?i)\b(owner|admin)\w*\s*=\s*(msg\.sender|_msgSender\s*\(\s*\))"
+    ).unwrap();
+
+    /// An authorisation modifier on a function declaration.
+    static ref AUTH_MODIFIER_REGEX: Regex = Regex::new(
+        r"(?i)\bonly\w*\b|\brequiresAuth\b|\bauth\b|\bonlyRole\s*\(|\bwhenOwner\b|\badminOnly\b"
+    ).unwrap();
+
+    /// A caller-controlled call payload in a parameter list.
+    static ref RELAY_CALLDATA_PARAM: Regex =
+        Regex::new(r"(?i)\bbytes\s+(calldata|memory)\s+\w+|\baddress\s+(target|to|dest)\w*\b").unwrap();
+
+    /// A low-level call that could carry a forwarded payload.
+    static ref RELAY_FORWARD_CALL: Regex =
+        Regex::new(r"\.\s*(call|delegatecall)\s*(\{[^}]*\})?\s*\(").unwrap();
+
+    /// A function declaration.
+    static ref FUNCTION_DECL_REGEX: Regex =
+        Regex::new(r"(?i)\bfunction\s+\w*\s*\(|\b(constructor|receive|fallback)\s*\(").unwrap();
+
+    /// A reentrancy guard applied to a function.
+    static ref REENTRANCY_GUARD_REGEX: Regex =
+        Regex::new(r"(?i)\bnon_?reentrant\b|\bmutex\b|\block(ed)?\b").unwrap();
+
+    /// A value-bearing external call: the point after which state must not be
+    /// written.
+    static ref EXTERNAL_CALL_REGEX: Regex = Regex::new(
+        r"(?i)\.\s*call\s*\{|\.\s*call\s*\(|\.\s*send\s*\(|\.\s*transfer\s*\(|\.\s*delegatecall\s*\("
+    ).unwrap();
+
+    /// A local variable declaration, which is not a state write.
+    static ref LOCAL_DECL_REGEX: Regex = Regex::new(
+        r"(?i)^\s*(uint\d*|int\d*|bool|address|bytes\d*|string|mapping|var)\b[^=]*=|^\s*\w+\s+(memory|storage|calldata)\s+\w+\s*="
+    ).unwrap();
+
+    /// An assignment to a storage location.
+    static ref STATE_WRITE_REGEX: Regex = Regex::new(
+        r"^[A-Za-z_]\w*(\s*\[[^\]]*\])*(\s*\.\s*\w+)*\s*(\+=|-=|\*=|/=|=[^=])"
     ).unwrap();
 
     /// Any equality/inequality comparison, which is a guard rather than an
@@ -18,23 +85,43 @@ lazy_static! {
     static ref ADMIN_COMPARISON: Regex = Regex::new(r"(==|!=|>=|<=)").unwrap();
 }
 
-/// Detects classic reentrancy: external call before state update (CEI violated)
+/// Detects classic reentrancy: a state update that happens *after* an external
+/// call, within the same function, with no reentrancy guard.
+///
+/// The previous implementation flagged every external call in any contract
+/// lacking a `nonReentrant` modifier, without ever checking ordering — so
+/// textbook checks-effects-interactions code, where the state write precedes
+/// the call, was reported as CRITICAL reentrancy. That is the whole bug class:
+/// the finding is about *order*, and order was never examined.
 pub fn detect_reentrancy_classic(source: &str, file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
+    let lines = textutil::code_lines(source);
 
-    // Pattern: look for external calls (call, send, transfer) followed by state updates
-    // in the same function without nonReentrant guard
+    for func in split_functions(&lines) {
+        // A guard on the function (or its modifiers) makes reentry impossible.
+        if func
+            .lines
+            .first()
+            .map(|(_, l)| REENTRANCY_GUARD_REGEX.is_match(l))
+            .unwrap_or(false)
+        {
+            continue;
+        }
 
-    // Simplified pattern matching: check for external calls (either .call{ or .transfer)
-    if (source.contains(".call{") || source.contains(".transfer(") || source.contains(".send("))
-        && !source.contains("nonReentrant")
-        && !source.contains("nonreentrant")
-    {
-        // Find line number of the pattern
-        for (line_num, line) in source.lines().enumerate() {
-            if (line.contains(".call{") || line.contains(".transfer(") || line.contains(".send("))
-                && !line.trim().starts_with("//")
-            {
+        for (pos, (line_num, line)) in func.lines.iter().enumerate() {
+            if !EXTERNAL_CALL_REGEX.is_match(line) {
+                continue;
+            }
+
+            // The violation is a state write *after* this call, still inside
+            // this function.
+            let writes_after = func
+                .lines
+                .iter()
+                .skip(pos + 1)
+                .any(|(_, later)| is_state_write(later));
+
+            if writes_after {
                 findings.push(
                     Finding::new(
                         "evm_reentrancy_classic".to_string(),
@@ -42,10 +129,12 @@ pub fn detect_reentrancy_classic(source: &str, file_path: &str) -> Vec<Finding> 
                         file_path.to_string(),
                         line_num + 1,
                         0,
-                        "External call detected before state update (Checks-Effects-Interactions pattern violated)".to_string(),
+                        "State is updated after an external call, so a reentrant call \
+                         observes stale state (checks-effects-interactions violated)"
+                            .to_string(),
                         line.trim().to_string(),
                     )
-                    .with_metadata("detector".to_string(), "pattern_match".to_string())
+                    .with_metadata("detector".to_string(), "pattern_match".to_string()),
                 );
             }
         }
@@ -54,61 +143,129 @@ pub fn detect_reentrancy_classic(source: &str, file_path: &str) -> Vec<Finding> 
     findings
 }
 
+/// A function body: its signature line plus its statements, each carrying the
+/// original line index so findings point at real source.
+pub struct FunctionSpan {
+    pub lines: Vec<(usize, String)>,
+}
+
+/// Split prepared source into function spans by brace depth.
+///
+/// Crude but sufficient, and far better than the whole-file scanning the
+/// detectors used to do: a state write in one function can no longer be
+/// attributed to an external call in another.
+pub fn split_functions(lines: &[String]) -> Vec<FunctionSpan> {
+    let mut spans = Vec::new();
+    let mut current: Option<FunctionSpan> = None;
+    let mut depth: i32 = 0;
+
+    for (idx, line) in lines.iter().enumerate() {
+        if current.is_none() && FUNCTION_DECL_REGEX.is_match(line) {
+            current = Some(FunctionSpan { lines: Vec::new() });
+            depth = 0;
+        }
+
+        if let Some(span) = current.as_mut() {
+            span.lines.push((idx, line.clone()));
+            depth += line.matches('{').count() as i32;
+            depth -= line.matches('}').count() as i32;
+            // Depth returns to zero only once the body has opened and closed.
+            if depth <= 0 && span.lines.iter().any(|(_, l)| l.contains('{')) {
+                spans.push(current.take().expect("span exists"));
+            }
+        }
+    }
+    if let Some(span) = current {
+        spans.push(span);
+    }
+    spans
+}
+
+/// Whether a line writes contract state.
+///
+/// Local declarations (`uint256 balance = ...`) and tuple destructuring of a
+/// call result (`(bool ok, ) = ...`) are assignments but not state writes, and
+/// counting them would resurrect the false positive this detector exists to
+/// avoid.
+pub(crate) fn is_state_write(line: &str) -> bool {
+    let trimmed = line.trim();
+    if trimmed.starts_with('(') {
+        return false; // tuple destructuring of a call result
+    }
+    if LOCAL_DECL_REGEX.is_match(trimmed) {
+        return false;
+    }
+    STATE_WRITE_REGEX.is_match(trimmed)
+}
+
 /// Detects missing signer checks in external state-modifying functions
 pub fn detect_missing_signer_check(source: &str, file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
+    let lines: Vec<String> = source.lines().map(str::to_string).collect();
 
-    // Pattern: external/public function that modifies state without msg.sender check
-    for (line_num, line) in source.lines().enumerate() {
-        let trimmed = line.trim();
+    for func in split_functions(&lines) {
+        let Some((decl_idx, decl)) = func.lines.first() else {
+            continue;
+        };
+        let trimmed = decl.trim();
 
-        // Look for function definitions
-        // A declaration ending in `;` has no body — it is an interface or
-        // abstract signature. It cannot contain a signer check, cannot modify
-        // state, and is not code that runs. Reporting `interface IERC20`'s
-        // `transfer`/`transferFrom` as "lacks msg.sender validation" is
-        // exactly the kind of finding that costs a tool its credibility.
-        let is_bodiless_declaration = trimmed.ends_with(';');
-
-        if (trimmed.starts_with("function ") || trimmed.contains(" function "))
-            && (trimmed.contains("public") || trimmed.contains("external"))
+        // A declaration ending in `;` has no body — an interface or abstract
+        // signature. It cannot contain a signer check, cannot modify state,
+        // and is not code that runs.
+        if trimmed.ends_with(';') {
+            continue;
+        }
+        let is_entry = (trimmed.contains("public") || trimmed.contains("external"))
             && !trimmed.contains("pure")
-            && !trimmed.contains("view")
-            && !is_bodiless_declaration
-        {
-            // Check if it has access control
-            let has_access_check = source.lines().skip(line_num).take(20).any(|l| {
-                let lower = l.to_lowercase();
-                lower.contains("msg.sender")
-                    || lower.contains("onlyowner")
-                    || lower.contains("require")
-                    || lower.contains("_checkrole")
-            });
+            && !trimmed.contains("view");
+        if !is_entry {
+            continue;
+        }
 
-            // Check if function modifies state
-            let modifies_state = source.lines().skip(line_num).take(20).any(|l| {
-                let lower = l.to_lowercase();
-                (lower.contains(" = ")
-                    || lower.contains("transfer")
-                    || lower.contains("mint")
-                    || lower.contains("burn"))
-                    && !l.trim().starts_with("//")
-            });
+        // Authorisation can live on the declaration as a modifier —
+        // `onlyOwner`, `onlyRole(MINTER_ROLE)`, `requiresAuth` — which the
+        // previous 20-line body scan never looked at, so every role-gated
+        // function in an AccessControl contract was reported as unguarded.
+        if AUTH_MODIFIER_REGEX.is_match(trimmed) {
+            continue;
+        }
 
-            if modifies_state && !has_access_check {
-                findings.push(
-                    Finding::new(
-                        "evm_missing_signer_check".to_string(),
-                        Severity::High,
-                        file_path.to_string(),
-                        line_num + 1,
-                        0,
-                        "External state-modifying function lacks msg.sender validation".to_string(),
-                        line.trim().to_string(),
-                    )
-                    .with_metadata("detector".to_string(), "ast_analysis".to_string()),
-                );
-            }
+        let body = func
+            .lines
+            .iter()
+            .skip(1)
+            .map(|(_, l)| l.as_str())
+            .collect::<Vec<_>>()
+            .join("\n")
+            .to_lowercase();
+
+        let has_access_check = body.contains("msg.sender")
+            || body.contains("_msgsender()")
+            || body.contains("require(")
+            || body.contains("revert")
+            || body.contains("_checkrole")
+            || body.contains("_checkowner")
+            || body.contains("hasrole(");
+
+        let modifies_state = func
+            .lines
+            .iter()
+            .skip(1)
+            .any(|(_, l)| is_state_write(l) || EXTERNAL_TOKEN_CALL_REGEX.is_match(l));
+
+        if modifies_state && !has_access_check {
+            findings.push(
+                Finding::new(
+                    "evm_missing_signer_check".to_string(),
+                    Severity::High,
+                    file_path.to_string(),
+                    decl_idx + 1,
+                    0,
+                    "External state-modifying function lacks msg.sender validation".to_string(),
+                    trimmed.to_string(),
+                )
+                .with_metadata("detector".to_string(), "ast_analysis".to_string()),
+            );
         }
     }
 
@@ -170,35 +327,85 @@ pub fn detect_conservation_check_absent(source: &str, file_path: &str) -> Vec<Fi
 pub fn detect_oracle_spot_price(source: &str, file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
 
-    // Pattern: balanceOf, reserve, or similar used in price calculation without oracle
-    for (line_num, line) in source.lines().enumerate() {
+    // Previously this fired when a line mentioned `balanceOf`/`reserve` AND
+    // contained any of "price", "rate", "amount" *or* "=". That last clause
+    // matched almost every line in existence — `mapping(address => uint256)`,
+    // `require(balanceOf[x] >= y)`, `balanceOf[x] -= y` — so a plain ERC-20
+    // produced eleven CRITICAL "oracle" findings and no contract was safe.
+    //
+    // A spot-price finding now requires a balance/reserve read to actually
+    // reach a price-shaped quantity. That intent lives at function scope, not
+    // line scope: in `function getPrice() { return reserve1 * 1e18 / reserve0; }`
+    // the price word is in the signature and the arithmetic is on another
+    // line, so both are tracked.
+    let lines = textutil::code_lines(source);
+    let mut fn_is_pricing = false;
+    let mut fn_has_oracle = false;
+    let mut depth: i32 = 0;
+
+    // A function's oracle usage may appear after the arithmetic, so each
+    // function is resolved as a unit before its candidates are emitted.
+    let mut pending: Vec<(usize, String)> = Vec::new();
+
+    let flush = |pending: &mut Vec<(usize, String)>, has_oracle: bool, out: &mut Vec<Finding>| {
+        if !has_oracle {
+            for (line_num, text) in pending.iter() {
+                out.push(
+                    Finding::new(
+                        "evm_oracle_spot_price".to_string(),
+                        Severity::Critical,
+                        file_path.to_string(),
+                        line_num + 1,
+                        0,
+                        "Spot price derived from a token balance or pool reserve rather than \
+                         an oracle"
+                            .to_string(),
+                        text.clone(),
+                    )
+                    .with_metadata("detector".to_string(), "pattern_match".to_string()),
+                );
+            }
+        }
+        pending.clear();
+    };
+
+    for (line_num, line) in lines.iter().enumerate() {
         let lower = line.to_lowercase();
 
-        if (lower.contains("balanceof")
-            || lower.contains("reserve")
-            || lower.contains("getreserves"))
-            && (lower.contains("price")
-                || lower.contains("rate")
-                || lower.contains("amount")
-                || lower.contains("="))
-            && !lower.contains("oracle")
-            && !lower.contains("chainlink")
-            && !lower.contains("//")
-        {
-            findings.push(
-                Finding::new(
-                    "evm_oracle_spot_price".to_string(),
-                    Severity::Critical,
-                    file_path.to_string(),
-                    line_num + 1,
-                    0,
-                    "Spot price calculation using token balance instead of oracle".to_string(),
-                    line.trim().to_string(),
-                )
-                .with_metadata("detector".to_string(), "pattern_match".to_string()),
-            );
+        if lower.contains("function ") {
+            // Leaving the previous function: resolve whatever it accumulated.
+            flush(&mut pending, fn_has_oracle, &mut findings);
+            fn_is_pricing = PRICE_TARGET_REGEX.is_match(&lower);
+            fn_has_oracle = false;
+            depth = 0;
+        }
+
+        if ORACLE_SOURCE_REGEX.is_match(&lower) {
+            fn_has_oracle = true;
+        }
+
+        let reads_balance = lower.contains("balanceof")
+            || lower.contains("getreserves")
+            || lower.contains("reserve0")
+            || lower.contains("reserve1")
+            || lower.contains(".reserves");
+
+        // The read must feed arithmetic — that is what turns a balance into a
+        // price — or be assigned to something price-shaped on the same line.
+        let arithmetic = lower.contains('*') || lower.contains('/');
+        let assigns_price = PRICE_TARGET_REGEX.is_match(&lower) && lower.contains('=');
+
+        if reads_balance && ((fn_is_pricing && arithmetic) || assigns_price) {
+            pending.push((line_num, line.trim().to_string()));
+        }
+
+        depth += line.matches('{').count() as i32;
+        depth -= line.matches('}').count() as i32;
+        if depth <= 0 && !pending.is_empty() && !lower.contains("function ") {
+            flush(&mut pending, fn_has_oracle, &mut findings);
         }
     }
+    flush(&mut pending, fn_has_oracle, &mut findings);
 
     findings
 }
@@ -336,33 +543,42 @@ pub fn detect_dvn_threshold(source: &str, file_path: &str) -> Vec<Finding> {
 /// Detects ERC20 reentrancy: token transfer before internal accounting update
 pub fn detect_reentrancy_erc20(source: &str, file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
+    let lines = textutil::code_lines(source);
 
-    for (line_num, line) in source.lines().enumerate() {
-        let lower = line.to_lowercase();
+    // This used to match any line whose *text* contained "erc20" and
+    // "transfer" — which includes every OpenZeppelin revert string
+    // (`"ERC20: transfer from the zero address"`), so every standard token
+    // reported CRITICAL reentrancy on its `require` lines.
+    //
+    // Matching is now against code with string literals and comments stripped,
+    // and requires an actual external token call, not the word "transfer".
+    for (line_num, line) in lines.iter().enumerate() {
+        if !EXTERNAL_TOKEN_CALL_REGEX.is_match(line) {
+            continue;
+        }
 
-        // ERC20 transfer patterns followed by balance updates
-        if (lower.contains("erc20") || lower.contains("ierc20"))
-            && (lower.contains("transfer") || lower.contains("transfer_from"))
-        {
-            // Check if balance update happens after
-            let following = source.lines().skip(line_num).take(10).any(|l| {
-                l.to_lowercase().contains("balances[") || l.to_lowercase().contains("_balances[")
-            });
+        // Checks-effects-interactions is only violated if internal accounting
+        // is written *after* the external call.
+        let updates_after = lines
+            .iter()
+            .skip(line_num + 1)
+            .take(10)
+            .any(|l| BALANCE_WRITE_REGEX.is_match(l));
 
-            if following {
-                findings.push(
-                    Finding::new(
-                        "evm_reentrancy_erc20".to_string(),
-                        Severity::Critical,
-                        file_path.to_string(),
-                        line_num + 1,
-                        0,
-                        "ERC20 token transfer before internal accounting update".to_string(),
-                        line.trim().to_string(),
-                    )
-                    .with_metadata("detector".to_string(), "token_pattern".to_string()),
-                );
-            }
+        if updates_after {
+            findings.push(
+                Finding::new(
+                    "evm_reentrancy_erc20".to_string(),
+                    Severity::Critical,
+                    file_path.to_string(),
+                    line_num + 1,
+                    0,
+                    "External token transfer occurs before internal balance accounting is updated"
+                        .to_string(),
+                    line.trim().to_string(),
+                )
+                .with_metadata("detector".to_string(), "token_pattern".to_string()),
+            );
         }
     }
 
@@ -581,25 +797,54 @@ pub fn detect_shallow_auth(source: &str, file_path: &str) -> Vec<Finding> {
 /// Detects public relay: permissionless relay function
 pub fn detect_public_relay(source: &str, file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
+    let lines: Vec<String> = source.lines().map(str::to_string).collect();
 
-    for (line_num, line) in source.lines().enumerate() {
-        if (line.contains("function") && line.contains("public") || line.contains("external"))
-            && (line.contains("relay") || line.contains("execute") || line.contains("forward"))
-            && !line.contains("onlyOwner")
-            && !line.contains("onlyAdmin")
-            && !line.contains("view")
-            && !line.contains("pure")
-        {
+    // The previous condition was `(function && public || external) && name`,
+    // which — by precedence — fired on *any* line containing "external" and
+    // one of relay/execute/forward, and only ever looked for `onlyOwner` or
+    // `onlyAdmin`. A timelocked, signer-gated multisig `execute()` was
+    // reported as a permissionless relay.
+    for func in split_functions(&lines) {
+        let Some((decl_idx, decl)) = func.lines.first() else {
+            continue;
+        };
+        let lower = decl.to_lowercase();
+        let is_entry = FUNCTION_DECL_REGEX.is_match(decl)
+            && (lower.contains(" public") || lower.contains(" external"))
+            && !lower.contains(" view")
+            && !lower.contains(" pure")
+            && !decl.trim_end().ends_with(';');
+        if !is_entry || AUTH_MODIFIER_REGEX.is_match(decl) {
+            continue;
+        }
+
+        // A relay forwards a caller-chosen call. Both halves are required: a
+        // `bytes` parameter the caller controls, and a low-level call in the
+        // body that could carry it. A function merely *named* execute is not
+        // a relay.
+        let takes_calldata = RELAY_CALLDATA_PARAM.is_match(decl);
+        let body = func
+            .lines
+            .iter()
+            .skip(1)
+            .map(|(_, l)| l.as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let forwards = RELAY_FORWARD_CALL.is_match(&body);
+        let guarded_in_body = body.contains("msg.sender") || body.contains("require(");
+
+        if takes_calldata && forwards && !guarded_in_body {
             findings.push(
                 Finding::new(
                     "evm_public_relay".to_string(),
                     Severity::High,
                     file_path.to_string(),
-                    line_num + 1,
+                    decl_idx + 1,
                     0,
-                    "Permissionless relay function allows anyone to execute arbitrary transactions"
+                    "Permissionless relay: anyone can have this contract execute a call of \
+                     their choosing"
                         .to_string(),
-                    line.trim().to_string(),
+                    decl.trim().to_string(),
                 )
                 .with_metadata("detector".to_string(), "authorization".to_string()),
             );
@@ -633,7 +878,31 @@ pub fn detect_single_eoa_admin(source: &str, file_path: &str) -> Vec<Finding> {
             let has_contract_check =
                 source.contains("isContract") || source.contains(".code.length");
 
-            if !has_contract_check {
+            // `owner = msg.sender` inside `acceptOwnership()` is the two-step
+            // handover — the caller was pre-approved as `pendingOwner` and the
+            // assignment is guarded. That is the recommended pattern, not a
+            // deployer claiming admin, and it must not be reported as one.
+            let all_lines: Vec<String> = source.lines().map(str::to_string).collect();
+            let enclosing = split_functions(&all_lines)
+                .into_iter()
+                .find(|f| f.lines.iter().any(|(i, _)| *i == line_num));
+            let is_two_step_handover = enclosing
+                .as_ref()
+                .map(|f| {
+                    let text = f
+                        .lines
+                        .iter()
+                        .map(|(_, l)| l.to_lowercase())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    text.contains("pendingowner")
+                        || text.contains("pending_owner")
+                        || text.contains("proposedowner")
+                        || text.contains("newowner")
+                })
+                .unwrap_or(false);
+
+            if !has_contract_check && !is_two_step_handover {
                 findings.push(
                     Finding::new(
                         "evm_single_eoa_admin".to_string(),

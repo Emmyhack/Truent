@@ -1,0 +1,52 @@
+# Truent's own release-readiness configuration.
+#
+# Risk acceptances: findings that are known, understood and consciously
+# carried. Each needs a reason, an owner and an expiry; `truent release-check`
+# reports them as ACCEPTED (listed, never hidden) and an expired entry stops
+# applying. Add or renew entries deliberately — this file is reviewed like
+# code (see .github/CODEOWNERS).
+
+[[accept]]
+id     = "sca_unmaintained_dependency"
+path   = "Cargo.lock"
+match  = "paste"
+reason = "transitive via alloy-primitives → revm; the maintained fork is not yet resolvable from revm 14. Re-evaluate at the next revm upgrade."
+owner  = "@geekstrancend"
+until  = "2027-03-31"
+
+[[accept]]
+id     = "sca_unmaintained_dependency"
+path   = "Cargo.lock"
+match  = "ring"
+reason = "ring is the rustls crypto provider used by truent-runtime and ureq; the aws-lc-rs provider adds a C/cmake build across six release targets. Informational advisory, no vulnerability. Re-evaluate when rustls' aws-lc-rs provider ships prebuilt for musl and Windows."
+owner  = "@geekstrancend"
+until  = "2027-03-31"
+
+[[accept]]
+id     = "sca_unmaintained_dependency"
+path   = "Cargo.lock"
+match  = "derivative"
+reason = "transitive, not in the normal build graph (dev/build only); no exposure in the shipped binary."
+owner  = "@geekstrancend"
+until  = "2027-03-31"
+
+[[accept]]
+id     = "evm_single_eoa_admin"
+path   = "examples/evm_token.sol"
+reason = "intentionally minimal example contract used by the documentation to show what a scan reports; not deployed anywhere."
+owner  = "@geekstrancend"
+until  = "2027-12-31"
+
+[[accept]]
+id     = "evm_symbolic_counterexample"
+path   = "examples/foundry"
+reason = "examples/foundry is the documented symbolic-execution demo: a deliberately buggy vault whose counterexample CI asserts is found. Not deployed."
+owner  = "@geekstrancend"
+until  = "2027-12-31"
+
+[[accept]]
+id     = "rt_no_https_redirect"
+path   = "http://127.0.0.1"
+reason = "The CI DAST target is `next start` on localhost, which serves plain HTTP by design; TLS termination and the HTTP→HTTPS redirect are the production edge's job. Verified separately by `truent probe https://<production-host>` before each release."
+owner  = "@geekstrancend"
+until  = "2027-03-31"

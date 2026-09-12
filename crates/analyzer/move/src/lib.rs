@@ -26,11 +26,15 @@ pub use semantic_model::build_semantic_model;
 /// This is the single entry point the CLI should use for Move analysis: each
 /// detector operates directly on raw source text, no Move AST parse is required.
 pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Finding> {
-    let mut findings = detectors::detect_all(source, file_path);
+    // Line-based detectors see code only — comments and string contents
+    // removed — so prose can neither raise nor suppress a finding. The
+    // tree-sitter semantic model still receives the raw source.
+    let code = truent_core::text::normalize(source, truent_core::text::CommentPolicy::StripAll);
+    let mut findings = detectors::detect_all(&code, file_path);
 
-    findings.extend(detect_move_resource_destruction(source, file_path));
-    findings.extend(detect_move_type_safety_violation(source, file_path));
-    findings.extend(detect_move_manual_overflow_check(source, file_path));
+    findings.extend(detect_move_resource_destruction(&code, file_path));
+    findings.extend(detect_move_type_safety_violation(&code, file_path));
+    findings.extend(detect_move_manual_overflow_check(&code, file_path));
 
     // Chain-agnostic shared-IR rule (Epic 6.1): flags privileged mutations
     // with no authorization guard, using the same rule EVM and Solana share.
@@ -38,6 +42,8 @@ pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Find
     findings.extend(truent_ir::rules::find_unauthorized_privileged_mutations(
         &model,
     ));
+
+    truent_core::text::restore_snippets(source, &mut findings);
 
     let mut seen = std::collections::HashSet::new();
     findings.retain(|f| seen.insert(f.dedup_key()));

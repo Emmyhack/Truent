@@ -1,0 +1,7 @@
+Checking 2 functions
+[PASS] prove_deposit_adds(uint256,uint256)
+[FAIL] prove_total_never_wraps(uint256)
+   Counterexample:
+     result:   Revert
+     calldata: prove_total_never_wraps(0x8000000000000000000000000000000000000000000000000000000000000000)
+Checked 2 functions; 1 failed

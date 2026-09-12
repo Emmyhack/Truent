@@ -21,7 +21,8 @@ lazy_static! {
     static ref IMPLEMENTATION_CHECK: Regex =
         Regex::new(r"(?i)(code\.(size|length)|ERC1967)").unwrap();
     static ref TIMELOCK_CHECK: Regex =
-        Regex::new(r"(?i)timelock|delay|pendingImplementation|schedule|execute").unwrap();
+        Regex::new(r"(?i)timelock|\bdelay\b|pendingImplementation|schedule|readyAt|eta\b").unwrap();
+    static ref HELPER_CALL: Regex = Regex::new(r"\b(_\w+)\s*\(").unwrap();
     static ref INTERFACE_CHECK: Regex =
         Regex::new(r"(?i)supportsInterface|implementsInterface|INTERFACE_ID").unwrap();
 }
@@ -34,13 +35,24 @@ pub fn detect_upgrade_path_verification(source: &str, file_path: &str) -> Vec<Fi
             continue;
         }
 
-        let context_end = std::cmp::min(line_num + 150, source.lines().count());
-        let function_body = source
-            .lines()
-            .skip(line_num)
-            .take(context_end - line_num)
-            .collect::<Vec<_>>()
-            .join("\n");
+        // Only a function *declaration* is an upgrade path; a call to
+        // `upgradeTo(...)` elsewhere is not one.
+        if !line.contains("function ") {
+            continue;
+        }
+
+        // The real function body, plus the bodies of any internal helpers it
+        // calls with the new implementation. UUPS puts every check in
+        // `_authorizeUpgrade`, so looking only at `upgradeTo` — as the old
+        // 150-line window did, while also bleeding into unrelated code — saw
+        // no check and reported the canonical safe pattern.
+        let own_body = crate::detectors::textutil::enclosing_function_body(source, line_num);
+        let function_body = with_called_helpers(source, &own_body);
+
+        // Note: an auth modifier is *not* a substitute for validation. An
+        // `onlyAdmin` upgrade with no code-size check still lets the admin
+        // point the proxy at an EOA or a malicious implementation; the
+        // finding is about what the new implementation is checked to be.
 
         let has_impl_check = IMPLEMENTATION_CHECK.is_match(&function_body);
         let has_timelock = TIMELOCK_CHECK.is_match(&function_body);
@@ -69,6 +81,26 @@ pub fn detect_upgrade_path_verification(source: &str, file_path: &str) -> Vec<Fi
     }
 
     findings
+}
+
+/// `body` plus the source of every internal `_helper(...)` it calls, one level
+/// deep — enough for `_authorizeUpgrade`, `_beforeUpgrade` and the like.
+fn with_called_helpers(source: &str, body: &str) -> String {
+    let mut out = body.to_string();
+    let lines: Vec<&str> = source.lines().collect();
+    for cap in HELPER_CALL.captures_iter(body) {
+        let name = &cap[1];
+        if let Some(idx) = lines
+            .iter()
+            .position(|l| l.contains("function ") && l.contains(&format!("{name}(")))
+        {
+            out.push('\n');
+            out.push_str(&crate::detectors::textutil::enclosing_function_body(
+                source, idx,
+            ));
+        }
+    }
+    out
 }
 
 #[cfg(test)]

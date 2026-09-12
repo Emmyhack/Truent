@@ -1,0 +1,9 @@
+# Configuration with every secret referenced, none inlined.
+[database]
+url = "${DATABASE_URL}"
+password = "${DB_PASSWORD}"
+
+[auth]
+token_lifetime_seconds = 3600
+jwt_public_key_path = "/etc/app/jwt.pub"
+api_key = "<your-api-key>"

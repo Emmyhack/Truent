@@ -44,6 +44,10 @@ pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Find
         ));
     }
 
+    // Findings are built from the parsed function model and record the
+    // function name; the report should show the source line.
+    truent_core::text::restore_snippets(source, &mut findings);
+
     let mut seen = std::collections::HashSet::new();
     findings.retain(|f| seen.insert(f.dedup_key()));
 

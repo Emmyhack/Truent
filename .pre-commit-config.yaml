@@ -1,0 +1,14 @@
+# truent harden: run the scanner before a commit exists.
+repos:
+  - repo: local
+    hooks:
+      - id: truent-scan
+        name: truent scan (secrets, injection, misconfiguration)
+        entry: truent scan --chain auto --fail-on high
+        language: system
+        pass_filenames: false
+      - id: truent-deps
+        name: truent deps (lockfile and pinning)
+        entry: truent deps --fail-on high
+        language: system
+        pass_filenames: false

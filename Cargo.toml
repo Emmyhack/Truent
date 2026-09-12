@@ -8,6 +8,11 @@ members = [
     "crates/analyzer/evm",
     "crates/analyzer/move",
     "crates/analyzer/soroban",
+    "crates/analyzer/general",
+    "crates/sca",
+    "crates/pathways",
+    "crates/runtime",
+    "crates/symbolic",
     "crates/dynamic/core",
     "crates/dynamic/evm",
     "crates/dynamic/solana",
@@ -17,6 +22,7 @@ members = [
     "crates/generator/move",
     "crates/invariant_library",
     "crates/report",
+    "crates/skills",
     "crates/utils",
 ]
 
@@ -42,6 +48,11 @@ truent-analyzer-solana = { path = "crates/analyzer/solana", version = "0.6.0" }
 truent-analyzer-evm = { path = "crates/analyzer/evm", version = "0.6.0" }
 truent-analyzer-move = { path = "crates/analyzer/move", version = "0.6.0" }
 truent-analyzer-soroban = { path = "crates/analyzer/soroban", version = "0.6.0" }
+truent-analyzer-general = { path = "crates/analyzer/general", version = "0.6.0" }
+truent-sca = { path = "crates/sca", version = "0.6.0" }
+truent-pathways = { path = "crates/pathways", version = "0.6.0" }
+truent-runtime = { path = "crates/runtime", version = "0.6.0" }
+truent-symbolic = { path = "crates/symbolic", version = "0.6.0" }
 truent-dynamic-core = { path = "crates/dynamic/core", version = "0.6.0" }
 truent-dynamic-evm = { path = "crates/dynamic/evm", version = "0.6.0" }
 truent-dynamic-solana = { path = "crates/dynamic/solana", version = "0.6.0" }
@@ -51,6 +62,7 @@ truent-generator-evm = { path = "crates/generator/evm", version = "0.6.0" }
 truent-generator-move = { path = "crates/generator/move", version = "0.6.0" }
 truent-library = { path = "crates/invariant_library", version = "0.6.0" }
 truent-report = { path = "crates/report", version = "0.6.0" }
+truent-skills = { path = "crates/skills", version = "0.6.0" }
 
 # Core dependencies
 anyhow = "1.0"
@@ -107,6 +119,10 @@ predicates = "3.1"
 insta = { version = "1.34", features = ["json"] }
 criterion = { version = "0.5" }
 tempfile = "3.8"
+# serde_yaml is unmaintained (RUSTSEC-2024-0370). serde_yaml_ng is the
+# maintained drop-in fork with the same API.
+serde_yaml_ng = "0.10"
+walkdir = "2.5"
 
 # Parallel processing
 rayon = "1.7"

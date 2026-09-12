@@ -212,6 +212,17 @@ impl Finding {
         self
     }
 
+    /// Industry-standard taxonomy for this finding — CWE, SWC, OWASP Smart
+    /// Contract Top 10, and DASP.
+    ///
+    /// Returns `None` for invariants with no mapping (user-authored `.sinv`
+    /// rules, test fixtures). Callers must render the absence rather than
+    /// substitute a plausible-looking class: a wrong CWE in an audit report is
+    /// worse than a missing one.
+    pub fn taxonomy(&self) -> Option<&'static crate::taxonomy::Taxonomy> {
+        crate::taxonomy::taxonomy_for(&self.invariant_id)
+    }
+
     /// Get a unique key for deduplication (invariant_id + file + line).
     pub fn dedup_key(&self) -> String {
         format!("{}:{}:{}", self.invariant_id, self.file, self.line)
@@ -251,6 +262,34 @@ mod tests {
             "code snippet".to_string(),
         );
         assert_eq!(f.dedup_key(), "test_invariant:contract.sol:42");
+    }
+
+    #[test]
+    fn test_finding_taxonomy_lookup() {
+        let f = Finding::new(
+            "evm_reentrancy_classic".to_string(),
+            Severity::Critical,
+            "Vault.sol".to_string(),
+            42,
+            0,
+            "msg".to_string(),
+            "code".to_string(),
+        );
+        let tax = f.taxonomy().expect("a shipped detector must be mapped");
+        assert_eq!(tax.primary_cwe().id, 841);
+        assert!(tax.tags().contains(&"SWC-107".to_string()));
+
+        // An unmapped ID yields nothing rather than a guess.
+        let unknown = Finding::new(
+            "my_custom_sinv_rule".to_string(),
+            Severity::Low,
+            "x.sol".to_string(),
+            1,
+            0,
+            "m".to_string(),
+            "c".to_string(),
+        );
+        assert!(unknown.taxonomy().is_none());
     }
 
     #[test]

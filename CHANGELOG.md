@@ -7,6 +7,496 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Engine JSON contract for consumers.** `truent scan --output json`
+  violations now carry `file`, `line`, `chain`, `evidence`, `exploitability`,
+  `exploit_reasons`, `fix`, `verify`, `attack` and `nist_csf` alongside the
+  display fields, and `recommendation` is the exposure table's fix rather
+  than a search link. `truent taxonomy --format json` includes each
+  detector's exposure profile (vector, prereq, interaction, impact, fix,
+  verify) and CWE / ATT&CK names; `truent exposure --format json` lists
+  `known_chains`. The web dashboard is generated from these.
+- **Web dashboard aligned with the engine.** The worker maps the real JSON
+  contract (location, evidence, exploitability, fix, verify, CWE, snippet
+  are stored per finding — new Prisma migration); submissions accept every
+  engine's languages (Solidity, Anchor, Soroban, Move, Python,
+  JavaScript/TypeScript, Go, shell, Dockerfile, Terraform, YAML) and are
+  written under the file name the detectors classify by. The report view
+  shows the evidence class, exploitability with reasons, fix and verify
+  step, CWE / ATT&CK tags, the source line, and a working workflow-status
+  control; the library, docs and landing page are generated from
+  `lib/catalog.json` (`scripts/sync-catalog.mjs` regenerates it from the
+  binary) so the site can never describe detectors or commands the engine
+  does not have. A Content-Security-Policy header was added and the API-key
+  generator now uses a CSPRNG — the two previously accepted web findings are
+  fixed, not accepted.
+- **Symbolic execution, settled** (`truent-symbolic`; `truent symbolic`).
+  Truent does not reimplement an SMT-backed executor; it drives the real
+  ones — **halmos**, **hevm**, **Mythril** — on a Foundry project and owns
+  the result under the honesty contract: a counterexample (a concrete input
+  the solver produced) becomes a **proven** `evm_symbolic_counterexample`;
+  a timeout, unknown or all-paths-reverted check is
+  `evm_symbolic_unresolved`, a lead and never a pass; no executor on PATH
+  is an error with install hints, never "no findings". Parsers are tested
+  on captured real output; `examples/foundry` is a deliberately buggy vault
+  whose counterexample (`amount = 2^255`) CI asserts is found.
+  `release-check --symbolic-report` resolves the symbolic-execution item.
+- **Risk acceptance** (`[[accept]]` in `.truent.toml`): a finding carried
+  with a reason, an owner and an expiry is ACCEPTED — listed in every
+  report, never hidden — and an expired entry stops applying. A malformed
+  file fails loudly. `release-check` and `exposure` both honour it.
+- **Truent is READY by its own checklist.** Every GitHub Action pinned to a
+  commit SHA (`# vN` retained, Dependabot keeps them current); releases
+  attested with `actions/attest-build-provenance` and npm `--provenance`;
+  a `harness` workflow runs fuzzing, a 3000-file stress scan under a time
+  budget, six chaos experiments (network hang, refused connection, corrupt
+  lockfiles, unreadable inputs, missing tools, malformed config),
+  halmos on the example, insta golden snapshots of every corpus,
+  criterion benchmarks against a `main` baseline, weekly cargo-mutants with
+  a 60% floor, and a PostgreSQL backup→destroy→restore drill recording RTO
+  and RPO; a `supply-chain` workflow produces the SBOM, validates the Sigma
+  rule, builds and serves the web dashboard and probes it (DAST), runs
+  symbolic execution, uploads SARIF, and runs `release-check --strict` on
+  `main`. Runbooks for disaster recovery and incident response, CODEOWNERS,
+  and dated acceptances for the three informational RustSec advisories, the
+  documented example contracts, and two findings in the maintainer's
+  uncommitted web work (each names its one-line fix).
+- **`truent release-check`**: the 33-section codebase safety & security
+  checklist, item by item (~330 items), with an honest status for each:
+  PASS (an engine ran and found nothing), FAIL (findings, with counts),
+  NEEDS-PROBE (pass a `truent probe` report), PARTIAL (the test suite /
+  load test / runbook exists but no CI workflow runs it), MISSING (nothing
+  found — `truent harden` generates a start), ASSESS (only a person can
+  verify) and N/A (nothing in the repository to apply to). The verdict is
+  READY only with no FAIL, MISSING or PARTIAL. 25 repository signals
+  (`truent_pathways::signals`) decide the items only your own system can run
+  — functional, regression, load, chaos, performance, differential,
+  mutation, migration, backup and recovery testing — by checking that the
+  evidence exists *and* that CI invokes it. `--strict` exits non-zero when
+  not READY.
+- **26 new detectors** closing the checklist's gaps. Application layer
+  (`web_security`): mass assignment, unvalidated uploads, error-detail
+  disclosure, sensitive data in logs, filesystem TOCTOU, insecure temp files,
+  world-writable permissions, ReDoS (nested quantifiers), XXE (lxml default
+  entity resolution, `noent`), unrestricted GraphQL (introspection / no
+  depth limit), WebSocket without origin check, non-atomic multi-write on
+  value, object-level authorization missing (IDOR/BOLA — a record loaded by
+  a request id with no ownership reference anywhere in the handler),
+  unbounded pagination. Taint sinks: open redirect, log injection (message
+  string only; structured fields are not flagged). Repository-level
+  (`repo`, cross-file, comment-stripped): missing rate limit on
+  authentication routes, missing security-event logging. CI: unsigned
+  release (publish without cosign / provenance / attestation). Contracts
+  (`gas_dos`): unbounded loop over a growable storage array, push payment in
+  a loop, missing pause mechanism on an admin-controlled value-moving
+  protocol. Supply chain (`integrity`): dependency confusion
+  (`--extra-index-url`, unmapped private npm scopes), typosquat candidates
+  (Damerau-Levenshtein 1 from popular names), lockfiles without integrity
+  hashes, install-script dependencies. Every one has a taxonomy row, an
+  exposure profile with fix and verify step, and good/bad corpus coverage.
+  172 detectors total.
+- **`truent harden`** now also generates the harnesses for the categories
+  only the owning team can run: a k6 load test with thresholds, a chaos
+  experiment table (Toxiproxy), a disaster-recovery runbook with RTO/RPO
+  and a drill, mutation-testing configuration (cargo-mutants / Stryker /
+  mutmut / Gambit), benchmark and gas-snapshot baselines, differential
+  test guidance, a Sigma detection rule for authentication anomalies, and
+  CODEOWNERS for security-sensitive paths.
+- **Exposure: how possible is it, and how is it prevented** (`truent
+  exposure`, `truent_core::exposure`). Truent will not exploit anything;
+  what it now does instead is rate every finding's exploitability from a
+  per-detector attack profile — where the attacker must stand
+  (network / adjacent / local), what they must already hold (nothing, an
+  account, a condition, a privileged role), whether a victim must act, and
+  what success buys — combined with evidence: a finding the probe observed
+  live outranks a static lead. Ratings are LIKELY / POSSIBLE / UNLIKELY /
+  THEORETICAL with the reasons spelled out. Every one of the 146 detectors
+  carries a concrete **fix** and a **verify** step (the command or test that
+  shows the fix landed); a test fails the build if a detector is added
+  without them. SARIF rule `help` now carries fix and verify, so GitHub code
+  scanning shows the remediation inline.
+- **Attack chains** (`truent_pathways::chains`). Twelve named compositions
+  of findings that together form a known attack path — session hijack over
+  cleartext, credentials served to the internet, injection reaching a
+  reachable database, CI takeover to supply-chain compromise, XSS to account
+  takeover, SSRF to cloud credentials, container escape, unauthenticated
+  service exposed, adversary-in-the-middle, oracle-manipulation drain,
+  reentrancy drain, single-admin-key takeover. `truent exposure` reports
+  each completed chain with its narrative, ATT&CK tactic sequence, the
+  findings satisfying each step, the step where the cheapest fix breaks it,
+  and that fix. `--probe-report` folds a live `truent probe` JSON report in
+  so static and observed findings compose.
+- **`truent harden`**: preventive measures generated for the repository at
+  hand. Profiles the tree (GitHub Actions, Dockerfile, Cargo/npm/pip/Go,
+  Express, Next.js, Django, Flask, Solidity) and plans: a secrets
+  `.gitignore` (merged, missing lines only), Dependabot for every ecosystem
+  present, a pre-commit hook running `truent scan`/`deps`, a least-privilege
+  CI gate uploading SARIF, framework-specific security-header and cookie
+  configuration, a hardened Dockerfile shape, an invariants file for
+  contracts, and a SECURITY.md. Each artifact names the detectors it
+  prevents. Dry run by default; `--write` never overwrites an existing file.
+- **Runtime probe** (`truent-runtime`; `truent probe <target> --authorized`).
+  The first Truent component that connects to a running system instead of
+  reading files, and the only one whose findings are marked **proven** — each
+  records what the target returned. Twelve `rt_*` detectors: TLS (expired /
+  expiring, untrusted or self-signed or wrong-name certificate, no modern
+  protocol negotiable), HTTP (HSTS, CSP, frame options, content-type options,
+  cookie Secure/HttpOnly, version-revealing banners, missing HTTP→HTTPS
+  redirect), files that must never be served (`/.git/config`, `/.env`,
+  `/.aws/credentials`, … — confirmed by content signature, never by a `200`
+  alone), and a TCP connect sweep of 20 common ports ranked by how dangerous
+  an exposed service is. Sends only `GET`s and connects: no payloads, no
+  authentication attempts, no writes. Refuses to run without `--authorized`.
+  Cookie values and file bodies are never recorded; `Set-Cookie` values are
+  redacted at collection time. JSON, text and `--sarif` output; `doctor`
+  exercises the evaluators on fixtures without touching the network. The
+  runtime-stage pathways (Penetration Testing, Runtime Security, Network
+  Security, Attack Surface Management) now have native detectors instead of
+  only hosted skills and manual controls.
+- **Intraprocedural taint tracking** for Python, JavaScript/TypeScript and
+  Go (`truent-analyzer-general::taint`). Tracks assignments within a function
+  from a source (request data, argv, stdin, a network read) to a sink (SQL
+  execution, shell command, `eval`, DOM HTML) unless a sanitizer intervenes,
+  so `q = request.args["id"]; sql = "… " + q; cur.execute(sql)` is caught
+  across three lines and `q = "constant"; cur.execute(q)` is not flagged at
+  all. Only the query/code argument of SQL and eval sinks is inspected, so the
+  correct parameterized form (`execute(sql, (uid,))`) is clean, and a
+  process-execution sink's scope is the whole argument list only when a shell
+  interprets it (`shell=True`, `spawn("sh", ["-c", …])`) — an argument array
+  forwarded to `spawnSync` is a CLI wrapper, not an injection. Taint findings
+  name both ends of the flow and take precedence over the line-local
+  detector's for the same sink. Intraprocedural and lexical by design; still
+  a lead, not proven.
+
+- **The security-pathway map** (`truent-pathways`; `truent pathways`,
+  `truent assess`). Every class of software, web, system-design and cloud
+  security — application, web, API, identity, architecture, DevSecOps,
+  supply chain, cloud, container, Kubernetes, network, data, database,
+  runtime, detection engineering, vulnerability management, attack surface,
+  penetration testing, resilience, incident response, backup/recovery — is
+  mapped to how Truent covers it: a native detector, a hosted skill subdomain,
+  or an explicit assessment control. Tests fail the build if a pathway names a
+  detector the taxonomy does not know or a subdomain that does not exist.
+  `truent assess` runs every native engine and the dependency analysis over a
+  repository and renders the per-pathway report with findings, installed
+  skills and the manual checklist.
+- **Threat modelling** (`truent threat-model`). A STRIDE model generated from
+  discovered structure — routes (Express, Flask/FastAPI, Django, net/http,
+  Solidity), data stores, outbound calls, secret sources, and auth / authz /
+  rate-limit / logging / validation markers — labelled REASONED throughout.
+- **Software composition analysis** (`truent-sca`; `truent deps`). Parses
+  Cargo, npm (v1–v3), Yarn, requirements, Poetry, Pipenv and Go lockfiles;
+  matches every pin against an OSV-JSON or RustSec advisory directory with
+  exact half-open range semantics; flags unpinned requirements and manifests
+  with no lockfile; emits a CycloneDX 1.5 SBOM. No database means no
+  vulnerability claim — the report says so.
+- **Infrastructure-as-Code detectors** for Terraform and CloudFormation:
+  internet-open administrative ports (443 is not reported), public storage,
+  unencrypted storage, public databases, wildcard IAM (Deny statements are
+  not reported).
+- **Web and API configuration detectors**: CORS wildcard (High with
+  credentials, Low without), insecure session/CSRF cookies, debug mode, JWT
+  verification disabled, CSRF protection removed, SSRF and path traversal from
+  request-controlled input (allowlist and basename guards are recognised).
+- 16 taxonomy rows (134 total) with CWE, ATT&CK and NIST CSF; doctor checks
+  for the dependency engine and the pathway map.
+
+
+- **General-purpose repository analyzer** (`truent-analyzer-general`,
+  `--chain general`). Truent now reads everything in a repository that is not
+  a contract, under the same zero-false-positive discipline: committed secrets
+  and private keys (eleven known token formats plus an entropy-gated
+  assignment heuristic that ignores placeholders and environment references);
+  GitHub Actions attacks (pwn-request, script injection, secret exposure,
+  unpinned third-party actions — with `env:` indirection and first-party
+  actions recognised as safe); Dockerfile and Kubernetes/compose hardening;
+  and command/code/SQL injection, XSS sinks, unsafe deserialization, disabled
+  TLS verification, weak password hashing and insecure randomness in Python,
+  JavaScript/TypeScript, Go and shell — each requiring a dynamic argument, so
+  `eval("literal")` and `exec.Command("ls", dir)` are not findings. Ships with
+  its own good/bad corpus and a doctor self-test.
+- **Inline suppression.** `truent:allow` on a line or the line above it
+  suppresses every general-analyzer finding there; `truent:allow <detector>`
+  suppresses one. A secret scanner cannot tell a synthetic key in a test
+  fixture from a real one, so the author says so where it lives. Build
+  artifacts (`.next`, `.nuxt`, `coverage`, `__pycache__`, …) are never scanned,
+  and unpinned third-party actions are reported once per action per workflow
+  rather than once per use.
+- **`--chain auto`.** Routes every file to every applicable engine: `.sol` →
+  EVM, Anchor markers → Solana, `soroban_sdk` → Soroban, `.move` → Move, and
+  the general analyzer over all of it. One command audits a mixed repository.
+- **MITRE ATT&CK and NIST CSF 2.0 in the taxonomy.** Repository findings map
+  to the vocabulary security teams actually triage in (`T1552.001` for a
+  committed credential, `T1195.002` for a hijacked workflow); contract rows
+  deliberately leave them empty rather than stretch `T1190` over everything.
+  A test enforces that every repository finding carries both, and that
+  contract registries (SWC/OWASP SC/DASP) are never applied to repository
+  findings. Surfaced in `truent taxonomy`, SARIF tags, and `docs/COVERAGE.md`.
+
+
+- **Skill runtime** (`truent-skills`, `truent skills`). Truent can now host
+  agentskills.io skill libraries, extending it beyond smart contracts into
+  cloud, DFIR, threat hunting, SOC and the other subdomains its engine cannot
+  reach. Sources are **cloned, not vendored** — the library stays upstream
+  under its own licence and updates with `git pull`. Skills are indexed by
+  name, tag, subdomain and framework ID (so `truent skills search T1048.003`
+  works), preflighted against the tools actually on `PATH`, and run on request.
+  Third-party output is labelled `ADVISORY` and never `ENGINE-BACKED`: running
+  someone else's script does not make its output reproducible.
+  `skills run` prompts before executing and refuses outright when stdin is not
+  a terminal unless `--yes` is passed.
+
+  Hardening built into the subsystem: source names are validated as single
+  path segments (a name is joined onto the cache root and `source remove`
+  deletes it recursively, so `../../x` would otherwise delete an arbitrary
+  directory); the registry is re-validated on load, so a hand-edited or shared
+  `sources.json` cannot traverse either; specs beginning with `-` are rejected
+  before reaching `git clone`, where `--upload-pack=<cmd>` executes a command;
+  and a `skills/` directory is only trusted as Truent's own — and its skills
+  labelled `ENGINE-BACKED` — when the parent carries Truent's plugin manifest,
+  so running Truent inside an unrelated project with a `skills/` folder cannot
+  launder that project's content as engine-verified.
+
+
+- **Detector taxonomy** (`truent_core::taxonomy`). All 100 invariant IDs across
+  EVM, Solana, Move, Soroban and the shared IR rule now map to **CWE**, the
+  **SWC Registry**, the **OWASP Smart Contract Top 10 (2025)** and **DASP Top
+  10**, in one const table. Two tests pin the table to the engine in both
+  directions: a detector that ships without a row fails the build, and a row
+  that outlives its detector fails too.
+- **`truent taxonomy`** — inspect the mapping (`--chain`, `--id CWE-841`,
+  `--format text|json|markdown`). Generates `docs/COVERAGE.md`, which CI checks
+  for drift.
+- **`truent scan --sarif <path>`** and **`truent check --sarif <path>`**. SARIF
+  generation existed in `truent-report` but had no caller and no CLI flag, so
+  it was unreachable; the `truent-gate` action post-converted JSON in Python
+  instead. The gate now prefers the native writer and falls back to the
+  converter only for older binaries.
+- Taxonomy surfaced in every output: terminal, SARIF, JSON, CSV
+  (`CWE`/`SWC`/`OWASP_SC` columns), Markdown, and HTML (a `Classification`
+  column).
+- **Three agent skills** — `truent-deps` (dependency supply-chain review that
+  audits *drifted* library code rather than excluding `lib/`), `truent-keys`
+  (key custody paired with the engine's on-chain authority findings),
+  `truent-ir` (incident response that reproduces the exploit against deployed
+  bytecode before naming a root cause).
+- **Plugin packaging** (`.claude-plugin/`), agentskills.io frontmatter on all
+  six skills, `tools/validate_skills.py`, generated `skills/index.json`, and
+  `skills` + `coverage-matrix` CI jobs.
+
+
+- **Three detectors the library declared but nothing implemented:**
+  `evm_unchecked_returns` (a discarded low-level call or ERC-20 bool result),
+  `evm_timestamp_dependence` (block values used as randomness or in strict
+  equality — deadline comparisons are deliberately exempt), and
+  `evm_division_by_zero` (a bare, unguarded divisor). The vulnerable CLI
+  fixture went from 7 findings to 9: these were real bugs that were invisible.
+- **A machine-checked library → detector coverage map**
+  (`truent_library::coverage`). All 28 built-in invariants were declared,
+  listed by `truent invariants`, and emitted by nothing. Each now resolves to
+  the detector that implements it or to a written reason it cannot be
+  implemented statically (three: front-running, uninitialised storage
+  pointers, instruction-data parsing). Tests fail the build if an invariant is
+  added without a row, or a row names a detector the taxonomy does not know.
+
+
+- **False positives: correct contracts no longer report findings.** A plain
+  OpenZeppelin-style ERC-20 produced four findings and the bundled example
+  contract produced fourteen (twelve of them CRITICAL) — on code with no bug in
+  it. Five distinct causes, each fixed:
+  - *Detectors matched inside comments and string literals.* `evm_reentrancy_erc20`
+    fired on `require(from != address(0), "ERC20: transfer from the zero address")`
+    because the **revert string** contains "ERC20" and "transfer", so every
+    standard token reported CRITICAL reentrancy on its `require` lines. A new
+    `detectors::textutil` module strips comments and literal contents before
+    matching, removing the whole class.
+  - *`evm_oracle_spot_price` matched almost every line.* Its condition was
+    `(balanceOf|reserve) AND (price|rate|amount|"=")` — that last clause matched
+    `mapping(address => uint256)`, `require(balanceOf[x] >= y)` and
+    `balanceOf[x] -= y`, producing eleven CRITICAL "oracle" findings on a token
+    with no oracle. It now requires a balance read to actually reach a
+    price-shaped quantity, tracked at function scope so
+    `function getPrice() { return reserve1 * 1e18 / reserve0; }` is still caught.
+  - *`evm_unbacked_synthetic_mint` fired on every contract.* Its contract-level
+    check ran unconditionally ("Always check if contract lacks proper
+    conservation checks"), reporting HIGH at line 1 with a fabricated code
+    snippet, on ERC-20s, libraries and interfaces alike. It is now gated on the
+    contract actually minting a collateral-backed asset, and anchored to the
+    mint function.
+  - *Its backing check was inverted.* `checks_backing_requirement` counted
+    keywords across a window including comments, calling a function safe at
+    three or more — so a function whose comments read `// No backing check!`
+    and `// drain collateral` scored three and was judged checked. The detector
+    stayed silent precisely where the code admitted the bug. A backing check is
+    now a check construct (`require`/`assert`/`if … revert`) constraining a
+    backing quantity.
+  - *`evm_reentrancy_classic` never checked ordering.* It flagged every external
+    call in any contract lacking a `nonReentrant` modifier, so textbook
+    checks-effects-interactions code — state written *before* the call — was
+    reported as CRITICAL reentrancy. It now requires a state write after the
+    call within the same function.
+  - *Detectors read fixed 40–50 line windows instead of function bodies.* A
+    `withdraw` function was reported as an unvalidated-oracle trade because an
+    unrelated `getPrice` sat six lines below it. Bodies are now delimited by
+    brace depth, and interface declarations (no body) are skipped.
+- **Regression corpus** (`crates/analyzer/evm/tests/false_positives.rs`).
+  Correct contracts must produce **zero** findings; genuinely vulnerable ones
+  must still be detected, so a detector can never be "fixed" by switching it
+  off. A third test asserts every finding points at a real source line whose
+  text matches the reported snippet.
+
+
+- **The `.sinv` invariant DSL was never compiled in.** `build.rs` lived at the
+  workspace root, which is a *virtual* manifest — cargo never runs a build
+  script there — and `truent-core` had none of its own. All nine `.sinv` files
+  were inert, `crates/core/src/generated/invariants.rs` was the "no .sinv files
+  found" stub, `truent invariants list` showed nothing, and
+  `truent_core::invariant_count()` returned 0, despite the DSL being a headline
+  feature. The script is now attached to `truent-core` and resolves its paths
+  from `CARGO_MANIFEST_DIR` rather than the working directory, so all nine
+  invariants compile in. Two latent bugs in the generator surfaced once it
+  actually ran and are fixed: the emitted `CompiledInvariant` lacked the serde
+  derives that `truent invariants show --format json` needs, and the emitted
+  registry contained an identity `.map(|i| i)` that fails `-D clippy::all`.
+- **`truent invariants list --chain <c>` printed the wrong count.** It showed
+  the global total above a filtered list, so `--chain evm` read as
+  "9 Compiled Invariants" above six rows.
+- **All ten `truent doctor` checks now exercise their subsystem.** Each
+  analyzer runs a known-vulnerable snippet through the real detector pipeline
+  and asserts it finds something; the DSL parser parses an invariant; the
+  report generator renders a report and confirms the taxonomy survived; core
+  verifies the compiled-invariant registry and a taxonomy round-trip. The
+  checks are text-only, so `doctor` never fails for want of `solc`.
+
+
+- **`truent doctor` could never fail.** Every component check was a hardcoded
+  `passed: true` and the command always returned `Ok(())`, so the install gate
+  the release workflow runs it as could not detect a broken install. Checks now
+  report real state and the command exits non-zero when any component is
+  unhealthy.
+- **`truent doctor` reported a hardcoded invariant count.** It printed
+  "28 built-in invariants" as a string literal; correct today by coincidence,
+  and silently wrong the moment any chain gained an invariant. The count is
+  computed across all four chains.
+- **`truent doctor` output was ragged.** The message column was padded with a
+  fixed run of spaces regardless of component-name length; it is now padded to
+  the widest name.
+
+
+- **`scripts/publish_crates.sh` would have failed.** It listed a
+  `truent-simulator` crate that no longer exists and omitted
+  `truent-analyzer-soroban`, `truent-dynamic-core`, `truent-dynamic-evm` and
+  `truent-dynamic-solana` — all dependencies of `truent-cli`, so publishing
+  would have aborted when cargo could not resolve them.
+
+- **SARIF rule catalogue was wrong.** Rules were emitted once per *finding*
+  rather than once per rule, and every result carried `"ruleIndex": 0` — so
+  fourteen findings became fourteen "rules" with all results attributed to the
+  first. Rules are now deduplicated and each result's index resolves to the
+  rule it names.
+- **Findings carried the wrong CWE.** `map_invariant_to_cwe` substring-matched
+  the invariant ID and fell back to `CWE-676 · Use of Potentially Dangerous
+  Function` for everything it did not recognise, which was most detectors
+  (e.g. `evm_oracle_spot_price` reported `CWE-676` instead of `CWE-807`). An
+  unmapped invariant now renders no taxonomy at all rather than a guess.
+- **`SecurityReport::generate_html` rendered no findings** — only a summary.
+  It now emits the findings table, with taxonomy badges and an empty state.
+- Added `security-severity` to SARIF rules; GitHub code scanning ranks on it,
+  and without it every Truent finding landed in the same bucket.
+
+### Fixed
+- Foundry test and script contracts (`*.t.sol`, `*.s.sol`) are never
+  deployed; the EVM analyzer no longer reports a `setUp()` harness as a
+  constructor race.
+- A Python heredoc inside a shell script is data the script writes, not a
+  handler it runs: application-layer detectors no longer read shell files
+  (permission and temp-file checks still do).
+- halmos witnesses wider than 64 bits were rounded through f64; they are now
+  kept exact and rendered as hex.
+- **RustSec advisory matching evaluated compound version ranges wrongly.**
+  `patched`/`unaffected` are TOML arrays of semver *requirements*, often
+  compound (`">= 0.8.4, < 0.9.0"`) and multi-line. The parser split them on
+  commas and collapsed them to `min(patched)`/`max(unaffected)`, so
+  `generic-array 0.14.7` was reported as vulnerable to RUSTSEC-2020-0146
+  (patched by `>= 0.13.3`) and `ring 0.17` matched an advisory whose
+  `unaffected` list is `>= 0.17`. Requirements are now kept and evaluated per
+  range (`>=`, `>`, `<=`, `<`, `=`, `^`, `~`, comma-conjunction); a version is
+  affected iff it satisfies none of them; `patched = []` with nothing
+  unaffected means every version. `truent deps` on Truent's own lockfile now
+  agrees with an independent audit: 0 vulnerabilities, 3 unmaintained crates.
+- `gen_web_debug_enabled` fired on `debug = true` in `Cargo.toml` profiles. It
+  is now scoped to Flask/Django settings (`DEBUG = True`, `app.run(debug=True)`)
+  and `.env` (`FLASK_DEBUG=1`, `DJANGO_DEBUG=True`).
+- `truent taxonomy --format markdown` omitted the general and supply-chain
+  sections, so `docs/COVERAGE.md` lagged the const table (130 of 134 rows).
+
+- **False positives, second pass: every analyzer, every chain.** The first pass
+  fixed the detectors that happened to fire on one example. This pass fixed
+  the *causes*, so the same class cannot recur:
+  - **Source is normalised once at each analyzer's entry point.** Comments and
+    string-literal contents are stripped before any detector runs
+    (`truent_core::text`), and each finding's snippet is restored to the
+    user's original line afterwards. Previously 32 of 34 EVM detector files —
+    and every Solana, Move and Soroban line detector — matched raw text, so
+    revert strings, doc comments and commented-out code raised findings.
+    Solana keeps only `/// CHECK:` lines, Anchor's one semantic annotation;
+    every other doc comment is prose.
+  - **Function bodies replace fixed windows.** Six EVM detectors and one Move
+    detector read a fixed 30–150 line window from a declaration, which bled
+    into whatever followed; they now read the brace-delimited body, and
+    `upgrade_path_verification` also resolves internal helpers so UUPS's
+    `_authorizeUpgrade` is seen.
+  - **Guards in modifiers and bodies are recognised.** `evm_missing_signer_check`,
+    `evm_public_relay` (which also had an operator-precedence bug making any
+    `external` function named `execute` a "permissionless relay"),
+    `move_access_control_missing`, and the shared IR rule on Move now see
+    `onlyRole(...)`, `onlySigner`, and `assert!(signer::address_of(..) == ..)`.
+  - **Design-level findings fire once, on evidence.** `move_admin_no_timelock`
+    fired on every line containing "admin"; `sol_treasury_single_authority` on
+    every line containing "vault" and "authority". Each now reports once, at
+    the operation that moves value, only when the module has no delay or
+    multisig.
+  - **Idioms are not bugs.** Two-step ownership (`acceptOwnership`) is not a
+    single-EOA admin; an `immutable` merkle root cannot be zero; a deployer-
+    fixed ERC-4626 `asset` is not a caller-supplied fee-on-transfer risk; a
+    role-gated token `mint` with no collateral is not a synthetic mint;
+    `Program<'info, System>` *is* the validated sysvar form; a `#[account(mut)]`
+    on an existing account has nothing to do with rent; `.expect("why")` on
+    checked arithmetic is Soroban's deliberate abort, not an unhandled panic.
+  - **`sol_missing_signer` never fired on real code.** It required `Account<`,
+    `mut` and an authority word on one line; Anchor puts `#[account(mut)]` on
+    the line above. It now checks authority-named fields for a `Signer` type
+    or `signer` constraint.
+- **Regression corpora for all four chains** (`crates/analyzer/*/tests/corpus/`).
+  `good/` programs must produce zero findings; `bad/` programs carry
+  `// EXPECT: <detector>` headers that must still fire; every finding must
+  point at a real line whose text it reports; every header must name a known
+  detector. Adding a case is dropping a file in.
+
+### Security
+
+- **Updated `anyhow` 1.0.102 → 1.0.104** for RUSTSEC-2026-0190, an unsoundness
+  in `Error::downcast_mut` categorised as memory-corruption. Truent never calls
+  that function, so exposure was transitive only, but the fix is a lockfile
+  bump within the existing `1.0` constraint.
+- **Replaced `serde_yaml` with `serde_yaml_ng`.** The skill runtime's YAML
+  parsing briefly pulled in `serde_yaml 0.9.34+deprecated`, which is
+  unmaintained (RUSTSEC-2024-0370); `serde_yaml_ng` is the maintained
+  drop-in fork. The lockfile now audits clean: zero vulnerabilities, with the
+  three remaining informational warnings (`derivative`, `paste`, `ring`) all
+  transitive through `alloy-primitives` and `rustls`.
+
+
+- **Fixed stored XSS in HTML reports.** `generate_html_report` interpolated the
+  scan target, invariant ID, severity and **file path** into the document
+  unescaped; only the finding message was escaped, and only for `<`/`>`. A
+  repository containing a file named `a"><img src=x onerror=...>.sol` therefore
+  produced an audit report that executed attacker markup when opened. All
+  values now go through `truent_report::html_escape` (previously private, now
+  exported so both HTML paths share one implementation). Covered by
+  `test_html_report_escapes_attacker_controlled_file_path`, which fails against
+  the old code.
+
 ## [0.4.0] - 2026-07-21 — Dynamic Execution: findings proved by running the code
 The headline change is that a finding no longer has to be taken on trust. Truent
 deploys the contract, drives adversarial sequences at it, and only reports a

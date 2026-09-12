@@ -36,23 +36,39 @@ pub use solana_unchecked_token_account::detect_unchecked_token_account_type;
 /// This is the single entry point the CLI should use for Solana analysis: each
 /// detector operates directly on raw source text, no syn/AST parse is required.
 pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Finding> {
-    let mut findings = detectors::detect_all(source, file_path);
+    // Line-based detectors see code only: string literals emptied and plain
+    // comments removed, so a `msg!("no signer check")` or a commented-out
+    // instruction cannot raise a finding. Only `/// CHECK:` lines are kept,
+    // because Anchor treats that annotation as semantic; other doc comments
+    // are prose. The semantic-model builder and
+    // the Anchor parser still receive the raw source.
+    // Multi-line raw strings are blanked first: a vulnerable fixture held
+    // in a `#[cfg(test)]` module is a string, not the program under test.
+    let without_raw = truent_core::text::strip_raw_strings(source);
+    let code = truent_core::text::normalize(
+        &without_raw,
+        truent_core::text::CommentPolicy::KeepCheckAnnotations,
+    );
+    let mut findings = detectors::detect_all(&code, file_path);
 
-    findings.extend(detect_solana_durable_nonce_validation(source, file_path));
-    findings.extend(detect_solana_pda_authority_validation(source, file_path));
-    findings.extend(detect_solana_rent_exemption(source, file_path));
-    findings.extend(detect_unchecked_token_account_type(source, file_path));
-    findings.extend(detect_fake_sysvar_instruction_account(source, file_path));
+    findings.extend(detect_solana_durable_nonce_validation(&code, file_path));
+    findings.extend(detect_solana_pda_authority_validation(&code, file_path));
+    findings.extend(detect_solana_rent_exemption(&code, file_path));
+    findings.extend(detect_unchecked_token_account_type(&code, file_path));
+    findings.extend(detect_fake_sysvar_instruction_account(&code, file_path));
 
     // Chain-agnostic shared-IR rule (Epic 6.1): flags privileged mutations
     // with no authorization guard, using the same rule EVM and Move share.
     // Best-effort: a source file the Anchor-account parser can't handle
     // simply contributes nothing from this rule rather than failing the scan.
-    if let Ok(model) = build_semantic_model(source, file_path) {
+    if let Ok(model) = build_semantic_model(&without_raw, file_path) {
         findings.extend(truent_ir::rules::find_unauthorized_privileged_mutations(
             &model,
         ));
     }
+
+    // Detectors recorded stripped text; report what the user wrote.
+    truent_core::text::restore_snippets(source, &mut findings);
 
     let mut seen = std::collections::HashSet::new();
     findings.retain(|f| seen.insert(f.dedup_key()));
