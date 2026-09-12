@@ -1,0 +1,25 @@
+[package]
+name = "truent-sca"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+description = "Truent: software composition analysis — lockfile parsing, advisory matching (OSV / RustSec), pinning checks and CycloneDX SBOM generation."
+
+keywords = ["truent", "sca", "sbom", "osv", "dependencies"]
+categories = ["development-tools"]
+readme = "README.md"
+
+[dependencies]
+truent-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+regex.workspace = true
+lazy_static.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

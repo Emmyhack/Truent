@@ -31,3 +31,20 @@ push_output.txt
 *.p12
 .aws/
 .kube/
+
+# --- truent harden ---
+.env.*
+!.env.example
+*.pfx
+*.jks
+id_rsa
+id_ed25519
+*.keystore
+credentials.json
+service-account*.json
+.netrc
+secrets.yml
+secrets.yaml
+
+# Cargo build output in nested crates (a stray `cargo bench` run left crates/cli/target)
+**/target/

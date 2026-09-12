@@ -56,12 +56,14 @@ jobs:
     needs: extract-version
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.extract-version.outputs.tag }}
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
 
       - name: Wait for crates.io availability
         run: |
@@ -115,13 +117,14 @@ jobs:
           - x86_64-pc-windows-msvc
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.extract-version.outputs.tag }}
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
+          toolchain: stable
           targets: ${{ matrix.target }}
 
       - name: Install cross (for cross-compilation)
@@ -158,7 +161,7 @@ jobs:
           fi
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: binary-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ steps.binary.outputs.name }}
@@ -171,17 +174,17 @@ jobs:
     needs: [extract-version, build-npm]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.extract-version.outputs.tag }}
 
       - name: Download all binary artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: ./binaries
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: https://registry.npmjs.org/
@@ -271,7 +274,7 @@ jobs:
           fi
 
       - name: Upload npm package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: npm-package
           path: truent-npm-${{ needs.extract-version.outputs.version }}.tgz
@@ -289,12 +292,12 @@ jobs:
         node-version: ["18", "20"]
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.node-version }}
 
       - name: Download npm package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: npm-package
 
@@ -312,22 +315,25 @@ jobs:
   publish-npm:
     name: Publish to npm Registry
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # npm --provenance: publishes a signed build attestation
     needs: [extract-version, test-npm]
     if: success()
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.extract-version.outputs.tag }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: https://registry.npmjs.org/
 
       - name: Download npm package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: npm-package
           path: ./
@@ -362,7 +368,7 @@ jobs:
           
           echo "Publishing @dextonicx/cli@$VERSION to npm..."
           
-          npm publish "$TARBALL" --access public
+          npm publish "$TARBALL" --access public --provenance
           
           echo "✓ Published to npm successfully"
 
@@ -400,12 +406,12 @@ jobs:
     if: success()
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.extract-version.outputs.tag }}
 
       - name: Update release notes
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const version = "${{ needs.extract-version.outputs.version }}";

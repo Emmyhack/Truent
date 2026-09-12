@@ -1,0 +1,11 @@
+[package]
+name = "example"
+version = "0.1.0"
+
+[profile.release]
+# Debug *info* for symbolicated crash reports; not application debug mode.
+debug = true
+strip = false
+
+[profile.dev]
+debug = true

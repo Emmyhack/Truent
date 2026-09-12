@@ -1,0 +1,55 @@
+{
+    "exitcode": 1,
+    "test_results": {
+        "test/Vault.t.sol:VaultTest": [
+            {
+                "name": "check_deposit_adds(uint256,uint256)",
+                "exitcode": 0,
+                "num_models": 0,
+                "models": [],
+                "num_paths": [
+                    2,
+                    1,
+                    0
+                ],
+                "time": [
+                    0.016653874947223812,
+                    0.0166450830292888,
+                    7.499998901039362e-06
+                ],
+                "num_bounded_loops": 0
+            },
+            {
+                "name": "check_total_never_wraps(uint256)",
+                "exitcode": 1,
+                "num_models": 1,
+                "models": [
+                    {
+                        "model": {
+                            "p_amount_uint256_a4bfd43_00": {
+                                "full_name": "p_amount_uint256_a4bfd43_00",
+                                "variable_name": "amount",
+                                "solidity_type": "uint256",
+                                "smt_type": "BitVec 256",
+                                "size_bits": 256,
+                                "value": 57896044618658097711785492504343953926634992332820282019728792003956564819968
+                            }
+                        },
+                        "is_valid": true
+                    }
+                ],
+                "num_paths": [
+                    2,
+                    1,
+                    0
+                ],
+                "time": [
+                    0.1116812500404194,
+                    0.006457958021201193,
+                    0.10522212501382455
+                ],
+                "num_bounded_loops": 0
+            }
+        ]
+    }
+}

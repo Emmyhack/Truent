@@ -200,6 +200,12 @@ impl SecurityReport {
                         "- **Location:** Line {}, Column {}\n",
                         finding.line, finding.col
                     ));
+                    report.push_str(&format!("- **Detector:** `{}`\n", finding.invariant_id));
+                    // Registry citations. A client triaging this report maps it
+                    // into their own tracker by CWE/SWC, not by our rule name.
+                    for (label, values) in taxonomy_lines(finding) {
+                        report.push_str(&format!("- **{}:** {}\n", label, values.join(", ")));
+                    }
                     report.push_str(&format!("- **Code:** {}\n", finding.snippet));
                     report.push('\n');
                 }
@@ -232,46 +238,141 @@ impl SecurityReport {
             "target_count": self.analyzed_targets.len(),
             "targets": self.analyzed_targets,
             "summary": self.executive_summary,
-            "findings": self.findings,
+            // Findings are serialized with their taxonomy attached rather than
+            // bare, so a consumer does not have to carry its own copy of the
+            // invariant-to-CWE mapping to make sense of the output.
+            "findings": self.findings.iter().map(|f| {
+                let mut v = serde_json::to_value(f).unwrap_or(serde_json::Value::Null);
+                if let (Some(obj), Some(t)) = (v.as_object_mut(), f.taxonomy()) {
+                    obj.insert("taxonomy".to_string(), serde_json::json!({
+                        "cwe": t.cwe.iter().map(|c| serde_json::json!({
+                            "id": c.id_str(), "name": c.name, "url": c.url()
+                        })).collect::<Vec<_>>(),
+                        "swc": t.swc.iter().map(|x| serde_json::json!({
+                            "id": x.id_str(), "title": x.title, "url": x.url()
+                        })).collect::<Vec<_>>(),
+                        "owasp_sc": t.owasp_sc.iter().map(|o| serde_json::json!({
+                            "id": o.id_str(), "title": o.title()
+                        })).collect::<Vec<_>>(),
+                        "dasp": t.dasp.iter().map(|d| serde_json::json!({
+                            "id": d.id_str(), "title": d.title()
+                        })).collect::<Vec<_>>(),
+                        "tags": t.tags(),
+                    }));
+                }
+                v
+            }).collect::<Vec<_>>(),
         });
 
         serde_json::to_string_pretty(&report).unwrap_or_else(|_| "{}".to_string())
     }
 
-    /// Generate HTML report, escaping any content that isn't a fixed literal
-    /// (title comes from the scan target and can contain attacker-chosen text).
+    /// Generate HTML report.
+    ///
+    /// Every interpolated value is escaped: the title comes from the scan
+    /// target, finding messages can quote contract source, and file paths are
+    /// chosen by whoever supplied the repository. A report is a document that
+    /// gets opened in a browser and forwarded to a client, so an unescaped
+    /// value here is stored XSS in an audit deliverable.
     fn generate_html(&self) -> String {
         let title = html_escape(&self.title);
         let timestamp = html_escape(&self.timestamp);
 
+        let rows = if self.findings.is_empty() {
+            "<tr><td colspan=\"5\" class=\"none\">No findings.</td></tr>".to_string()
+        } else {
+            self.findings
+                .iter()
+                .map(|f| {
+                    format!(
+                        "<tr><td><code>{}</code></td><td class=\"{}\">{}</td>\
+                         <td>{}:{}</td><td>{}</td><td>{}</td></tr>",
+                        html_escape(&f.invariant_id),
+                        f.severity.name().to_lowercase(),
+                        f.severity.name(),
+                        html_escape(&f.file),
+                        f.line,
+                        taxonomy_badges_html(f),
+                        html_escape(&f.message),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
+        };
+
         format!(
             r#"<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>{}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        .critical {{ color: red; font-weight: bold; }}
-        .high {{ color: orange; font-weight: bold; }}
-        .medium {{ color: #FFD700; }}
-        .low {{ color: blue; }}
-        table {{ border-collapse: collapse; width: 100%; }}
-        th, td {{ border: 1px solid black; padding: 8px; text-align: left; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+               margin: 20px; background: #f6f8fb; color: #24292e; }}
+        .container {{ max-width: 1200px; margin: 0 auto; background: #fff;
+                     padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }}
+        h1 {{ color: #0366d6; border-bottom: 2px solid #e1e4e8; padding-bottom: 10px; }}
+        table {{ border-collapse: collapse; width: 100%; margin-top: 12px; }}
+        th, td {{ border: 1px solid #e1e4e8; padding: 8px; text-align: left;
+                 vertical-align: top; font-size: 13px; }}
+        th {{ background: #f6f8fa; }}
+        .critical {{ color: #d73a49; font-weight: 600; }}
+        .high     {{ color: #e36209; font-weight: 600; }}
+        .medium   {{ color: #b08800; font-weight: 600; }}
+        .low      {{ color: #6f42c1; font-weight: 600; }}
+        .info     {{ color: #0366d6; font-weight: 600; }}
+        .none     {{ color: #22863a; font-weight: 600; text-align: center; }}
+        .tax {{ display: inline-block; background: #eef2f7; border: 1px solid #d6dde6;
+               border-radius: 4px; padding: 1px 6px; margin: 1px 2px 1px 0; font-size: 11px;
+               font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+               color: #3a4652; white-space: nowrap; }}
+        .timestamp {{ color: #6a737d; font-size: 12px; margin-top: 20px; }}
     </style>
 </head>
 <body>
-    <h1>{}</h1>
-    <p><strong>Generated:</strong> {}</p>
-    <h2>Summary</h2>
-    <p>Total Findings: {}</p>
-    <p>Risk Score: {:.1}/100.0</p>
+    <div class="container">
+        <h1>{title}</h1>
+        <p><strong>Generated:</strong> {timestamp}</p>
+
+        <h2>Summary</h2>
+        <ul>
+            <li><strong>Total Findings:</strong> {total}</li>
+            <li><strong>Critical:</strong> {critical}</li>
+            <li><strong>High:</strong> {high}</li>
+            <li><strong>Medium:</strong> {medium}</li>
+            <li><strong>Low:</strong> {low}</li>
+            <li><strong>Info:</strong> {info}</li>
+            <li><strong>Risk Score:</strong> {risk:.1}/100.0</li>
+        </ul>
+
+        <h2>Findings</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Invariant</th><th>Severity</th><th>Location</th>
+                    <th>Classification</th><th>Message</th>
+                </tr>
+            </thead>
+            <tbody>
+{rows}
+            </tbody>
+        </table>
+
+        <div class="timestamp">Generated by Truent</div>
+    </div>
 </body>
 </html>"#,
-            title,
-            title,
-            timestamp,
-            self.severity_stats.total(),
-            self.severity_stats.risk_score()
+            title = title,
+            timestamp = timestamp,
+            total = self.severity_stats.total(),
+            critical = self.severity_stats.critical,
+            high = self.severity_stats.high,
+            medium = self.severity_stats.medium,
+            low = self.severity_stats.low,
+            info = self.severity_stats.info,
+            risk = self.severity_stats.risk_score(),
+            rows = rows,
         )
     }
 
@@ -279,13 +380,24 @@ impl SecurityReport {
     /// in double quotes, internal quotes doubled) rather than naive comma
     /// stripping, so quotes/commas/newlines in a finding can't corrupt columns.
     fn generate_csv(&self) -> String {
-        let mut csv = "Severity,Vulnerability_ID,File,Line,Message\n".to_string();
+        let mut csv = "Severity,Vulnerability_ID,CWE,SWC,OWASP_SC,File,Line,Message\n".to_string();
 
         for finding in &self.findings {
+            let tax = finding.taxonomy();
+            let join = |pick: fn(&truent_core::Taxonomy) -> Vec<String>| -> String {
+                tax.map(pick).unwrap_or_default().join("; ")
+            };
             csv.push_str(&format!(
-                "{},{},{},{},{}\n",
+                "{},{},{},{},{},{},{},{}\n",
                 csv_escape(&format!("{:?}", finding.severity)),
                 csv_escape(&finding.invariant_id),
+                csv_escape(&join(|t| t.cwe.iter().map(|c| c.id_str()).collect())),
+                csv_escape(&join(|t| t.swc.iter().map(|x| x.id_str()).collect())),
+                csv_escape(&join(|t| t
+                    .owasp_sc
+                    .iter()
+                    .map(|o| o.id_str().to_string())
+                    .collect())),
                 csv_escape(&finding.file),
                 finding.line,
                 csv_escape(&finding.message)
@@ -296,14 +408,69 @@ impl SecurityReport {
     }
 }
 
+/// Registry citations for a finding, as `(label, values)` pairs.
+///
+/// Only registries that actually map the finding are returned — an unmapped
+/// invariant, or one from a chain a registry does not cover, yields nothing
+/// rather than an empty-looking "CWE: —" line.
+fn taxonomy_lines(finding: &Finding) -> Vec<(&'static str, Vec<String>)> {
+    let Some(t) = finding.taxonomy() else {
+        return Vec::new();
+    };
+    let mut out: Vec<(&'static str, Vec<String>)> = Vec::new();
+    if !t.cwe.is_empty() {
+        out.push(("CWE", t.cwe.iter().map(|c| c.label()).collect()));
+    }
+    if !t.swc.is_empty() {
+        out.push(("SWC", t.swc.iter().map(|x| x.label()).collect()));
+    }
+    if !t.owasp_sc.is_empty() {
+        out.push((
+            "OWASP Smart Contract Top 10",
+            t.owasp_sc.iter().map(|o| o.label()).collect(),
+        ));
+    }
+    if !t.dasp.is_empty() {
+        out.push(("DASP", t.dasp.iter().map(|d| d.label()).collect()));
+    }
+    out
+}
+
 /// Escape a single CSV field per RFC 4180: always quote, and double any
 /// embedded quote characters. Safe regardless of commas/quotes/newlines.
 fn csv_escape(field: &str) -> String {
     format!("\"{}\"", field.replace('"', "\"\""))
 }
 
+/// Render a finding's registry citations as HTML badges.
+///
+/// Empty when the invariant has no mapping, so the cell is blank rather than
+/// asserting a weakness class Truent cannot stand behind.
+fn taxonomy_badges_html(finding: &Finding) -> String {
+    taxonomy_lines(finding)
+        .into_iter()
+        .flat_map(|(_, values)| values)
+        .map(|label| {
+            // Labels read "CWE-841 · Name"; the badge shows the ID and the
+            // tooltip carries the full name.
+            let id = label.split(' ').next().unwrap_or(&label).to_string();
+            format!(
+                "<span class=\"tax\" title=\"{}\">{}</span>",
+                html_escape(&label),
+                html_escape(&id)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Escape a string for safe interpolation into HTML text content.
-fn html_escape(s: &str) -> String {
+///
+/// Public because the CLI builds its own HTML report and needs the same
+/// escaping. Every value that reaches an HTML report is attacker-influenceable
+/// — a scan target is a path the user chose, a finding message can quote
+/// contract source, and reports get shared.
+pub fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
@@ -314,6 +481,151 @@ fn html_escape(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Build a one-finding report for the given invariant.
+    fn report_for(invariant_id: &str) -> SecurityReport {
+        SecurityReport::new(
+            "Test Report".to_string(),
+            vec!["Vault.sol".to_string()],
+            vec![Finding::new(
+                invariant_id.to_string(),
+                Severity::Critical,
+                "Vault.sol".to_string(),
+                42,
+                0,
+                "Reentrancy in withdraw".to_string(),
+                "code".to_string(),
+            )],
+            "summary".to_string(),
+        )
+    }
+
+    #[test]
+    fn json_report_carries_structured_taxonomy() {
+        let json = report_for("evm_reentrancy_classic").generate(ReportFormat::Json);
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let tax = &v["findings"][0]["taxonomy"];
+
+        assert_eq!(tax["cwe"][0]["id"], "CWE-841");
+        assert_eq!(
+            tax["cwe"][0]["url"],
+            "https://cwe.mitre.org/data/definitions/841.html"
+        );
+        assert_eq!(tax["swc"][0]["id"], "SWC-107");
+        assert_eq!(tax["owasp_sc"][0]["id"], "SC05");
+        assert_eq!(tax["dasp"][0]["id"], "DASP-1");
+    }
+
+    #[test]
+    fn json_report_omits_taxonomy_when_unmapped() {
+        // A user-authored .sinv rule has no mapping. The key must be absent
+        // rather than present-and-empty, so a consumer cannot read an empty
+        // CWE list as "no weakness class applies".
+        let json = report_for("my_custom_sinv_rule").generate(ReportFormat::Json);
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(v["findings"][0]["taxonomy"].is_null());
+    }
+
+    #[test]
+    fn csv_report_has_taxonomy_columns() {
+        let csv = report_for("evm_reentrancy_classic").generate(ReportFormat::Csv);
+        let mut lines = csv.lines();
+        assert_eq!(
+            lines.next().unwrap(),
+            "Severity,Vulnerability_ID,CWE,SWC,OWASP_SC,File,Line,Message"
+        );
+        let row = lines.next().unwrap();
+        assert!(row.contains("CWE-841; CWE-663"), "row was: {row}");
+        assert!(row.contains("SWC-107"));
+        assert!(row.contains("SC05"));
+    }
+
+    #[test]
+    fn csv_taxonomy_columns_are_empty_not_missing_when_unmapped() {
+        // Column count must stay constant or the CSV misaligns downstream.
+        let csv = report_for("my_custom_sinv_rule").generate(ReportFormat::Csv);
+        let header_cols = csv.lines().next().unwrap().split(',').count();
+        let row_cols = csv.lines().nth(1).unwrap().split(',').count();
+        assert_eq!(header_cols, row_cols);
+    }
+
+    #[test]
+    fn markdown_report_cites_registries() {
+        let md = report_for("evm_reentrancy_classic").generate(ReportFormat::Markdown);
+        assert!(md.contains("**Detector:** `evm_reentrancy_classic`"));
+        assert!(md.contains("CWE-841 · Improper Enforcement of Behavioral Workflow"));
+        assert!(md.contains("SWC-107 · Reentrancy"));
+        assert!(md.contains("**OWASP Smart Contract Top 10:** SC05 · Reentrancy Attacks"));
+        assert!(md.contains("DASP-1 · Reentrancy"));
+    }
+
+    #[test]
+    fn markdown_report_omits_registry_lines_when_unmapped() {
+        let md = report_for("my_custom_sinv_rule").generate(ReportFormat::Markdown);
+        assert!(md.contains("**Detector:** `my_custom_sinv_rule`"));
+        assert!(!md.contains("**CWE:**"), "must not invent a weakness class");
+    }
+
+    #[test]
+    fn html_report_renders_findings_with_taxonomy() {
+        // Before this, generate_html emitted only a summary — a "report" with
+        // no findings in it.
+        let html = report_for("evm_reentrancy_classic").generate(ReportFormat::Html);
+        assert!(html.contains("<th>Classification</th>"));
+        assert!(html.contains("evm_reentrancy_classic"));
+        assert!(html.contains("Vault.sol:42"));
+        assert!(html.contains(r#"class="tax""#));
+        assert!(html.contains(">CWE-841<"), "badge should show the bare ID");
+        assert!(
+            html.contains("Improper Enforcement of Behavioral Workflow"),
+            "tooltip should carry the full weakness name"
+        );
+        assert!(html.contains(">SWC-107<"));
+    }
+
+    #[test]
+    fn html_report_shows_an_empty_state_rather_than_an_empty_table() {
+        let empty = SecurityReport::new(
+            "Clean".to_string(),
+            vec!["Vault.sol".to_string()],
+            vec![],
+            "no issues".to_string(),
+        );
+        let html = empty.generate(ReportFormat::Html);
+        assert!(html.contains("No findings."));
+    }
+
+    #[test]
+    fn html_report_escapes_finding_fields() {
+        // File paths and messages both reach the HTML and are both
+        // attacker-influenceable. The old generator rendered neither, so
+        // nothing covered this.
+        let mut report = report_for("evm_reentrancy_classic");
+        report.findings[0].file = r#"a"><img src=x onerror=alert(1)>.sol"#.to_string();
+        report.findings[0].message = "<script>alert('xss')</script>".to_string();
+
+        let html = report.generate(ReportFormat::Html);
+        assert!(
+            !html.contains("<img src=x onerror="),
+            "file path was not escaped:\n{html}"
+        );
+        assert!(
+            !html.contains("<script>alert('xss')</script>"),
+            "message was not escaped:\n{html}"
+        );
+        assert!(html.contains("&lt;img src=x onerror=alert(1)&gt;"));
+        assert!(html.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn html_report_omits_badges_for_unmapped_invariants() {
+        let html = report_for("my_custom_sinv_rule").generate(ReportFormat::Html);
+        assert!(html.contains("my_custom_sinv_rule"));
+        assert!(
+            !html.contains(r#"class="tax""#),
+            "must not invent a classification"
+        );
+    }
 
     #[test]
     fn severity_stats_from_findings() {

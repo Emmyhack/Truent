@@ -93,7 +93,11 @@ fn analyze_function(method: &syn::ImplItemFn, source: &str) -> ContractFunction 
     let has_raw_arithmetic = body.contains('+') || body.contains('-') || body.contains('*');
     let uses_unchecked_arithmetic = has_raw_arithmetic && !has_checked_math;
 
-    let unwrap_count = body.matches(".unwrap(").count() + body.matches(".expect(").count();
+    // Only a *bare* `.unwrap()` is reported. `.expect("overflow")` on a
+    // checked-arithmetic result is the Soroban idiom for a deliberate abort —
+    // the equivalent of `require` — and counting it flagged every correctly
+    // written token.
+    let unwrap_count = body.matches(".unwrap(").count();
 
     let writes_persistent_storage =
         body.contains("persistent()") && (body.contains(".set(") || body.contains(".remove("));

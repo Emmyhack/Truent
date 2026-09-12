@@ -1,6 +1,37 @@
 ---
 name: truent-recon
 description: "Pre-audit reconnaissance for a smart-contract codebase. Produces a recon report (overview, threat model, entry points, synthesized invariants, git-history risk map, test/coverage gaps, and a prioritized audit plan) — and, unlike a report-only recon, feeds the synthesized invariants straight into Truent's engine to auto-check them. Multi-chain. Triggers on 'truent recon', 'pre-audit', 'audit readiness', 'readiness report', 'prep this protocol', 'map this codebase', 'where should I audit'."
+license: MIT
+metadata:
+  version: "0.1.0"
+  author: geekstrancend
+  homepage: https://github.com/geekstrancend/Truent
+  domain: smart-contract-security
+  subdomain: reconnaissance
+  chains:
+    - evm
+    - solana
+    - move
+    - soroban
+  requires:
+    - "truent >= 0.6.0"
+  taxonomy:
+    - CWE
+    - SWC
+    - OWASP-SC-Top-10-2025
+    - DASP
+  tags:
+    - smart-contract
+    - pre-audit
+    - threat-model
+    - recon
+    - invariants
+    - git-history
+    - attack-surface
+    - evm
+    - solana
+    - move
+    - soroban
 ---
 
 # Truent Recon

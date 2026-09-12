@@ -1,6 +1,38 @@
 ---
 name: truent-audit
 description: "Deterministic-first smart-contract security audit. Runs Truent's compiled engine (static analysis + dynamic invariant fuzzing with real EVM execution) for machine-verified, reproducible findings, then amplifies coverage with specialized LLM attacker lenses whose findings are verified back through the engine before they are reported. Multi-chain: EVM, Solana, Move, Soroban. Triggers on 'truent audit', 'audit this contract', 'security review', 'check for vulnerabilities', 'review for security'."
+license: MIT
+metadata:
+  version: "0.1.0"
+  author: geekstrancend
+  homepage: https://github.com/geekstrancend/Truent
+  domain: smart-contract-security
+  subdomain: audit
+  chains:
+    - evm
+    - solana
+    - move
+    - soroban
+  requires:
+    - "truent >= 0.6.0"
+  taxonomy:
+    - CWE
+    - SWC
+    - OWASP-SC-Top-10-2025
+    - DASP
+  tags:
+    - smart-contract
+    - audit
+    - security-review
+    - evm
+    - solana
+    - move
+    - soroban
+    - static-analysis
+    - invariant-fuzzing
+    - reentrancy
+    - access-control
+    - oracle
 ---
 
 # Truent Audit

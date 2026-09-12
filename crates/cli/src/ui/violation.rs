@@ -19,8 +19,18 @@ pub struct Violation {
     pub invariant_id: String,
     /// File and line location (e.g., "Token.sol:142")
     pub location: String,
-    /// CWE ID and description (e.g., "CWE-841 · Description")
-    pub cwe: String,
+    /// CWE ID and description (e.g., "CWE-841 · Improper Enforcement of
+    /// Behavioral Workflow"), or `None` for an invariant with no mapping —
+    /// a user-authored `.sinv` rule. Rendered as an omitted line rather than
+    /// a guessed class.
+    pub cwe: Option<String>,
+    /// SWC Registry entries. Always empty for non-EVM chains: SWC is a
+    /// Solidity registry, and citing it on a Move finding would be fabricated.
+    pub swc: Vec<String>,
+    /// OWASP Smart Contract Top 10 (2025) categories.
+    pub owasp_sc: Vec<String>,
+    /// DASP Top 10 categories.
+    pub dasp: Vec<String>,
     /// Detailed description of the vulnerability
     pub message: String,
     /// Recommendation for fixing the issue
@@ -32,6 +42,26 @@ pub struct Violation {
     /// How strongly this result is supported: proven by execution, or a
     /// heuristic lead that has not been demonstrated.
     pub evidence: truent_core::Evidence,
+    /// Source file (or URL / `host:port` for runtime findings), separately
+    /// from the display `location`, so consumers never have to parse it.
+    pub file: String,
+    /// 1-based line; runtime findings report 1.
+    pub line: usize,
+    /// Engine that produced it: `evm`, `solana`, `move`, `soroban`,
+    /// `general`, `supply-chain`, `runtime`.
+    pub chain: Option<String>,
+    /// Exploitability rating: `likely`, `possible`, `unlikely`, `theoretical`.
+    pub exploitability: Option<String>,
+    /// Why it was rated that way.
+    pub exploit_reasons: Vec<String>,
+    /// The change that closes the weakness, from the exposure table.
+    pub fix: Option<String>,
+    /// How to show the fix landed.
+    pub verify: Option<String>,
+    /// MITRE ATT&CK technique ids.
+    pub attack: Vec<String>,
+    /// NIST CSF 2.0 subcategory ids.
+    pub nist_csf: Vec<String>,
 }
 
 /// Render a single violation panel with bordered box.
@@ -116,10 +146,24 @@ pub fn render_violation(violation: &Violation, width: usize) -> String {
     let location_line = format!("{}  {}", location_label, color_value(&violation.location));
     output.push_str(&format!("{}\n", box_line(&location_line, width)));
 
-    // CWE line
-    let cwe_label = color_dim("CWE");
-    let cwe_line = format!("{}  {}", cwe_label, color_value(&violation.cwe));
-    output.push_str(&format!("{}\n", box_line(&cwe_line, width)));
+    // Taxonomy lines — CWE, SWC, OWASP SC, DASP. Each is omitted entirely
+    // when the invariant has no honest mapping for that registry, so a reader
+    // never sees a citation the engine cannot stand behind.
+    if let Some(cwe) = &violation.cwe {
+        let cwe_line = format!("{}  {}", color_dim("CWE"), color_value(cwe));
+        output.push_str(&format!("{}\n", box_line(&cwe_line, width)));
+    }
+    for (label, values) in [
+        ("SWC", &violation.swc),
+        ("OWASP", &violation.owasp_sc),
+        ("DASP", &violation.dasp),
+    ] {
+        if values.is_empty() {
+            continue;
+        }
+        let line = format!("{}  {}", color_dim(label), color_value(&values.join(", ")));
+        output.push_str(&format!("{}\n", box_line(&line, width)));
+    }
 
     // Empty line
     output.push_str(&format!("{}\n", empty_box_line(width)));
@@ -226,12 +270,24 @@ mod tests {
             title: "Test Vulnerability".to_string(),
             invariant_id: "test_invariant".to_string(),
             location: "test.sol:42".to_string(),
-            cwe: "CWE-123 · Test CWE".to_string(),
+            cwe: Some("CWE-123 · Test CWE".to_string()),
+            swc: vec!["SWC-107 · Reentrancy".to_string()],
+            owasp_sc: vec!["SC05 · Reentrancy Attacks".to_string()],
+            dasp: vec!["DASP-1 · Reentrancy".to_string()],
             message: "This is a test message".to_string(),
             recommendation: "Fix this issue".to_string(),
             reference: "https://docs.example.com".to_string(),
             code_snippet: "    42 | function transfer() public { }".to_string(),
             evidence: truent_core::Evidence::Lead,
+            file: String::new(),
+            line: 1,
+            chain: None,
+            exploitability: None,
+            exploit_reasons: Vec::new(),
+            fix: None,
+            verify: None,
+            attack: Vec::new(),
+            nist_csf: Vec::new(),
         };
 
         let rendered = render_violation(&violation, 80);
@@ -263,12 +319,24 @@ mod tests {
                 title: "Test".to_string(),
                 invariant_id: "test".to_string(),
                 location: "test.sol:1".to_string(),
-                cwe: "CWE-1".to_string(),
+                cwe: Some("CWE-1".to_string()),
+                swc: Vec::new(),
+                owasp_sc: Vec::new(),
+                dasp: Vec::new(),
                 message: "msg".to_string(),
                 recommendation: "fix".to_string(),
                 reference: "ref".to_string(),
                 code_snippet: String::new(),
                 evidence: truent_core::Evidence::Lead,
+                file: String::new(),
+                line: 1,
+                chain: None,
+                exploitability: None,
+                exploit_reasons: Vec::new(),
+                fix: None,
+                verify: None,
+                attack: Vec::new(),
+                nist_csf: Vec::new(),
             };
 
             let rendered = render_violation(&violation, 80);
@@ -286,12 +354,24 @@ mod tests {
                 title: "Issue 1".to_string(),
                 invariant_id: "inv1".to_string(),
                 location: "file.sol:1".to_string(),
-                cwe: "CWE-1".to_string(),
+                cwe: Some("CWE-1".to_string()),
+                swc: Vec::new(),
+                owasp_sc: Vec::new(),
+                dasp: Vec::new(),
                 message: "msg1".to_string(),
                 recommendation: "fix1".to_string(),
                 reference: "ref1".to_string(),
                 code_snippet: String::new(),
                 evidence: truent_core::Evidence::Lead,
+                file: String::new(),
+                line: 1,
+                chain: None,
+                exploitability: None,
+                exploit_reasons: Vec::new(),
+                fix: None,
+                verify: None,
+                attack: Vec::new(),
+                nist_csf: Vec::new(),
             },
             Violation {
                 index: 2,
@@ -300,12 +380,24 @@ mod tests {
                 title: "Issue 2".to_string(),
                 invariant_id: "inv2".to_string(),
                 location: "file.sol:2".to_string(),
-                cwe: "CWE-2".to_string(),
+                cwe: Some("CWE-2".to_string()),
+                swc: Vec::new(),
+                owasp_sc: Vec::new(),
+                dasp: Vec::new(),
                 message: "msg2".to_string(),
                 recommendation: "fix2".to_string(),
                 reference: "ref2".to_string(),
                 code_snippet: String::new(),
                 evidence: truent_core::Evidence::Lead,
+                file: String::new(),
+                line: 1,
+                chain: None,
+                exploitability: None,
+                exploit_reasons: Vec::new(),
+                fix: None,
+                verify: None,
+                attack: Vec::new(),
+                nist_csf: Vec::new(),
             },
         ];
 

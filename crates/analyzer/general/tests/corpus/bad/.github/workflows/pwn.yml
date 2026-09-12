@@ -1,0 +1,15 @@
+# EXPECT: gen_ci_pwn_request
+# EXPECT: gen_ci_script_injection
+# EXPECT: gen_ci_unpinned_action
+name: PR
+on:
+  pull_request_target:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: someone/setup-tool@main
+      - run: echo "Building ${{ github.event.pull_request.title }}" && npm ci && npm test

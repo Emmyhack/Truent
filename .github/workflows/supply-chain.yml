@@ -1,0 +1,116 @@
+# Supply-chain evidence and the self-gate: an SBOM for every build, the
+# Sigma detection rule validated, and Truent's own release checklist run
+# against Truent — strict on main.
+name: supply-chain
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  sbom:
+    name: SBOM (CycloneDX) + dependency findings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - run: cargo build --release --bin truent
+      - name: Advisory database (RustSec + OSV)
+        run: git clone --depth 1 https://github.com/rustsec/advisory-db.git /tmp/advdb
+      - name: SBOM and dependency analysis
+        run: ./target/release/truent deps . --advisory-db /tmp/advdb --sbom sbom.cdx.json --fail-on high
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom
+          path: sbom.cdx.json
+
+  detection-rules:
+    name: Validate Sigma detection rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: pip install "sigma-cli==1.0.4"
+      - name: sigma check (syntax + schema of every rule under security/alerts)
+        run: sigma check security/alerts/
+
+  web-dast:
+    name: DAST — build the web dashboard, serve it, probe it
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://u:p@127.0.0.1:5999/nodb   # build/serve only; no query runs
+      NEXTAUTH_SECRET: ci-build-only-not-a-secret
+      NEXTAUTH_URL: http://127.0.0.1:3111
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - run: cargo build --release --bin truent
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: cd web && npm ci --ignore-scripts && npx prisma generate && npx next build
+      - name: Serve and probe
+        run: |
+          (cd web && npx next start -p 3111 > /tmp/web.log 2>&1 &)
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3111/ && break; sleep 1; done
+          ./target/release/truent probe http://127.0.0.1:3111 --authorized --ports none --format json --fail-on critical > probe-web.json
+          ./target/release/truent probe http://127.0.0.1:3111 --authorized --ports none --fail-on critical || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: probe-web
+          path: probe-web.json
+
+  release-check:
+    name: Truent's own release checklist
+    needs: [web-dast]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - run: cargo build --release --bin truent
+      - run: git clone --depth 1 https://github.com/rustsec/advisory-db.git /tmp/advdb
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: probe-web
+      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: pip install "halmos==0.3.3"
+      - name: Symbolic execution report (the example's counterexample is expected and accepted)
+        run: ./target/release/truent symbolic examples/foundry --format json --out symbolic.json || true
+      - name: Scan with SARIF for code scanning
+        run: ./target/release/truent scan . --chain auto --sarif truent.sarif --output json > /dev/null || true
+      - uses: github/codeql-action/upload-sarif@f09c1c0a94de965c15400f5634aa42fac8fb8f88 # v3
+        if: always()
+        with:
+          sarif_file: truent.sarif
+      - name: release-check (strict on main; report on PRs)
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then STRICT=--strict; else STRICT=; fi
+          ./target/release/truent release-check . --advisory-db /tmp/advdb --probe-report probe-web.json --symbolic-report symbolic.json --out release-check.md $STRICT
+          head -60 release-check.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: release-check
+          path: release-check.md

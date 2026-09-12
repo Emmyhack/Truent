@@ -13,56 +13,91 @@ use regex::Regex;
 use truent_core::Finding;
 
 lazy_static! {
-    static ref ACCOUNT_MUT: Regex =
-        Regex::new(r"(?i)account_info.*is_signer\s*=|#\[account\(mut\)\]|AccountInfo.*mut")
-            .unwrap();
+    /// Where lamports are created or drained by hand.
+    static ref RENT_SENSITIVE_OP: Regex = Regex::new(
+        r"(?i)create_account(_with_seed)?\s*\(|try_borrow_mut_lamports\s*\(\s*\)\s*\??\s*-=|\.lamports\s*\(\s*\)\s*-|sub_lamports\s*\("
+    ).unwrap();
     static ref RENT_EXEMPT_CHECK: Regex =
-        Regex::new(r"(?i)rent\.is_exempt|lamports.*?\>=.*?rent|rent_exempt").unwrap();
-    static ref TRANSFER_TO_ACCOUNT: Regex =
-        Regex::new(r"(?i)transfer_with_seed|rent\.minimum_balance").unwrap();
+        Regex::new(r"(?i)rent\.is_exempt|minimum_balance|rent_exempt|Rent::get").unwrap();
 }
 
 pub fn detect_solana_rent_exemption(source: &str, file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
+    let lines: Vec<&str> = source.lines().collect();
 
-    for (line_num, line) in source.lines().enumerate() {
-        if line.trim().starts_with("//") || !ACCOUNT_MUT.is_match(line) {
+    // Rent only matters where lamports are created or drained by hand.
+    // Anchor's `init` allocates a rent-exempt account itself, and a plain
+    // `#[account(mut)]` on an existing account has nothing to do with rent —
+    // the old check fired on every one of those, and looked for the rent
+    // check in a 100-line window that bled into unrelated code.
+    for (line_num, line) in lines.iter().enumerate() {
+        if !RENT_SENSITIVE_OP.is_match(line) {
+            continue;
+        }
+        let body = enclosing_body(&lines, line_num);
+        if RENT_EXEMPT_CHECK.is_match(&body) {
             continue;
         }
 
-        let context_end = std::cmp::min(line_num + 100, source.lines().count());
-        let function_body = source
-            .lines()
-            .skip(line_num)
-            .take(context_end - line_num)
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        let has_rent_check = RENT_EXEMPT_CHECK.is_match(&function_body);
-
-        if !has_rent_check {
-            findings.push(
-                Finding::new(
-                    "sol_rent_exemption_check".to_string(),
-                    truent_core::Severity::Medium,
-                    file_path.to_string(),
-                    line_num + 1,
-                    0,
-                    "Mutable account lacks rent exemption validation. Verify: rent.is_exempt(lamports, account_size)".to_string(),
-                    line.trim().to_string(),
-                )
-                .with_metadata("exploit_id".to_string(), "H55".to_string())
-                .with_metadata("exploit_name".to_string(), "Solana Rent Exemption".to_string())
-                .with_metadata("loss".to_string(), "$6.7M".to_string())
-                .with_metadata("year".to_string(), "2023".to_string())
-                .with_metadata("vulnerability_type".to_string(), "rent_violation".to_string())
-                .with_metadata("detector".to_string(), "pattern_analysis".to_string())
-                .with_metadata("remediation".to_string(), "Add rent.is_exempt(account.lamports(), account.data.len())".to_string()),
-            );
-        }
+        findings.push(
+            Finding::new(
+                "sol_rent_exemption_check".to_string(),
+                truent_core::Severity::Medium,
+                file_path.to_string(),
+                line_num + 1,
+                0,
+                "Lamports are created or withdrawn by hand with no rent-exemption check: an \
+                 account left below the rent-exempt minimum can be garbage-collected, losing \
+                 its state"
+                    .to_string(),
+                line.trim().to_string(),
+            )
+            .with_metadata("exploit_id".to_string(), "H55".to_string())
+            .with_metadata(
+                "exploit_name".to_string(),
+                "Solana Rent Exemption".to_string(),
+            )
+            .with_metadata(
+                "vulnerability_type".to_string(),
+                "rent_violation".to_string(),
+            )
+            .with_metadata("detector".to_string(), "pattern_analysis".to_string())
+            .with_metadata(
+                "remediation".to_string(),
+                "Check Rent::get()?.minimum_balance(len) before creating or draining".to_string(),
+            ),
+        );
     }
 
     findings
+}
+
+/// The brace-delimited function containing `line_idx`, walking back to its
+/// declaration and forward to its closing brace.
+fn enclosing_body(lines: &[&str], line_idx: usize) -> String {
+    // No enclosing declaration (a bare snippet): the whole text is the body,
+    // so a guard on the line *above* the operation is still seen.
+    let Some(start) = (0..=line_idx)
+        .rev()
+        .find(|&i| lines[i].contains("fn ") && lines[i].contains('('))
+    else {
+        return lines.join("\n");
+    };
+    let mut depth: i32 = 0;
+    let mut opened = false;
+    let mut out: Vec<&str> = Vec::new();
+    for l in lines.iter().skip(start) {
+        out.push(l);
+        depth += l.matches('{').count() as i32;
+        if depth > 0 {
+            opened = true;
+        }
+        depth -= l.matches('}').count() as i32;
+        if opened && depth <= 0 {
+            break;
+        }
+    }
+    out.join("\n")
 }
 
 #[cfg(test)]
@@ -70,13 +105,46 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_no_rent_check() {
-        let vulnerable = r#"
+    fn a_mutable_existing_account_is_not_a_rent_finding() {
+        // This test used to assert the opposite. A `#[account(mut)]` on an
+        // account that already exists has nothing to do with rent — the
+        // runtime keeps existing accounts rent-exempt — and reporting every
+        // one of them fired on every Anchor program in existence.
+        let existing = r#"
         #[account(mut)]
         pub user_account: AccountInfo<'info>,
         "#;
+        let findings = detect_solana_rent_exemption(existing, "test.rs");
+        assert!(findings.is_empty(), "{findings:?}");
+    }
+
+    #[test]
+    fn creating_an_account_without_minimum_balance_is_flagged() {
+        // Rent matters where lamports are created or drained by hand.
+        let vulnerable = r#"
+        pub fn make(ctx: Context<Make>, size: u64) -> Result<()> {
+            system_program::create_account(
+                CpiContext::new(ctx.accounts.system_program.to_account_info(), cpi),
+                1_000,
+                size,
+                &program_id,
+            )?;
+            Ok(())
+        }
+        "#;
         let findings = detect_solana_rent_exemption(vulnerable, "test.rs");
         assert!(!findings.is_empty());
+    }
+
+    #[test]
+    fn draining_lamports_without_a_rent_check_is_flagged() {
+        let vulnerable = r#"
+        pub fn drain(ctx: Context<Drain>, amount: u64) -> Result<()> {
+            **ctx.accounts.vault.to_account_info().try_borrow_mut_lamports()? -= amount;
+            Ok(())
+        }
+        "#;
+        assert!(!detect_solana_rent_exemption(vulnerable, "test.rs").is_empty());
     }
 
     #[test]

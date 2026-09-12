@@ -38,19 +38,29 @@ pub fn render_doctor_results(checks: &[HealthCheck]) -> String {
     output.push_str(&format!("{}\n", divider(width)));
     output.push('\n');
 
-    // Health checks
+    // Health checks.
+    //
+    // The component column is padded to the widest name rather than by a fixed
+    // run of spaces: the literal-padding version left the message column
+    // ragged, since component names differ in length.
+    let name_width = checks
+        .iter()
+        .map(|c| c.component.chars().count())
+        .max()
+        .unwrap_or(0);
+
     let mut all_passed = true;
     for check in checks {
         if check.passed {
             output.push_str(&format!(
-                "{}  {}                     {}\n",
+                "{}  {:<name_width$}  {}\n",
                 color_success(ICON_PASS),
                 check.component,
                 check.message
             ));
         } else {
             output.push_str(&format!(
-                "{}  {}                     {}\n",
+                "{}  {:<name_width$}  {}\n",
                 color_failure(ICON_CRITICAL),
                 check.component,
                 check.message

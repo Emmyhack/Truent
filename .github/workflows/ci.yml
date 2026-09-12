@@ -18,13 +18,14 @@ jobs:
     name: Format Check (Strict)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
+          toolchain: stable
           components: rustfmt
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -34,13 +35,14 @@ jobs:
     name: Clippy Lint (Strict)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
+          toolchain: stable
           components: clippy
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Run clippy strict
         run: cargo clippy --all --all-targets --all-features -- -D warnings -D clippy::all
@@ -50,9 +52,11 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
       - name: Install cargo-audit
         run: cargo install cargo-audit
@@ -72,13 +76,13 @@ jobs:
         rust: [stable]
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           toolchain: ${{ matrix.rust }}
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Run unit tests
         run: cargo test --lib --all --verbose
@@ -92,13 +96,13 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           toolchain: beta
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Run unit tests
         run: cargo test --lib --all --verbose
@@ -112,11 +116,13 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Run property tests
         run: cargo test --tests --verbose
@@ -127,11 +133,13 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Run security tests
         run: cargo test --tests --verbose
@@ -141,11 +149,13 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Run integration tests
         run: cargo test --tests --verbose
@@ -155,11 +165,13 @@ jobs:
     name: CLI Behavior Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Build CLI
         run: cargo build --release --bin truent
@@ -204,11 +216,13 @@ jobs:
           - os: windows-latest
             bin: ./target/release/truent.exe
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Build release binary
         run: cargo build --release --bin truent
@@ -250,11 +264,13 @@ jobs:
     name: Code Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
@@ -263,18 +279,20 @@ jobs:
         run: cargo tarpaulin --all --out Xml --timeout 300
         
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
           
   # Benchmark smoke test
   benchmark:
     name: Benchmark Smoke Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Run benchmark smoke test
         run: cargo bench --no-run
@@ -284,11 +302,13 @@ jobs:
     name: Determinism Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Run tests multiple times (determinism)
         run: |
@@ -316,11 +336,13 @@ jobs:
             artifact_name: truent.exe
             asset_name: truent-windows-x86_64.exe
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
       
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       
       - name: Build release
         run: cargo build --release --bin truent --verbose
@@ -330,18 +352,95 @@ jobs:
         run: strip target/release/${{ matrix.artifact_name }}
         
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ matrix.asset_name }}
           path: target/release/${{ matrix.artifact_name }}
           retention-days: 30
           
+  # Skills are shipped to agent platforms as-is. A malformed SKILL.md does not
+  # error at load time — it just stops being selected — so it has to be caught
+  # here or not at all.
+  skills:
+    name: Agent Skills
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      # Frontmatter validity, name/directory agreement, description quality,
+      # VERSION agreement, and referenced-file existence.
+      - name: Validate SKILL.md frontmatter
+        run: python3 tools/validate_skills.py
+
+      # index.json is generated. A PR that edits a description must regenerate
+      # it, or discovery tooling serves the old text.
+      - name: Check skills/index.json is current
+        run: python3 tools/validate_skills.py --check
+
+      # Plugin manifests gate installation; a JSON syntax error makes the
+      # whole marketplace entry unloadable.
+      #
+      # plugin.json is also load-bearing at runtime: truent-skills uses
+      # `name == "truent"` in it to decide whether a `skills/` directory is
+      # really Truent's, and therefore whether its skills may be labelled
+      # ENGINE-BACKED. Renaming it would silently drop the built-ins.
+      - name: Validate plugin manifests
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          plugin = json.load(open('.claude-plugin/plugin.json'))
+          market = json.load(open('.claude-plugin/marketplace.json'))
+          if plugin.get('name') != 'truent':
+              sys.exit("plugin.json name must be 'truent' — truent-skills uses it "
+                       "as the marker for ENGINE-BACKED built-ins")
+          names = {p.get('name') for p in market.get('plugins', [])}
+          if 'truent' not in names:
+              sys.exit("marketplace.json must list a plugin named 'truent'")
+          print("OK: plugin manifests valid, name marker intact")
+          PY
+
+  # docs/COVERAGE.md is generated from the taxonomy table in truent-core.
+  # The table itself is guarded by unit tests (every detector must be mapped,
+  # and no row may map a detector that no longer exists); this guards the
+  # published document against drifting away from the table.
+  coverage-matrix:
+    name: Detector Coverage Matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+
+      - name: Build CLI
+        run: cargo build --bin truent
+
+      - name: Check docs/COVERAGE.md is current
+        run: |
+          ./target/debug/truent taxonomy --format markdown --output /tmp/COVERAGE.md
+          if ! diff -u docs/COVERAGE.md /tmp/COVERAGE.md; then
+            echo "::error::docs/COVERAGE.md is stale. Regenerate with:"
+            echo "  truent taxonomy --format markdown --output docs/COVERAGE.md"
+            exit 1
+          fi
+          echo "OK: coverage matrix is current"
+
   # Final status check
   all-checks-pass:
     name: All Checks Pass
     runs-on: ubuntu-latest
     # v0.1: Added cli-smoke-test to verify CLI works on all platforms
-    needs: [format, clippy, test, integration-tests, cli-tests, cli-smoke-test, coverage, benchmark, determinism, audit]
+    needs: [format, clippy, test, integration-tests, cli-tests, cli-smoke-test, coverage, benchmark, determinism, audit, skills, coverage-matrix]
     steps:
       - name: Confirm all checks passed
         run: echo "All production-grade checks have passed!"

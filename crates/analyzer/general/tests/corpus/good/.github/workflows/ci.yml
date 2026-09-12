@@ -1,0 +1,21 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: thirdparty/lint@0123456789abcdef0123456789abcdef01234567
+      - name: Use PR title safely
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "Testing: $TITLE"
+      - run: npm ci && npm test

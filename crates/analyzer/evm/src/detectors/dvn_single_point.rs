@@ -37,15 +37,9 @@ pub fn detect_dvn_single_point_failure(source: &str, file_path: &str) -> Vec<Fin
 
         let func_name = extract_function_name(func_line);
 
-        // Extract function body (~30 lines)
-        let func_start = func_line_num;
-        let func_end = (func_line_num + 30).min(source.lines().count());
-        let func_body = source
-            .lines()
-            .skip(func_start)
-            .take(func_end - func_start)
-            .collect::<Vec<&str>>()
-            .join("\n");
+        // The actual function, delimited by brace depth — not a fixed window
+        // that bleeds into whatever follows.
+        let func_body = crate::detectors::textutil::enclosing_function_body(source, func_line_num);
 
         // Pattern 2: Check if function allows unconstrained DVN count
         if allows_single_dvn(&func_body) {

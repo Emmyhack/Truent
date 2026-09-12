@@ -28,14 +28,39 @@ if ! command -v "$TRUENT_BIN" >/dev/null 2>&1 && [ ! -x "$TRUENT_BIN" ]; then
   exit 127
 fi
 
+# Prefer the engine's own SARIF writer. It emits a real CWE taxonomy component
+# with per-rule relationships and security-severity, which is what lets GitHub
+# code scanning group, filter and rank Truent findings by weakness class. The
+# Python converter can only attach CWE as an opaque property string.
+#
+# The action may run against a binary older than the --sarif flag, so probe for
+# it rather than assume.
+native_sarif=0
+if "$TRUENT_BIN" scan --help 2>/dev/null | grep -q -- '--sarif'; then
+  native_sarif=1
+fi
+
 # Run the scan. --fail-on makes the exit code the gate signal; capture it
 # without aborting so we still emit SARIF for the Security tab.
 scan_rc=0
-"$TRUENT_BIN" scan "$SCAN_PATH" --chain "$SCAN_CHAIN" --output json --fail-on "$FAIL_ON" \
-  > "$OUT_JSON" 2>/dev/null || scan_rc=$?
+if [ "$native_sarif" -eq 1 ]; then
+  "$TRUENT_BIN" scan "$SCAN_PATH" --chain "$SCAN_CHAIN" --output json \
+    --fail-on "$FAIL_ON" --sarif "$OUT_SARIF" \
+    > "$OUT_JSON" 2>/dev/null || scan_rc=$?
+else
+  echo "::warning::truent has no --sarif flag; falling back to the converter. \
+Upgrade to get CWE taxonomy in code scanning." >&2
+  "$TRUENT_BIN" scan "$SCAN_PATH" --chain "$SCAN_CHAIN" --output json \
+    --fail-on "$FAIL_ON" \
+    > "$OUT_JSON" 2>/dev/null || scan_rc=$?
+fi
 
-# Always convert to SARIF (valid even on an empty/failed report).
-python3 "$HERE/to_sarif.py" "$OUT_JSON" "$OUT_SARIF" || true
+# Fallback conversion, also used if the native write produced nothing (e.g. the
+# scan aborted before reaching the writer). An empty Security tab is a worse
+# failure than a taxonomy-less one.
+if [ ! -s "$OUT_SARIF" ]; then
+  python3 "$HERE/to_sarif.py" "$OUT_JSON" "$OUT_SARIF" || true
+fi
 
 # One-line summary from the report.
 python3 - "$OUT_JSON" <<'PY' || true

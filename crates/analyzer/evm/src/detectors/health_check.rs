@@ -106,15 +106,9 @@ pub fn detect_missing_health_check(source: &str, file_path: &str) -> Vec<Finding
             continue;
         }
 
-        // Extract function body (simplified - look ahead ~50 lines)
-        let func_start = func_line_num;
-        let func_end = (func_line_num + 50).min(source.lines().count());
-        let func_body = source
-            .lines()
-            .skip(func_start)
-            .take(func_end - func_start)
-            .collect::<Vec<&str>>()
-            .join("\n");
+        // The actual function, delimited by brace depth — not a fixed window
+        // that bleeds into whatever follows.
+        let func_body = crate::detectors::textutil::enclosing_function_body(source, func_line_num);
 
         let func_body_lower = func_body.to_lowercase();
 

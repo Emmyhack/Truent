@@ -1,0 +1,21 @@
+[package]
+name = "truent-analyzer-general"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+description = "Truent: general-purpose repository security analyzer — secrets, CI/IaC misconfiguration, and dangerous code patterns in Python, JavaScript/TypeScript, Go and shell."
+
+keywords = ["truent", "security", "secrets", "ci", "static-analysis"]
+categories = ["development-tools"]
+readme = "README.md"
+
+[dependencies]
+truent-core.workspace = true
+regex.workspace = true
+lazy_static.workspace = true
+
+[dev-dependencies]

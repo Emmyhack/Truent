@@ -122,6 +122,16 @@ fn build_semantic_model_ast(source: &str, file_path: &str) -> Option<SemanticMod
             })
             .unwrap_or_default();
 
+        // Move's other authorisation idiom lives in the body: take a
+        // `&signer` and assert who it is. Only capability parameters used to
+        // count, so every `withdraw` guarded by
+        // `assert!(signer::address_of(account) == t.admin)` was reported as
+        // an unauthorised privileged mutation.
+        let mut guards = guards;
+        if let Some(check) = body_authority_guard(text(func_node)) {
+            guards.push(check);
+        }
+
         model.mutations.push(PrivilegedMutation {
             entry_point: fn_name.to_string(),
             kind: kind.clone(),
@@ -178,13 +188,17 @@ fn build_semantic_model_regex(source: &str, file_path: &str) -> SemanticModel {
             continue;
         };
 
-        let guards: Vec<AuthorizationCheck> = cap_re
+        let mut guards: Vec<AuthorizationCheck> = cap_re
             .captures_iter(params)
             .map(|c| AuthorizationCheck {
                 kind: AuthCheckKind::RoleOrCapability,
                 source: c[1].to_string(),
             })
             .collect();
+        let whole = caps.get(0).expect("group 0");
+        if let Some(check) = body_authority_guard(brace_body(source, whole.end())) {
+            guards.push(check);
+        }
 
         let name_match = caps
             .get(1)
@@ -208,6 +222,64 @@ fn offset_to_line(source: &str, byte_offset: usize) -> usize {
         .matches('\n')
         .count()
         + 1
+}
+
+/// An authority assertion in a function body, if present.
+///
+/// Recognises `assert!(signer::address_of(x) == ...)`, `assert!(x == @addr)`,
+/// and `assert_admin`/`is_admin`/`has_role`-style helpers.
+fn body_authority_guard(body: &str) -> Option<AuthorizationCheck> {
+    let lower = body.to_lowercase();
+    let asserts = lower.contains("assert!(") || lower.contains("abort");
+    if asserts && lower.contains("signer::address_of(") && lower.contains("==") {
+        return Some(AuthorizationCheck {
+            kind: AuthCheckKind::Signer,
+            source: "assert!(signer::address_of(..) == ..)".to_string(),
+        });
+    }
+    if asserts && lower.contains("== @") {
+        return Some(AuthorizationCheck {
+            kind: AuthCheckKind::Signer,
+            source: "assert!(.. == @address)".to_string(),
+        });
+    }
+    for helper in [
+        "assert_admin(",
+        "assert_owner(",
+        "is_admin(",
+        "only_admin(",
+        "has_role(",
+    ] {
+        if lower.contains(helper) {
+            return Some(AuthorizationCheck {
+                kind: AuthCheckKind::RoleOrCapability,
+                source: helper.trim_end_matches('(').to_string(),
+            });
+        }
+    }
+    None
+}
+
+/// The brace-delimited block starting at or after byte offset `from`.
+fn brace_body(source: &str, from: usize) -> &str {
+    let rest = &source[from..];
+    let Some(open) = rest.find('{') else {
+        return "";
+    };
+    let mut depth = 0i32;
+    for (i, c) in rest[open..].char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return &rest[open..open + i + 1];
+                }
+            }
+            _ => {}
+        }
+    }
+    &rest[open..]
 }
 
 #[cfg(test)]

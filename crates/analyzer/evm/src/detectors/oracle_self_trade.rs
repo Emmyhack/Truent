@@ -53,17 +53,21 @@ pub fn detect_oracle_self_trade(source: &str, file_path: &str) -> Vec<Finding> {
             continue;
         }
 
+        // An interface or abstract declaration has no body; there is nothing
+        // to analyse and nothing to exploit.
+        if func_line.trim_end().ends_with(';') {
+            continue;
+        }
+
         let func_name = extract_function_name(func_line);
 
-        // Extract function body (~50 lines)
-        let func_start = func_line_num;
-        let func_end = (func_line_num + 50).min(source.lines().count());
-        let func_body = source
-            .lines()
-            .skip(func_start)
-            .take(func_end - func_start)
-            .collect::<Vec<&str>>()
-            .join("\n");
+        // The body is the *actual* function, delimited by brace depth.
+        //
+        // This used to be a fixed 50-line window from the declaration, which
+        // bled into whatever followed: a `withdraw` function was reported as
+        // an unvalidated-oracle trade because an unrelated `getPrice` happened
+        // to sit six lines below it.
+        let func_body = crate::detectors::textutil::enclosing_function_body(source, func_line_num);
 
         // Pattern 2: Check if function modifies state (trades) AND uses oracle
         let modifies_state = func_body.to_lowercase().contains("transfer")

@@ -1,0 +1,163 @@
+{
+  "version": "1.0.0",
+  "repository": "https://github.com/geekstrancend/Truent",
+  "domain": "smart-contract-security",
+  "total_skills": 6,
+  "skills": [
+    {
+      "name": "truent-audit",
+      "description": "Deterministic-first smart-contract security audit. Runs Truent's compiled engine (static analysis + dynamic invariant fuzzing with real EVM execution) for machine-verified, reproducible findings, then amplifies coverage with specialized LLM attacker lenses whose findings are verified back through the engine before they are reported. Multi-chain: EVM, Solana, Move, Soroban. Triggers on 'truent audit', 'audit this contract', 'security review', 'check for vulnerabilities', 'review for security'.",
+      "version": "0.1.0",
+      "domain": "smart-contract-security",
+      "subdomain": "audit",
+      "chains": [
+        "evm",
+        "solana",
+        "move",
+        "soroban"
+      ],
+      "tags": [
+        "smart-contract",
+        "audit",
+        "security-review",
+        "evm",
+        "solana",
+        "move",
+        "soroban",
+        "static-analysis",
+        "invariant-fuzzing",
+        "reentrancy",
+        "access-control",
+        "oracle"
+      ],
+      "path": "skills/truent-audit"
+    },
+    {
+      "name": "truent-deps",
+      "description": "Supply-chain security review of a smart-contract project's dependencies and CI. Finds forked/drifted libraries, unpinned submodules and package versions, and CI workflows that leak deploy keys — then runs Truent's engine over the dependency code that is actually compiled into your contracts, because a patched modifier in a vendored OpenZeppelin is your bug, not upstream's. Multi-chain: Foundry/Hardhat (EVM), Anchor (Solana), Move, Soroban. Triggers on 'truent deps', 'dependency audit', 'supply chain review', 'check my dependencies', 'are my libs safe', 'audit CI workflows'.",
+      "version": "0.1.0",
+      "domain": "smart-contract-security",
+      "subdomain": "supply-chain",
+      "chains": [
+        "evm",
+        "solana",
+        "move",
+        "soroban"
+      ],
+      "tags": [
+        "smart-contract",
+        "supply-chain",
+        "dependencies",
+        "foundry",
+        "hardhat",
+        "anchor",
+        "ci-cd",
+        "submodules",
+        "openzeppelin",
+        "vendored-code"
+      ],
+      "path": "skills/truent-deps"
+    },
+    {
+      "name": "truent-fuzz",
+      "description": "Stateful invariant fuzzing for smart contracts. Default path runs Truent's native revm-backed fuzzer — auto-detected invariants, adversarial call sequences, and minimal-PoC shrinking in one binary, no external toolchain. Optionally emits an equivalent Echidna/Medusa harness for teams standardized on those runners (strict superset, not lock-in). Triggers on 'truent fuzz', 'fuzz this', 'invariant fuzzing', 'stateful fuzzing', 'build a fuzz harness', 'property testing', 'generate fuzz suite'.",
+      "version": "0.1.0",
+      "domain": "smart-contract-security",
+      "subdomain": "fuzzing",
+      "chains": [
+        "evm",
+        "solana",
+        "move",
+        "soroban"
+      ],
+      "tags": [
+        "smart-contract",
+        "fuzzing",
+        "invariant-testing",
+        "property-testing",
+        "echidna",
+        "medusa",
+        "revm",
+        "evm",
+        "proof-of-concept"
+      ],
+      "path": "skills/truent-fuzz"
+    },
+    {
+      "name": "truent-ir",
+      "description": "On-chain incident response for a live or past smart-contract exploit. Scopes the damage from the exploit transaction, reproduces the attack against the deployed bytecode with Truent's revm-backed fuzzer to identify the exact broken invariant, and separates confirmed mechanism from speculation before anyone writes a post-mortem. Covers containment, evidence preservation, and the regression invariant that stops a repeat. Triggers on 'truent ir', 'we are being exploited', 'incident response', 'post-mortem', 'we got hacked', 'analyze this exploit tx', 'what went wrong on-chain'.",
+      "version": "0.1.0",
+      "domain": "smart-contract-security",
+      "subdomain": "incident-response",
+      "chains": [
+        "evm",
+        "solana",
+        "move",
+        "soroban"
+      ],
+      "tags": [
+        "smart-contract",
+        "incident-response",
+        "exploit-analysis",
+        "post-mortem",
+        "forensics",
+        "revm",
+        "root-cause",
+        "containment"
+      ],
+      "path": "skills/truent-ir"
+    },
+    {
+      "name": "truent-keys",
+      "description": "Key custody and deploy-safety review for a smart-contract project. Finds plaintext private keys in source, scripts, history and CI; then runs Truent's engine over the on-chain side of the same question — single-EOA admins, multisig thresholds too low to matter, unprotected initializers and upgrade paths — because a well-guarded key on a contract anyone can re-initialize protects nothing. Multi-chain: EVM, Solana, Move, Soroban. Triggers on 'truent keys', 'key hygiene', 'deploy safety', 'check my private keys', 'is my deploy script safe', 'admin key review', 'who can upgrade this'.",
+      "version": "0.1.0",
+      "domain": "smart-contract-security",
+      "subdomain": "key-management",
+      "chains": [
+        "evm",
+        "solana",
+        "move",
+        "soroban"
+      ],
+      "tags": [
+        "smart-contract",
+        "key-management",
+        "deployment",
+        "access-control",
+        "multisig",
+        "upgradeability",
+        "secrets",
+        "foundry",
+        "anchor"
+      ],
+      "path": "skills/truent-keys"
+    },
+    {
+      "name": "truent-recon",
+      "description": "Pre-audit reconnaissance for a smart-contract codebase. Produces a recon report (overview, threat model, entry points, synthesized invariants, git-history risk map, test/coverage gaps, and a prioritized audit plan) — and, unlike a report-only recon, feeds the synthesized invariants straight into Truent's engine to auto-check them. Multi-chain. Triggers on 'truent recon', 'pre-audit', 'audit readiness', 'readiness report', 'prep this protocol', 'map this codebase', 'where should I audit'.",
+      "version": "0.1.0",
+      "domain": "smart-contract-security",
+      "subdomain": "reconnaissance",
+      "chains": [
+        "evm",
+        "solana",
+        "move",
+        "soroban"
+      ],
+      "tags": [
+        "smart-contract",
+        "pre-audit",
+        "threat-model",
+        "recon",
+        "invariants",
+        "git-history",
+        "attack-surface",
+        "evm",
+        "solana",
+        "move",
+        "soroban"
+      ],
+      "path": "skills/truent-recon"
+    }
+  ]
+}
