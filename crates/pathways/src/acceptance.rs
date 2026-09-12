@@ -12,7 +12,7 @@
 //! path   = "Cargo.lock"                       # prefix/substring match; omit for any
 //! match  = "paste"                            # optional: must appear in the message
 //! reason = "transitive via alloy-primitives; no maintained replacement resolvable"
-//! owner  = "@geekstrancend"
+//! owner  = "@Emmyhack"
 //! until  = "2027-03-31"                       # ISO date; expired acceptances do not apply
 //! ```
 //!

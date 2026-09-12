@@ -4,7 +4,7 @@ Multi-chain smart contract invariant checker for EVM, Solana, Move, and Soroban.
 
 [![Crates.io](https://img.shields.io/crates/v/truent-cli)](https://crates.io/crates/truent-cli)
 [![Downloads](https://img.shields.io/crates/d/truent-cli)](https://crates.io/crates/truent-cli)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/geekstrancend/Truent/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/Emmyhack/Truent/blob/main/LICENSE)
 
 ## What is Truent?
 
@@ -61,7 +61,7 @@ truent check ./contracts --format json --output report.json
 
 ## Documentation
 
-Full documentation: [github.com/geekstrancend/Truent](https://github.com/geekstrancend/Truent)
+Full documentation: [github.com/Emmyhack/Truent](https://github.com/Emmyhack/Truent)
 
 ## License
 

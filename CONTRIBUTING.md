@@ -20,7 +20,7 @@ We are committed to providing a welcoming and inclusive environment for all cont
 
 ```bash
 # Clone the repository
-git clone https://github.com/geekstrancend/Truent.git
+git clone https://github.com/Emmyhack/Truent.git
 cd Truent
 
 # Install dependencies

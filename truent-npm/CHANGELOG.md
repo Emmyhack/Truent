@@ -120,4 +120,4 @@ This package follows the Truent release schedule:
 
 ---
 
-For detailed release notes, see the [main Truent repository](https://github.com/geekstrancend/Truent/releases).
+For detailed release notes, see the [main Truent repository](https://github.com/Emmyhack/Truent/releases).

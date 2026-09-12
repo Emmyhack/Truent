@@ -163,7 +163,7 @@ Files to update:
 ### Security
 - All binaries are deterministically built and reproducible
 
-[0.1.8]: https://github.com/geekstrancend/Truent/releases/tag/v0.1.8
+[0.1.8]: https://github.com/Emmyhack/Truent/releases/tag/v0.1.8
 ```
 
 ### Step 3: Commit and Tag

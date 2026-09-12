@@ -56,7 +56,7 @@ async function main() {
       "",
       "You can manually install via one of:",
       "  - cargo install truent-cli",
-      "  - Download from: https://github.com/geekstrancend/Truent/releases",
+      "  - Download from: https://github.com/Emmyhack/Truent/releases",
       "  - Re-run: npm install @truent/cli",
       "",
     ].join("\n"));

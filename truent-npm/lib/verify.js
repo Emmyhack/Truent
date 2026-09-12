@@ -16,7 +16,7 @@ const HttpsProxyAgent = require("https-proxy-agent");
  */
 async function verifyChecksum(archivePath, platformInfo) {
   // Download SHA256SUMS file
-  const sha256sumsUrl = `https://github.com/geekstrancend/Truent/releases/download/v${platformInfo.version}/SHA256SUMS`;
+  const sha256sumsUrl = `https://github.com/Emmyhack/Truent/releases/download/v${platformInfo.version}/SHA256SUMS`;
   
   const checksumContent = await downloadSha256Sums(sha256sumsUrl);
   
@@ -35,7 +35,7 @@ async function verifyChecksum(archivePath, platformInfo) {
   if (!expectedChecksum) {
     throw new Error(
       `Checksum for ${platformInfo.archiveName} not found in SHA256SUMS.\n` +
-      `Available in GitHub release: https://github.com/geekstrancend/Truent/releases`
+      `Available in GitHub release: https://github.com/Emmyhack/Truent/releases`
     );
   }
 

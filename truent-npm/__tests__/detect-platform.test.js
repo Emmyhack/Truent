@@ -73,7 +73,7 @@ describe("Platform Detection", () => {
 
     expect(() => {
       detectPlatform();
-    }).toThrow(/github.com\/geekstrancend\/Truent\/issues/);
+    }).toThrow(/github.com\/Emmyhack\/Truent\/issues/);
   });
 
   test("exports correct version", () => {
@@ -82,7 +82,7 @@ describe("Platform Detection", () => {
   });
 
   test("exports correct GitHub repo", () => {
-    expect(GITHUB_REPO).toBe("geekstrancend/Truent");
+    expect(GITHUB_REPO).toBe("Emmyhack/Truent");
   });
 
   test("exports binary directory path", () => {

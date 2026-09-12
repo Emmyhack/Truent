@@ -34,7 +34,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       
       - name: Install Truent
-        run: cargo install --git https://github.com/geekstrancend/Truent --bin truent
+        run: cargo install --git https://github.com/Emmyhack/Truent --bin truent
       
       - name: Run Truent Checks
         run: truent check ./contracts --chain evm --fail-on high --format json --output truent-report.json
@@ -68,7 +68,7 @@ truent:
   image: rust:latest
   stage: test
   script:
-    - cargo install --git https://github.com/geekstrancend/Truent --bin truent
+    - cargo install --git https://github.com/Emmyhack/Truent --bin truent
     - truent check ./contracts --chain evm --fail-on high --quiet
   artifacts:
     reports:
@@ -95,7 +95,7 @@ jobs:
       - checkout
       - run:
           name: Install Truent
-          command: cargo install --git https://github.com/geekstrancend/Truent --bin truent
+          command: cargo install --git https://github.com/Emmyhack/Truent --bin truent
       - run:
           name: Run Truent Checks
           command: truent check ./contracts --chain evm --fail-on high
@@ -367,7 +367,7 @@ steps:
 ```dockerfile
 FROM rust:latest
 
-RUN cargo install --git https://github.com/geekstrancend/Truent --bin truent
+RUN cargo install --git https://github.com/Emmyhack/Truent --bin truent
 
 WORKDIR /workspace
 
@@ -491,7 +491,7 @@ Ensure installation in CI environment:
 which truent
 
 # Install if missing
-cargo install --git https://github.com/geekstrancend/Truent --bin truent
+cargo install --git https://github.com/Emmyhack/Truent --bin truent
 
 # Verify
 truent --version
@@ -557,7 +557,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       
       - name: Install Truent
-        run: cargo install --git https://github.com/geekstrancend/Truent --bin truent
+        run: cargo install --git https://github.com/Emmyhack/Truent --bin truent
       
       - name: Run Truent
         id: truent

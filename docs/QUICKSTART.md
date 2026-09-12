@@ -228,6 +228,6 @@ Performance varies based on:
 ## Support
 
 For issues, questions, or feature requests, visit:
-- GitHub: https://github.com/geekstrancend/Truent
+- GitHub: https://github.com/Emmyhack/Truent
 - Docs: https://docs.truent.dev
-- Issues: https://github.com/geekstrancend/Truent/issues
+- Issues: https://github.com/Emmyhack/Truent/issues

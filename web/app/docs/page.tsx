@@ -96,7 +96,7 @@ function Overview({ go }: { go: (p: PageId) => void }) {
   const cards = [
     { icon: '▸', title: 'Quick start', desc: 'Install the CLI and scan a repository in under five minutes.', cta: 'Get started', to: 'getting-started' as const },
     { icon: '⌘', title: 'CLI reference', desc: `${COMMANDS.length} commands: scan, deps, probe, symbolic, exposure, harden, release-check and more.`, cta: 'View commands', to: 'cli' as const },
-    { icon: '◈', title: 'Coverage matrix', desc: `${ENGINE.totalDetectors} detectors mapped to CWE / ATT&CK / NIST, as the engine reports them.`, cta: 'Open COVERAGE.md', href: 'https://github.com/geekstrancend/Truent/blob/main/docs/COVERAGE.md' },
+    { icon: '◈', title: 'Coverage matrix', desc: `${ENGINE.totalDetectors} detectors mapped to CWE / ATT&CK / NIST, as the engine reports them.`, cta: 'Open COVERAGE.md', href: 'https://github.com/Emmyhack/Truent/blob/main/docs/COVERAGE.md' },
     { icon: '◆', title: 'Evidence & exploitability', desc: 'Lead vs proven, LIKELY → THEORETICAL, attack chains: how to read a finding.', cta: 'Read the contract', to: 'honesty' as const, badge: true },
     { icon: '⎇', title: 'CI/CD integration', desc: 'Gate pull requests with SARIF upload; run the probe and the release check.', cta: 'Set up pipeline', to: 'ci-cd' as const },
     { icon: '⟐', title: 'Dashboard API', desc: 'Queue scans and read reports from the hosted dashboard.', cta: 'API reference', to: 'api' as const },
@@ -622,7 +622,7 @@ export default function DocsPage() {
             ))}
           </nav>
           <div className="mt-7 flex flex-col gap-2.5 border-t border-white/[0.06] pt-5">
-            <a href="https://github.com/geekstrancend/Truent" target="_blank" rel="noopener noreferrer" className="text-[12.5px] text-sec transition-colors hover:text-text">GitHub repo ↗</a>
+            <a href="https://github.com/Emmyhack/Truent" target="_blank" rel="noopener noreferrer" className="text-[12.5px] text-sec transition-colors hover:text-text">GitHub repo ↗</a>
           </div>
         </aside>
 

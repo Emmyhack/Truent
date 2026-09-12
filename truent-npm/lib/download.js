@@ -183,7 +183,7 @@ async function downloadFile(url, destinationPath, verbose) {
           reject(new Error(
             `Failed to download from ${url}\n` +
             `HTTP ${response.statusCode}: ${response.statusMessage}\n` +
-            `Check the GitHub releases page: https://github.com/geekstrancend/Truent/releases`
+            `Check the GitHub releases page: https://github.com/Emmyhack/Truent/releases`
           ));
           response.resume(); // drain the response
           return;

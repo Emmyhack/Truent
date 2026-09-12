@@ -4,8 +4,8 @@ description: "On-chain incident response for a live or past smart-contract explo
 license: MIT
 metadata:
   version: "0.1.0"
-  author: geekstrancend
-  homepage: https://github.com/geekstrancend/Truent
+  author: Emmyhack
+  homepage: https://github.com/Emmyhack/Truent
   domain: smart-contract-security
   subdomain: incident-response
   chains:

@@ -24,7 +24,7 @@ export default function SupportPage() {
           {[
             { icon: <BookOpen size={20} className="text-acc-text" />, title: 'Documentation', desc: 'Browse guides and the CLI reference', href: '/docs' },
             { icon: <Mail size={20} className="text-acc-text" />, title: 'Email Support', desc: 'support@truent.dev · 24h response', href: 'mailto:support@truent.dev' },
-            { icon: <Github size={20} className="text-acc-text" />, title: 'GitHub Issues', desc: 'Report bugs or request features', href: 'https://github.com/geekstrancend/Truent/issues' },
+            { icon: <Github size={20} className="text-acc-text" />, title: 'GitHub Issues', desc: 'Report bugs or request features', href: 'https://github.com/Emmyhack/Truent/issues' },
           ].map((card, i) => (
             <Link key={i} href={card.href}
               target={card.href.startsWith('http') ? '_blank' : undefined}

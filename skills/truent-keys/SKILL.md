@@ -4,8 +4,8 @@ description: "Key custody and deploy-safety review for a smart-contract project.
 license: MIT
 metadata:
   version: "0.1.0"
-  author: geekstrancend
-  homepage: https://github.com/geekstrancend/Truent
+  author: Emmyhack
+  homepage: https://github.com/Emmyhack/Truent
   domain: smart-contract-security
   subdomain: key-management
   chains:

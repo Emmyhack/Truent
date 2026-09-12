@@ -5,7 +5,7 @@ const path = require("path");
 const { familySync, GLIBC, MUSL } = require("detect-libc");
 
 const { version: TRUENT_VERSION } = require("../package.json");
-const GITHUB_REPO = "geekstrancend/Truent";
+const GITHUB_REPO = "Emmyhack/Truent";
 const BINARY_DIR = path.join(__dirname, "..", ".truent-bin");
 
 /**
@@ -77,7 +77,7 @@ function detectPlatform() {
         throw new Error(
           "Error: Truent does not publish a musl build for linux-aarch64 yet.\n" +
           "Supported platforms: linux-x86_64 (glibc or musl), linux-aarch64 (glibc), macos-x86_64, macos-aarch64, windows-x86_64\n" +
-          "Please open an issue at https://github.com/geekstrancend/Truent/issues"
+          "Please open an issue at https://github.com/Emmyhack/Truent/issues"
         );
       }
       mappingKey = "linux-arm64";
@@ -94,7 +94,7 @@ function detectPlatform() {
     throw new Error(
       `Error: Truent does not support your platform: ${platform}-${arch}\n` +
       `Supported platforms: linux-x86_64 (glibc or musl), linux-aarch64 (glibc), macos-x86_64, macos-aarch64, windows-x86_64\n` +
-      `Please open an issue at https://github.com/geekstrancend/Truent/issues`
+      `Please open an issue at https://github.com/Emmyhack/Truent/issues`
     );
   }
 

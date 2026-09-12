@@ -53,7 +53,7 @@ def to_sarif(report):
                 "id": rule_id,
                 "name": str(v.get("title") or rule_id),
                 "shortDescription": {"text": str(v.get("title") or rule_id)},
-                "helpUri": str(v.get("reference") or "https://github.com/geekstrancend/Truent"),
+                "helpUri": str(v.get("reference") or "https://github.com/Emmyhack/Truent"),
                 "properties": {"cwe": str(v.get("cwe") or "")},
             }
         path, line = split_location(str(v.get("location") or ""))
@@ -76,7 +76,7 @@ def to_sarif(report):
             "tool": {
                 "driver": {
                     "name": "Truent",
-                    "informationUri": "https://github.com/geekstrancend/Truent",
+                    "informationUri": "https://github.com/Emmyhack/Truent",
                     "version": str(report.get("version") or "0.0.0") if isinstance(report, dict) else "0.0.0",
                     "rules": list(rules.values()),
                 }

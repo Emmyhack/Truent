@@ -5,11 +5,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/geekstrancend/Truent.git"
+    "url": "git+https://github.com/Emmyhack/Truent.git"
   },
-  "homepage": "https://github.com/geekstrancend/Truent",
+  "homepage": "https://github.com/Emmyhack/Truent",
   "bugs": {
-    "url": "https://github.com/geekstrancend/Truent/issues"
+    "url": "https://github.com/Emmyhack/Truent/issues"
   },
   "keywords": [
     "solidity",

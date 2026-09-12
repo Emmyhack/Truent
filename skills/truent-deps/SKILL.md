@@ -4,8 +4,8 @@ description: "Supply-chain security review of a smart-contract project's depende
 license: MIT
 metadata:
   version: "0.1.0"
-  author: geekstrancend
-  homepage: https://github.com/geekstrancend/Truent
+  author: Emmyhack
+  homepage: https://github.com/Emmyhack/Truent
   domain: smart-contract-security
   subdomain: supply-chain
   chains:

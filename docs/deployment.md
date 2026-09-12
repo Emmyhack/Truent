@@ -27,15 +27,15 @@ truent check --strict --output json
 **Latest Release:**
 ```bash
 # Linux
-curl -fsSL https://releases.github.com/geekstrancend/truent/latest/linux-x86_64.tar.gz | tar xz
+curl -fsSL https://releases.github.com/Emmyhack/truent/latest/linux-x86_64.tar.gz | tar xz
 sudo mv truent /usr/local/bin/
 
 # macOS
-curl -fsSL https://releases.github.com/geekstrancend/truent/latest/macos-x86_64.tar.gz | tar xz
+curl -fsSL https://releases.github.com/Emmyhack/truent/latest/macos-x86_64.tar.gz | tar xz
 sudo mv truent /usr/local/bin/
 
 # Windows
-curl -fsSL https://releases.github.com/geekstrancend/truent/latest/windows-x86_64.zip -o truent.zip
+curl -fsSL https://releases.github.com/Emmyhack/truent/latest/windows-x86_64.zip -o truent.zip
 unzip truent.zip
 # Add to PATH
 ```
@@ -49,7 +49,7 @@ truent --help
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew tap geekstrancend/truent
+brew tap Emmyhack/truent
 brew install truent
 ```
 
@@ -61,7 +61,7 @@ brew upgrade truent
 ### Build from Source
 
 ```bash
-git clone https://github.com/geekstrancend/Truent.git
+git clone https://github.com/Emmyhack/Truent.git
 cd Truent
 
 # Build release binary

@@ -6,7 +6,7 @@
 # verifies the checksum, and installs it to $PATH.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/geekstrancend/Truent/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Emmyhack/Truent/main/scripts/install.sh | bash
 #
 # Or with options:
 #   bash install.sh [--prefix /custom/path] [--version v0.1.0]
@@ -21,7 +21,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="geekstrancend/Truent"
+GITHUB_REPO="Emmyhack/Truent"
 INSTALL_PREFIX="${INSTALL_PREFIX:-${HOME}/.local/bin}"
 BINARY_VERSION="${BINARY_VERSION:-latest}"
 TMP_DIR=$(mktemp -d)

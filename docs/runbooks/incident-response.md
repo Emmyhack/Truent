@@ -38,6 +38,6 @@ incident issue — reference the secret manager version instead.
 
 ## Contacts
 
-- Maintainer: `@geekstrancend`
+- Maintainer: `@Emmyhack`
 - npm / crates.io support: for takedown of a malicious version
 - GitHub Security: for advisory publication (GHSA)

@@ -31,7 +31,7 @@ jobs:
       - run: echo "$PWD/target/release" >> "$GITHUB_PATH"
 
       # The gate: fail the PR on critical findings, publish SARIF.
-      - uses: geekstrancend/Truent/.github/actions/truent-gate@main
+      - uses: Emmyhack/Truent/.github/actions/truent-gate@main
         with:
           path: src            # your contracts
           chain: evm           # evm | solana | move | soroban

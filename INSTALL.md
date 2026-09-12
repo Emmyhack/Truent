@@ -12,14 +12,14 @@ Truent is a production-grade, audit-ready multi-chain smart contract invariant e
 
 ### 1. Pre-compiled Binaries (Recommended)
 
-Download the latest release from [GitHub Releases](https://github.com/geekstrancend/Truent/releases).
+Download the latest release from [GitHub Releases](https://github.com/Emmyhack/Truent/releases).
 
 #### Linux / macOS
 
 ```bash
 # Download and verify
-curl -L -O https://github.com/geekstrancend/Truent/releases/download/v0.3.0/truent-linux-x86_64-0.3.0
-curl -L -O https://github.com/geekstrancend/Truent/releases/download/v0.3.0/truent-linux-x86_64-0.3.0.sha256
+curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.3.0/truent-linux-x86_64-0.3.0
+curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.3.0/truent-linux-x86_64-0.3.0.sha256
 
 # Verify checksum (critical for security)
 sha256sum -c truent-linux-x86_64-0.3.0.sha256
@@ -35,7 +35,7 @@ truent --version
 #### macOS (ARM64 / Apple Silicon)
 
 ```bash
-curl -L -O https://github.com/geekstrancend/Truent/releases/download/v0.3.0/truent-darwin-aarch64-0.3.0
+curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.3.0/truent-darwin-aarch64-0.3.0
 sha256sum -c truent-darwin-aarch64-0.3.0.sha256
 chmod +x truent-darwin-aarch64-0.3.0
 sudo mv truent-darwin-aarch64-0.3.0 /usr/local/bin/truent
@@ -51,7 +51,7 @@ Download `truent-windows-x86_64-0.3.0.exe` from the releases page and add it to 
 Requires Rust 1.70.0+. Install from [https://rustup.rs/](https://rustup.rs/).
 
 ```bash
-git clone https://github.com/geekstrancend/Truent.git
+git clone https://github.com/Emmyhack/Truent.git
 cd Truent
 cargo install --path crates/cli
 ```
@@ -181,9 +181,9 @@ chmod +x /usr/local/bin/truent
 
 ## Getting Help
 
-- Report bugs: [https://github.com/geekstrancend/Truent/issues](https://github.com/geekstrancend/Truent/issues)
-- Documentation: [https://github.com/geekstrancend/Truent/wiki](https://github.com/geekstrancend/Truent/wiki)
-- Community: Discussions at [https://github.com/geekstrancend/Truent/discussions](https://github.com/geekstrancend/Truent/discussions)
+- Report bugs: [https://github.com/Emmyhack/Truent/issues](https://github.com/Emmyhack/Truent/issues)
+- Documentation: [https://github.com/Emmyhack/Truent/wiki](https://github.com/Emmyhack/Truent/wiki)
+- Community: Discussions at [https://github.com/Emmyhack/Truent/discussions](https://github.com/Emmyhack/Truent/discussions)
 
 ## Release Notes
 

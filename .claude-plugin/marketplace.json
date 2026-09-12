@@ -1,7 +1,7 @@
 {
   "name": "truent",
   "owner": {
-    "name": "geekstrancend"
+    "name": "Emmyhack"
   },
   "metadata": {
     "description": "Engine-backed smart-contract security skills. Every reported finding is either reproduced by Truent's compiled engine or explicitly labeled as an unverified lead.",
@@ -14,7 +14,7 @@
       "description": "Audit, recon, fuzzing, dependency-supply-chain review, key hygiene, and on-chain incident response for EVM · Solana · Move · Soroban. Findings map to CWE, SWC, OWASP Smart Contract Top 10 and DASP.",
       "version": "0.6.0",
       "author": {
-        "name": "geekstrancend"
+        "name": "Emmyhack"
       },
       "license": "MIT",
       "keywords": [
@@ -31,8 +31,8 @@
         "web3"
       ],
       "category": "security",
-      "homepage": "https://github.com/geekstrancend/Truent",
-      "repository": "https://github.com/geekstrancend/Truent"
+      "homepage": "https://github.com/Emmyhack/Truent",
+      "repository": "https://github.com/Emmyhack/Truent"
     }
   ]
 }

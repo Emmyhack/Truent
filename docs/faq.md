@@ -14,7 +14,7 @@ curl -fsSL https://install.truent.dev | bash
 brew install truent
 
 # From source
-git clone https://github.com/geekstrancend/Truent.git
+git clone https://github.com/Emmyhack/Truent.git
 cd Truent
 cargo install --path crates/cli
 
@@ -462,8 +462,8 @@ For plugin system, see [Roadmap](README.md#Roadmap).
 
 - [Documentation](docs/README.md) - Complete guides
 - [Examples](examples/) - Real-world usage
-- [GitHub Issues](https://github.com/geekstrancend/Truent/issues) - Ask community
-- [GitHub Discussions](https://github.com/geekstrancend/Truent/discussions) - Discussions
+- [GitHub Issues](https://github.com/Emmyhack/Truent/issues) - Ask community
+- [GitHub Discussions](https://github.com/Emmyhack/Truent/discussions) - Discussions
 - [Discord](https://discord.gg/truent) - Real-time chat
 
 ### Getting Help

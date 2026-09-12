@@ -13,8 +13,8 @@ This npm package is a **thin wrapper** around the Rust `truent-cli` binary. It:
 
 ### Issues & Features for the npm package
 
-- **Binary download issues**: Report at https://github.com/geekstrancend/Truent/issues
-- **Node.js API suggestions**: Post on https://github.com/geekstrancend/Truent/discussions
+- **Binary download issues**: Report at https://github.com/Emmyhack/Truent/issues
+- **Node.js API suggestions**: Post on https://github.com/Emmyhack/Truent/discussions
 - **Installation problems**: Github Issues with error message and `npm --version`, `node --version`
 
 ### Rust/Invariant Analysis Features
@@ -25,7 +25,7 @@ This npm package is a **thin wrapper** around the Rust `truent-cli` binary. It:
 - Analysis algorithms
 - Core invariants
 
-Should be made to the main Truent repository at https://github.com/geekstrancend/Truent
+Should be made to the main Truent repository at https://github.com/Emmyhack/Truent
 
 ## Development Setup
 
@@ -38,7 +38,7 @@ npm >= 8
 ### Local Development
 
 ```bash
-git clone https://github.com/geekstrancend/Truent.git
+git clone https://github.com/Emmyhack/Truent.git
 cd Truent/truent-npm
 
 # Install dependencies
@@ -102,12 +102,12 @@ Example:
 ```javascript
 throw new Error(
   `Failed to download Truent binary\n` +
-  `URL: https://github.com/geekstrancend/Truent/releases/download/...\n` +
+  `URL: https://github.com/Emmyhack/Truent/releases/download/...\n` +
   `HTTP 404: Release not found\n\n` +
   `Solutions:\n` +
-  `1. Check if the version exists: https://github.com/geekstrancend/Truent/releases\n` +
+  `1. Check if the version exists: https://github.com/Emmyhack/Truent/releases\n` +
   `2. Install via Rust: cargo install truent-cli\n` +
-  `3. See: https://github.com/geekstrancend/Truent/issues`
+  `3. See: https://github.com/Emmyhack/Truent/issues`
 );
 ```
 
@@ -197,8 +197,8 @@ Found a bug? Open an issue with:
 
 ## Questions?
 
-- **Discussions**: https://github.com/geekstrancend/Truent/discussions
-- **Issues**: https://github.com/geekstrancend/Truent/issues
+- **Discussions**: https://github.com/Emmyhack/Truent/discussions
+- **Issues**: https://github.com/Emmyhack/Truent/issues
 - **Email**: Open an issue and mention if you need direct contact
 
 ---

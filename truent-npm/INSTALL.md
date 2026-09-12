@@ -347,7 +347,7 @@ npm install @dextonicx/cli
 The release may not exist for your version. Check:
 
 ```bash
-https://github.com/geekstrancend/Truent/releases
+https://github.com/Emmyhack/Truent/releases
 ```
 
 Install a different version:
@@ -416,8 +416,8 @@ After installation:
 
 4. **Read full docs**:
    - README.md: Usage and examples
-   - GitHub: https://github.com/geekstrancend/Truent
+   - GitHub: https://github.com/Emmyhack/Truent
 
 ---
 
-**Still having issues?** Open an issue: https://github.com/geekstrancend/Truent/issues
+**Still having issues?** Open an issue: https://github.com/Emmyhack/Truent/issues

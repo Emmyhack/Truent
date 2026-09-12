@@ -34,8 +34,8 @@ edition = "2021"
 rust-version = "1.75"
 authors = ["Truent Contributors"]
 license = "MIT"
-homepage = "https://github.com/geekstrancend/Truent"
-repository = "https://github.com/geekstrancend/Truent"
+homepage = "https://github.com/Emmyhack/Truent"
+repository = "https://github.com/Emmyhack/Truent"
 documentation = "https://docs.rs/truent-cli"
 
 [workspace.dependencies]

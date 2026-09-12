@@ -42,14 +42,14 @@ brew install truent
 #### **Option C: Build from Source**
 
 ```bash
-git clone https://github.com/geekstrancend/truent.git
+git clone https://github.com/Emmyhack/truent.git
 cd truent
 cargo install --path .
 ```
 
 #### **Option D: Download Pre-built Binary**
 
-Visit the [Truent Releases](https://github.com/geekstrancend/truent/releases) page and download the binary for your OS (Linux, macOS, Windows).
+Visit the [Truent Releases](https://github.com/Emmyhack/truent/releases) page and download the binary for your OS (Linux, macOS, Windows).
 
 Extract and add to PATH:
 
@@ -619,8 +619,8 @@ truent check --verbose invariants/
 ## Getting Help
 
 - **Documentation**: [https://truent.dev/docs](https://truent.dev/docs)
-- **Issues**: [GitHub Issues](https://github.com/geekstrancend/Truent/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/geekstrancend/Truent/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Emmyhack/Truent/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Emmyhack/Truent/discussions)
 - **Security**: [security@truent.dev](mailto:security@truent.dev)
 
 ## Key Concepts

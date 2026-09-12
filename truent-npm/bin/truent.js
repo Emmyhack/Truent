@@ -16,7 +16,7 @@ if (!isBinaryInstalled()) {
     "    cargo install truent-cli             (install via Rust)",
     "",
     "  Or download manually from:",
-    "  https://github.com/geekstrancend/Truent/releases",
+    "  https://github.com/Emmyhack/Truent/releases",
     "",
   ].join("\n"));
   process.exit(2);

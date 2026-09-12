@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/@dextonicx/cli.svg)](https://www.npmjs.com/package/@dextonicx/cli)
 [![Downloads](https://img.shields.io/crates/d/truent-cli.svg)](https://crates.io/crates/truent-cli)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/geekstrancend/Truent/actions/workflows/ci.yml/badge.svg)](https://github.com/geekstrancend/Truent/actions)
+[![CI](https://github.com/Emmyhack/Truent/actions/workflows/ci.yml/badge.svg)](https://github.com/Emmyhack/Truent/actions)
 
 **Multi-chain smart contract security analyzer for EVM, Solana, Move, and Soroban.**
 
@@ -279,7 +279,7 @@ findings), and `truent-ir` (incident response that reproduces the exploit
 against deployed bytecode before anyone writes the post-mortem).
 
 ```
-/plugin marketplace add geekstrancend/Truent
+/plugin marketplace add Emmyhack/Truent
 /plugin install truent
 ```
 
@@ -371,7 +371,7 @@ truent doctor
 ```
 
 Or download a pre-built binary directly from
-[GitHub Releases](https://github.com/geekstrancend/Truent/releases).
+[GitHub Releases](https://github.com/Emmyhack/Truent/releases).
 
 **Supported platforms:**
 
@@ -639,7 +639,7 @@ pub mystery: AccountInfo<'info>,
 
 ## Links
 
-- **GitHub**: [geekstrancend/Truent](https://github.com/geekstrancend/Truent)
+- **GitHub**: [Emmyhack/Truent](https://github.com/Emmyhack/Truent)
 - **crates.io**: [truent-cli](https://crates.io/crates/truent-cli)
 - **npm**: [@dextonicx/cli](https://www.npmjs.com/package/@dextonicx/cli)
 - **Docs**: [docs.rs/truent-cli](https://docs.rs/truent-cli)

@@ -146,7 +146,7 @@ export function DocsShell({
 
         {/* Sidebar footer */}
         <div className="flex-shrink-0 p-4 border-t border-hair space-y-2">
-          <Link href="https://github.com/geekstrancend/Truent" target="_blank" rel="noopener"
+          <Link href="https://github.com/Emmyhack/Truent" target="_blank" rel="noopener"
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sec hover:text-text hover:bg-panel transition-colors text-body-md">
             <Github size={14} />
             <span>GitHub</span>

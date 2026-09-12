@@ -1,25 +1,23 @@
 # Release check — .
 
-**Verdict: READY** — ACCEPTED 8 · ASSESS 32 · PASS 367
+**Verdict: READY** — ACCEPTED 4 · ASSESS 32 · PASS 371
 
 PASS = an engine ran and found nothing · ACCEPTED = findings carried under a dated, owned risk acceptance · FAIL = findings · PARTIAL = the test exists but CI never runs it (or a check is undecided) · MISSING = nothing found (`truent harden` generates a start) · NEEDS-TOOL = pass a `truent probe` / `truent symbolic` report · ASSESS = a person must verify · N/A = nothing to apply to
 
 ## Risk acceptances
 
-- **gen_insecure_randomness** ./web/app/dashboard/settings/page.tsx:29 — accepted until 2026-12-31 by @geekstrancend: API key generated with Math.random() in the dashboard; fix is a one-line change to crypto.randomUUID() / crypto.getRandomValues() in the maintainer's uncommitted web work. Carried until that lands.
-- **evm_single_eoa_admin** ./examples/evm_token.sol:27 — accepted until 2027-12-31 by @geekstrancend: intentionally minimal example contract used by the documentation to show what a scan reports; not deployed anywhere.
-- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @geekstrancend: transitive, not in the normal build graph (dev/build only); no exposure in the shipped binary.
-- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @geekstrancend: transitive via alloy-primitives → revm; the maintained fork is not yet resolvable from revm 14. Re-evaluate at the next revm upgrade.
-- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @geekstrancend: ring is the rustls crypto provider used by truent-runtime and ureq; the aws-lc-rs provider adds a C/cmake build across six release targets. Informational advisory, no vulnerability. Re-evaluate when rustls' aws-lc-rs provider ships prebuilt for musl and Windows.
-- **rt_no_https_redirect** http://127.0.0.1:3111:1 — accepted until 2027-03-31 by @geekstrancend: The CI DAST target is `next start` on localhost, which serves plain HTTP by design; TLS termination and the HTTP→HTTPS redirect are the production edge's job. Verified separately by `truent probe https://<production-host>` before each release.
-- **rt_missing_csp** http://127.0.0.1:3111:1 — accepted until 2026-12-31 by @geekstrancend: The web dashboard sends X-Frame-Options, nosniff, Referrer-Policy and COOP but no Content-Security-Policy. Fix: add a CSP entry to headers() in web/next.config.js (default-src 'self'; script-src 'self' 'nonce-…'; frame-ancestors 'none'). Lives in the maintainer's uncommitted web work.
-- **evm_symbolic_counterexample** examples/foundry/test/Vault.t.sol:1 — accepted until 2027-12-31 by @geekstrancend: examples/foundry is the documented symbolic-execution demo: a deliberately buggy vault whose counterexample CI asserts is found. Not deployed.
+- **evm_single_eoa_admin** ./examples/evm_token.sol:27 — accepted until 2027-12-31 by @Emmyhack: intentionally minimal example contract used by the documentation to show what a scan reports; not deployed anywhere.
+- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @Emmyhack: transitive, not in the normal build graph (dev/build only); no exposure in the shipped binary.
+- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @Emmyhack: transitive via alloy-primitives → revm; the maintained fork is not yet resolvable from revm 14. Re-evaluate at the next revm upgrade.
+- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @Emmyhack: ring is the rustls crypto provider used by truent-runtime and ureq; the aws-lc-rs provider adds a C/cmake build across six release targets. Informational advisory, no vulnerability. Re-evaluate when rustls' aws-lc-rs provider ships prebuilt for musl and Windows.
+- **rt_no_https_redirect** http://127.0.0.1:3111:1 — accepted until 2027-03-31 by @Emmyhack: The CI DAST target is `next start` on localhost, which serves plain HTTP by design; TLS termination and the HTTP→HTTPS redirect are the production edge's job. Verified separately by `truent probe https://<production-host>` before each release.
+- **evm_symbolic_counterexample** examples/foundry/test/Vault.t.sol:1 — accepted until 2027-12-31 by @Emmyhack: examples/foundry is the documented symbolic-execution demo: a deliberately buggy vault whose counterexample CI asserts is found. Not deployed.
 
 | # | Section | Worst | Pass | Fail | Partial | Missing | Assess |
 |---|---|---|---|---|---|---|---|
 | 1 | Functional Testing | PASS | 7 | 0 | 0 | 0 | 0 |
 | 2 | Regression Testing | ASSESS | 8 | 0 | 0 | 0 | 2 |
-| 3 | Static Application Security Testing (SAST) | ACCEPTED | 13 | 0 | 0 | 0 | 0 |
+| 3 | Static Application Security Testing (SAST) | PASS | 13 | 0 | 0 | 0 | 0 |
 | 4 | Dynamic Application Security Testing (DAST) | ASSESS | 12 | 0 | 0 | 0 | 1 |
 | 5 | Dependency & Supply-Chain Security Testing | ACCEPTED | 10 | 0 | 0 | 0 | 0 |
 | 6 | Fuzz Testing | PASS | 14 | 0 | 0 | 0 | 0 |
@@ -67,14 +65,14 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [ ] **Previously fixed vulnerability regression tests** — ASSESS: Every fixed vulnerability has a test that reproduces it; keep them in a `regressions/` corpus the way Truent keeps its own `tests/corpus/bad`
 - [ ] **Previously fixed bug regression tests** — ASSESS: Bug fixes land with a failing-then-passing test
 - [x] **Critical user-flow regression tests** — PASS: end-to-end tests present and run in CI (crates/cli/tests/cli/mod.rs, crates/cli/tests/cli.rs, tests/cli.rs)
-- [x] **Authentication regression tests** — ACCEPTED: under risk acceptance: gen_insecure_randomness ×1
+- [x] **Authentication regression tests** — PASS: 3 detector(s) ran, no findings
 - [x] **Authorization regression tests** — PASS: 2 detector(s) ran, no findings
 - [x] **Payment/withdrawal regression tests** — PASS: 3 detector(s) ran, no findings
 - [x] **Database-operation regression tests** — PASS: 2 detector(s) ran, no findings
 - [x] **Smart-contract interaction regression tests** — PASS: 7 detector(s) ran, no findings
 - [x] **State-transition regression tests** — PASS: 8 detector(s) ran, no findings
 
-## 3. Static Application Security Testing (SAST) — ACCEPTED
+## 3. Static Application Security Testing (SAST) — PASS
 
 - [x] **SQL injection detection** — PASS: 1 detector(s) ran, no findings
 - [x] **Command injection detection** — PASS: 2 detector(s) ran, no findings
@@ -83,7 +81,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Path traversal detection** — PASS: 1 detector(s) ran, no findings
 - [x] **Insecure deserialization detection** — PASS: 2 detector(s) ran, no findings
 - [x] **Hardcoded secrets detection** — PASS: 2 detector(s) ran, no findings
-- [x] **Weak/unsafe cryptography detection** — ACCEPTED: under risk acceptance: gen_insecure_randomness ×1
+- [x] **Weak/unsafe cryptography detection** — PASS: 3 detector(s) ran, no findings
 - [x] **Authentication flaws** — PASS: 5 detector(s) ran, no findings
 - [x] **Authorization flaws** — PASS: 14 detector(s) ran, no findings
 - [x] **Dangerous function/API usage** — PASS: 4 detector(s) ran, no findings
@@ -198,14 +196,14 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 - [x] **Login testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Logout testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Password-reset testing** — ACCEPTED: under risk acceptance: gen_insecure_randomness ×1
+- [x] **Password-reset testing** — PASS: 2 detector(s) ran, no findings
 - [ ] **MFA testing** — ASSESS: Verify enrolment, recovery codes and step-up on sensitive actions in the E2E suite
 - [x] **Session-expiration testing** — PASS: probe observed no issue
 - [ ] **Session-revocation testing** — ASSESS: Logout and password change must invalidate every other session; test it
 - [x] **Session-fixation testing** — PASS: probe observed no issue
 - [x] **Token-reuse testing** — PASS: 2 detector(s) ran, no findings
 - [x] **JWT validation testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Refresh-token testing** — ACCEPTED: under risk acceptance: gen_insecure_randomness ×1
+- [x] **Refresh-token testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Credential-stuffing resistance testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Brute-force protection testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Account-enumeration testing** — PASS: 1 detector(s) ran, no findings
@@ -237,7 +235,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [ ] **Referential-integrity testing** — ASSESS: Foreign keys with the intended on-delete behaviour
 - [x] **Backup restoration testing** — PASS: disaster-recovery runbook present and run in CI (docs/runbooks/incident-response.md, docs/runbooks/disaster-recovery.md)
 - [x] **Disaster-recovery testing** — PASS: disaster-recovery runbook present and run in CI (docs/runbooks/incident-response.md, docs/runbooks/disaster-recovery.md)
-- [x] **Data migration integrity testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260621132501_init/migration.sql, web/prisma/migrations/20260806000000_scans_billing/migration.sql)
+- [x] **Data migration integrity testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
 - [x] **Financial-balance reconciliation testing** — PASS: 6 detector(s) ran, no findings
 
 ## 14. Financial / Value-Movement Testing — ASSESS
@@ -321,18 +319,18 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 ## 18. Load & Stress Testing — PASS
 
-- [x] **Normal-load testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **Peak-load testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **High-concurrency testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **Stress testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **Spike testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **Endurance/soak testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
+- [x] **Normal-load testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **Peak-load testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **High-concurrency testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **Stress testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **Spike testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **Endurance/soak testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **CPU-exhaustion testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Memory-exhaustion testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Database-exhaustion testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Connection-exhaustion testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **Queue-overload testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **API timeout testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
+- [x] **Connection-exhaustion testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **Queue-overload testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **API timeout testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **Cascading-failure testing** — PASS: chaos/failure experiments present and run in CI (tests/chaos/run.sh)
 
 ## 19. Chaos & Failure Testing — PASS
@@ -354,11 +352,11 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 ## 20. Migration & Upgrade Testing — ASSESS
 
-- [x] **Database migration testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260621132501_init/migration.sql, web/prisma/migrations/20260806000000_scans_billing/migration.sql)
-- [x] **Schema migration testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260621132501_init/migration.sql, web/prisma/migrations/20260806000000_scans_billing/migration.sql)
+- [x] **Database migration testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
+- [x] **Schema migration testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
 - [x] **Migration rollback testing** — PASS: migration rollback present and run in CI (migration tool with rollback support)
 - [x] **Partial-migration failure testing** — PASS: migration rollback present and run in CI (migration tool with rollback support)
-- [x] **Existing-data compatibility testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260621132501_init/migration.sql, web/prisma/migrations/20260806000000_scans_billing/migration.sql)
+- [x] **Existing-data compatibility testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
 - [x] **Version-upgrade testing** — PASS: end-to-end tests present and run in CI (crates/cli/tests/cli/mod.rs, crates/cli/tests/cli.rs, tests/cli.rs)
 - [ ] **API backward-compatibility testing** — ASSESS: Contract tests against the previous client version
 - [x] **Smart-contract upgrade testing** — PASS: 8 detector(s) ran, no findings
@@ -368,14 +366,14 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 ## 21. Performance Testing — ASSESS
 
-- [x] **Response-time testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **Throughput testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
+- [x] **Response-time testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **Throughput testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **CPU profiling** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
 - [x] **Memory profiling** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
 - [x] **Database-query performance testing** — PASS: 1 detector(s) ran, no findings
 - [ ] **N+1 query detection** — ASSESS: Enable query logging in tests and assert query counts per request
 - [x] **RPC-call performance testing** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
-- [x] **Network-performance testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
+- [x] **Network-performance testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **Cache-performance testing** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
 - [x] **Smart-contract gas-usage testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Performance-regression testing** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
@@ -447,8 +445,8 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **CPU-exhaustion testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Expensive-operation abuse testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Gas-griefing testing** — PASS: 2 detector(s) ran, no findings
-- [x] **Queue exhaustion testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
-- [x] **Connection exhaustion testing** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
+- [x] **Queue exhaustion testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
+- [x] **Connection exhaustion testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **Rate-limit bypass testing** — PASS: 1 detector(s) ran, no findings
 
 ## 28. Supply-Chain & Build Security — PASS
@@ -545,9 +543,9 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Data-integrity tests pass** — PASS: 6 detector(s) ran, no findings
 - [x] **Financial/value-movement tests pass** — PASS: 7 detector(s) ran, no findings
 - [x] **Smart-contract security tests pass** — PASS: 14 detector(s) ran, no findings
-- [x] **Load/stress tests pass** — PASS: load/stress tests present and run in CI (web/.next/static/Neg-Szywa-fBowdK6H_hU/_ssgManifest.js, web/.next/static/Neg-Szywa-fBowdK6H_hU/_buildManifest.js, tests/load/stress-scan.sh)
+- [x] **Load/stress tests pass** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **Failure/chaos tests pass** — PASS: chaos/failure experiments present and run in CI (tests/chaos/run.sh)
-- [x] **Migration tests pass** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260621132501_init/migration.sql, web/prisma/migrations/20260806000000_scans_billing/migration.sql)
+- [x] **Migration tests pass** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
 - [x] **Performance regression checks pass** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
 - [x] **Mutation tests meet the required threshold** — PASS: mutation testing present and run in CI (mutation job in CI)
 - [x] **Secrets/configuration scans pass** — PASS: 2 detector(s) ran, no findings

@@ -469,7 +469,7 @@ pub fn format_sarif(findings: &[Finding], tool_version: &str) -> Value {
             "driver": {
                 "name": "Truent",
                 "version": tool_version,
-                "informationUri": "https://github.com/geekstrancend/Truent",
+                "informationUri": "https://github.com/Emmyhack/Truent",
                 "rules": rules
             }
         },

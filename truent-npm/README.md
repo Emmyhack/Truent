@@ -372,7 +372,7 @@ Truent checks 22 built-in security invariants across three blockchains.
 - **MOVE_004**: Type mismatches
 - **MOVE_005**: Missing signer requirements
 
-See the [full invariants reference](https://github.com/geekstrancend/Truent#invariants) for detailed descriptions.
+See the [full invariants reference](https://github.com/Emmyhack/Truent#invariants) for detailed descriptions.
 
 ## Configuration
 
@@ -530,7 +530,7 @@ Times vary with code size and system speed.
 
 ## Documentation
 
-- **GitHub**: [github.com/geekstrancend/Truent](https://github.com/geekstrancend/Truent)
+- **GitHub**: [github.com/Emmyhack/Truent](https://github.com/Emmyhack/Truent)
 - **Crates.io**: [crates.io/crates/truent-cli](https://crates.io/crates/truent-cli)
 - **API Docs**: [docs.rs/truent-cli](https://docs.rs/truent-cli)
 
@@ -540,9 +540,9 @@ MIT — See [LICENSE](LICENSE)
 
 ## Support
 
-- **Issues**: [github.com/geekstrancend/Truent/issues](https://github.com/geekstrancend/Truent/issues)
-- **Discussions**: [github.com/geekstrancend/Truent/discussions](https://github.com/geekstrancend/Truent/discussions)
-- **Security**: [github.com/geekstrancend/Truent/security/policy](https://github.com/geekstrancend/Truent/security/policy)
+- **Issues**: [github.com/Emmyhack/Truent/issues](https://github.com/Emmyhack/Truent/issues)
+- **Discussions**: [github.com/Emmyhack/Truent/discussions](https://github.com/Emmyhack/Truent/discussions)
+- **Security**: [github.com/Emmyhack/Truent/security/policy](https://github.com/Emmyhack/Truent/security/policy)
 
 ---
 

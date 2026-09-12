@@ -2,7 +2,7 @@
 
 Deterministic-first security skills for AI coding agents (Claude Code, Cursor,
 Codex, Copilot, Windsurf). Unlike prompt-only audit skills, these are backed by
-[Truent](https://github.com/geekstrancend/Truent)'s **compiled engine** — static
+[Truent](https://github.com/Emmyhack/Truent)'s **compiled engine** — static
 analyzers plus a real `revm`-backed invariant fuzzer — so findings are
 machine-verified and reproducible, not an LLM's opinion.
 
@@ -53,14 +53,14 @@ Verify: `truent doctor` should report all components healthy.
 **As a Claude Code plugin** (recommended — installs all six skills):
 
 ```
-/plugin marketplace add geekstrancend/Truent
+/plugin marketplace add Emmyhack/Truent
 /plugin install truent
 ```
 
 **Or point an agent at the repo:**
 
 ```
-Install https://github.com/geekstrancend/Truent and run truent-audit on the codebase
+Install https://github.com/Emmyhack/Truent and run truent-audit on the codebase
 ```
 
 **Or copy a single skill** into your agent's skills directory, e.g.

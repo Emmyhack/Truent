@@ -17,7 +17,7 @@ const columns = [
       { label: 'Getting Started', href: '/docs#getting-started' },
       { label: 'CLI Reference', href: '/docs#cli' },
       { label: 'CI/CD Guide', href: '/docs#ci-cd' },
-      { label: 'GitHub ↗', href: 'https://github.com/geekstrancend/Truent', external: true },
+      { label: 'GitHub ↗', href: 'https://github.com/Emmyhack/Truent', external: true },
     ],
   },
   {
@@ -27,13 +27,13 @@ const columns = [
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
       // The design pointed this at its 404 mock; sent to the real policy instead.
-      { label: 'Security Disclosure', href: 'https://github.com/geekstrancend/Truent/security/policy', external: true },
+      { label: 'Security Disclosure', href: 'https://github.com/Emmyhack/Truent/security/policy', external: true },
     ],
   },
 ]
 
 const socials = [
-  { label: 'GH', href: 'https://github.com/geekstrancend/Truent', name: 'GitHub' },
+  { label: 'GH', href: 'https://github.com/Emmyhack/Truent', name: 'GitHub' },
   { label: '𝕏', href: 'https://twitter.com/truentsec', name: 'X' },
 ]
 

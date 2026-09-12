@@ -169,7 +169,7 @@ def build_index(skill_dirs: list[Path]) -> dict:
         )
     return {
         "version": "1.0.0",
-        "repository": "https://github.com/geekstrancend/Truent",
+        "repository": "https://github.com/Emmyhack/Truent",
         "domain": "smart-contract-security",
         "total_skills": len(entries),
         "skills": entries,

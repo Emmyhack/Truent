@@ -1878,7 +1878,7 @@ fn get_vulnerability_reference(invariant_id: &str) -> String {
     for (pattern, anchor) in invariant_mapping.iter() {
         if clean_id.contains(pattern) {
             return format!(
-                "https://github.com/geekstrancend/Truent/blob/main/docs/INVARIANT_LIBRARY.md{}",
+                "https://github.com/Emmyhack/Truent/blob/main/docs/INVARIANT_LIBRARY.md{}",
                 anchor
             );
         }
@@ -1886,7 +1886,7 @@ fn get_vulnerability_reference(invariant_id: &str) -> String {
 
     // Fallback to GitHub search if no mapping found
     format!(
-        "https://github.com/geekstrancend/Truent/search?q={}",
+        "https://github.com/Emmyhack/Truent/search?q={}",
         id_lower.replace("_", "%20")
     )
 }
