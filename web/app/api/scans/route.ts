@@ -12,7 +12,11 @@ export async function GET(request: NextRequest) {
     where: { userId: user.id },
     orderBy: { createdAt: 'desc' },
     take: limit,
-    include: { findings: { select: { severity: true, status: true } } },
+    select: {
+      id: true, projectName: true, language: true, status: true, error: true,
+      durationMs: true, createdAt: true, completedAt: true,
+      findings: { select: { severity: true, status: true, evidence: true } },
+    },
   })
 
   return NextResponse.json({ scans })

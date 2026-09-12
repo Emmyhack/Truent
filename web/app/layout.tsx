@@ -3,13 +3,13 @@ import '../styles/globals.css'
 import { AuthProvider } from './providers'
 
 export const metadata: Metadata = {
-  title: 'Truent | Smart Contract Security Intelligence',
-  description: 'Audit faster. Find more. Miss nothing. Advanced symbolic execution and invariant-based security for DeFi protocols.',
-  keywords: ['smart contracts', 'security', 'audit', 'DeFi', 'blockchain', 'invariants'],
+  title: 'Truent | Security engine for contracts, code and infrastructure',
+  description: 'One engine for smart contracts, application code, dependencies, infrastructure and live targets. Every finding is a lead or proven — never a guess — with an exploitability rating and a fix.',
+  keywords: ['smart contracts', 'security', 'SAST', 'DAST', 'supply chain', 'symbolic execution', 'audit', 'DeFi'],
   authors: [{ name: 'Truent Security' }],
   openGraph: {
-    title: 'Truent | Smart Contract Security Intelligence',
-    description: 'Don\'t get Hacked!',
+    title: 'Truent | Security engine for contracts, code and infrastructure',
+    description: 'Findings you can act on: lead or proven, rated for exploitability, with the fix and how to verify it.',
     type: 'website',
     url: 'https://truent.dev',
   },

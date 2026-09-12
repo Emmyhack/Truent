@@ -8,23 +8,23 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // NextAuth models
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -47,16 +47,16 @@ model User {
   name          String?
   email         String?   @unique
   emailVerified DateTime?
-  password      String?   // For credentials provider
+  password      String? // For credentials provider
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  scans Scan[]
+  accounts     Account[]
+  sessions     Session[]
+  scans        Scan[]
   subscription Subscription?
-  payments Payment[]
+  payments     Payment[]
 }
 
 model AuthNonce {
@@ -69,18 +69,23 @@ model AuthNonce {
 }
 
 model Scan {
-  id          String   @id @default(cuid())
-  userId      String
-  projectName String?
-  sourceType  String   @default("code")
-  sourceRef   String?
-  language    String
-  status      String   @default("processing")
-  error       String?
-  startedAt   DateTime @default(now())
-  completedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String    @id @default(cuid())
+  userId        String
+  projectName   String?
+  sourceType    String    @default("code")
+  sourceRef     String?
+  sourceContent String?
+  language      String
+  status        String    @default("queued")
+  error         String?
+  attempts      Int       @default(0)
+  claimedAt     DateTime?
+  workerId      String?
+  durationMs    Int?
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   findings Finding[]
@@ -101,6 +106,16 @@ model Finding {
   recommendation String
   status         String   @default("open")
   fingerprint    String
+  // Engine contract (truent scan --output json). `evidence` is the honesty
+  // contract: "lead" is a static inference, "proven" a concrete witness.
+  invariantId    String?
+  chain          String?
+  evidence       String   @default("lead")
+  exploitability String?
+  fix            String?
+  verify         String?
+  cwe            String?
+  snippet        String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -111,17 +126,17 @@ model Finding {
 }
 
 model Subscription {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  provider             String
-  providerCustomerId   String?
-  providerSubscriptionId String? @unique
-  plan                 String
-  status               String
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
+  provider               String
+  providerCustomerId     String?
+  providerSubscriptionId String?   @unique
+  plan                   String
+  status                 String
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -129,19 +144,19 @@ model Subscription {
 }
 
 model Payment {
-  id                    String   @id @default(cuid())
-  userId                String
-  provider              String
-  providerPaymentId     String   @unique
-  plan                   String
-  amount                 Int
-  currency               String
-  status                 String
-  walletAddress          String?
-  transactionHash        String? @unique
-  expiresAt              DateTime?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                String    @id @default(cuid())
+  userId            String
+  provider          String
+  providerPaymentId String    @unique
+  plan              String
+  amount            Int
+  currency          String
+  status            String
+  walletAddress     String?
+  transactionHash   String?   @unique
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

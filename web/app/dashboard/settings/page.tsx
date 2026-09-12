@@ -1,14 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/Button'
 import { Copy, Eye, EyeOff, Check, AlertCircle } from 'lucide-react'
 
 export default function SettingsPage() {
-  const [fullName, setFullName] = useState('Alex Developer')
-  const [email, setEmail] = useState('alex@example.com')
-  const [apiKey, setApiKey] = useState('truent_sk_1234567890abcdefghijk')
+  const { data: session } = useSession()
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  useEffect(() => {
+    setFullName(session?.user?.name || '')
+    setEmail(session?.user?.email || '')
+  }, [session])
   const [showApiKey, setShowApiKey] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [copiedApiKey, setCopiedApiKey] = useState(false)
@@ -25,8 +31,10 @@ export default function SettingsPage() {
   }
 
   const handleRegenerateApiKey = () => {
-    // In a real app, this would call an API endpoint
-    setApiKey('truent_sk_' + Math.random().toString(36).slice(2, 24))
+    // Key material must come from a CSPRNG; Math.random() is predictable.
+    const bytes = new Uint8Array(24)
+    crypto.getRandomValues(bytes)
+    setApiKey('truent_sk_' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join(''))
   }
 
   return (
@@ -166,7 +174,7 @@ export default function SettingsPage() {
                 Professional
               </h3>
               <p className="text-body-sm text-sec mb-4">
-                $499/month • Unlimited scans • Priority support
+                $499/month • 10,000 scans • Priority support
               </p>
               <p className="text-xs text-sec">
                 Billing date: Jun 15, 2026 • Next renewal: Aug 15, 2026
@@ -178,12 +186,12 @@ export default function SettingsPage() {
               <h4 className="text-sm font-[600] text-text mb-3">Included Features</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  'Unlimited Scans',
-                  'Priority CI/CD Queues',
-                  'Full AI Co-Auditor',
-                  'GitHub Integration',
-                  'Team Management',
-                  'API Access',
+                  '10,000 scans / month',
+                  'Every engine: contracts, application code, infrastructure',
+                  'Exploitability rating and attack chains',
+                  'Fix + verify step on every finding',
+                  'SARIF export for code scanning',
+                  'Priority support',
                 ].map((feature) => (
                   <div key={feature} className="flex items-center gap-2 p-2 rounded bg-panel">
                     <Check className="w-4 h-4 text-medium flex-shrink-0" />

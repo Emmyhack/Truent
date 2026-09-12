@@ -158,7 +158,9 @@ export const authOptions: NextAuthOptions = {
     signIn: '/',
   },
   session: {
-    strategy: 'database',
+    // JWT sessions are required by NextAuth middleware, which runs before the
+    // database-backed route handlers and cannot resolve opaque session tokens.
+    strategy: 'jwt',
     maxAge: 7 * 24 * 60 * 60, // 7 days (reduced from 30 for security)
   },
 }

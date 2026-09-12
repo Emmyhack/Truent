@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-import path from 'path'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 // Since Prisma 7, PrismaClient must be constructed with an explicit driver
 // adapter (there's no more "resolve automatically from schema.prisma" magic).
@@ -9,13 +8,11 @@ import path from 'path'
 // dependency but unused today - see prisma.config.ts for the note on what a
 // real Postgres migration would require: changing the schema provider and
 // regenerating migrations, not just swapping the adapter here).
-function sqliteFilePath(): string {
-  const url = process.env.DATABASE_URL ?? `file:${path.join(process.cwd(), 'prisma', 'dev.db')}`
-  return url.startsWith('file:') ? url.slice('file:'.length) : url
-}
-
 const prismaClientSingleton = () => {
-  const adapter = new PrismaBetterSqlite3({ url: sqliteFilePath() })
+  // The fallback permits `next build` to statically inspect route modules;
+  // deployed processes must always provide DATABASE_URL.
+  const url = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/truent'
+  const adapter = new PrismaPg({ connectionString: url })
   return new PrismaClient({ adapter })
 }
 

@@ -1,15 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
 import { ScanModal } from '@/components/ui/ScanModal'
 
 interface Scan {
   id: string
   project: string
-  chain: 'EVM' | 'Solana' | 'Arbitrum' | 'Base'
+  chain: string
   date: string
   findings: { critical: number; high: number; medium: number; low: number }
+  proven: number
   status: 'complete' | 'scanning' | 'failed'
   duration: string
 }
@@ -20,28 +23,6 @@ interface Activity {
   description: string
   time: string
 }
-
-const SCANS: Scan[] = [
-  { id: 'TRU-2026-042', project: 'Dexalot Contracts', chain: 'EVM', date: 'Jul 7, 2026', findings: { critical: 3, high: 6, medium: 7, low: 5 }, status: 'complete', duration: '4m 12s' },
-  { id: 'TRU-2026-041', project: 'Circle-Pay BCH', chain: 'Solana', date: 'Jul 6, 2026', findings: { critical: 5, high: 7, medium: 6, low: 4 }, status: 'complete', duration: '6m 55s' },
-  { id: 'TRU-2026-040', project: 'Vault Core V2', chain: 'Arbitrum', date: 'Jul 5, 2026', findings: { critical: 0, high: 0, medium: 2, low: 12 }, status: 'complete', duration: '2m 08s' },
-  { id: 'TRU-2026-043', project: 'Protocol X LendingPool', chain: 'Base', date: 'Jul 8, 2026', findings: { critical: 0, high: 0, medium: 0, low: 0 }, status: 'scanning', duration: '–' },
-]
-
-const ACTIVITY: Activity[] = [
-  { type: 'finding', title: 'Critical confirmed', description: 'Reentrancy vulnerability in Dexalot signature logic', time: '2m ago' },
-  { type: 'shared', title: 'Report shared', description: 'Security disclosure TRU-2026-041 sent to Circle-Pay team', time: '45m ago' },
-  { type: 'complete', title: 'Scan complete', description: 'Circle-Pay BCH finished — 22 findings across 3 contracts', time: '3h ago' },
-  { type: 'updated', title: 'Library updated', description: '47 new patterns synced from global exploit database', time: '5h ago' },
-  { type: 'complete', title: 'Scan complete', description: 'Vault Core V2 — Clean result, 14 low-risk observations', time: '1d ago' },
-]
-
-const METRICS = [
-  { label: 'Total scans', value: '43', delta: '+8 this month', icon: '▤' },
-  { label: 'Critical findings', value: '8', delta: '-3 resolved', icon: '⚠' },
-  { label: 'Protocols monitored', value: '12', delta: '+2 this month', icon: '⬡' },
-  { label: 'Avg scan time', value: '4m 20s', delta: '↓ 18% faster', icon: '◔' },
-]
 
 const ACTIVITY_ICON: Record<Activity['type'], { cls: string; symbol: string }> = {
   finding: { cls: 'bg-[#ef4444]/20 text-[#ef4444]', symbol: '!' },
@@ -71,7 +52,60 @@ function Findings({ scan }: { scan: Scan }) {
 }
 
 export default function DashboardPage() {
+  const { data: session } = useSession()
   const [showScanModal, setShowScanModal] = useState(false)
+  const [scans, setScans] = useState<Scan[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/scans?limit=50')
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Unable to load scans')
+        const data = await response.json()
+        setScans(data.scans.map((scan: any) => {
+          const counts = { critical: 0, high: 0, medium: 0, low: 0 }
+          let proven = 0
+          scan.findings.forEach((finding: any) => {
+            if (finding.severity in counts) counts[finding.severity as keyof typeof counts]++
+            if (finding.evidence === 'proven') proven++
+          })
+          return {
+            id: scan.id,
+            project: scan.projectName || 'Untitled scan',
+            chain: scan.language,
+            date: new Date(scan.createdAt).toLocaleDateString(),
+            findings: counts,
+            proven,
+            status: scan.status === 'queued' || scan.status === 'processing' ? 'scanning' : scan.status,
+            duration: scan.durationMs ? `${(scan.durationMs / 1000).toFixed(1)}s` : '–',
+          }
+        }))
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [showScanModal])
+
+  const metrics = useMemo(() => {
+    const completed = scans.filter((scan) => scan.status === 'complete')
+    const critical = scans.reduce((sum, scan) => sum + scan.findings.critical, 0)
+    const proven = scans.reduce((sum, scan) => sum + scan.proven, 0)
+    const average = completed.length
+      ? completed.reduce((sum, scan) => sum + (Number.parseFloat(scan.duration) || 0), 0) / completed.length
+      : 0
+    return [
+      { label: 'Total scans', value: String(scans.length), delta: `${completed.length} completed`, icon: '▤' },
+      { label: 'Critical findings', value: String(critical), delta: 'Across all scans', icon: '⚠' },
+      { label: 'Proven findings', value: String(proven), delta: 'Concrete witness, not inference', icon: '◆' },
+      { label: 'Avg scan time', value: average ? `${average.toFixed(1)}s` : '–', delta: 'Completed scans', icon: '◔' },
+    ]
+  }, [scans])
+
+  const activity: Activity[] = scans.slice(0, 5).map((scan) => ({
+    type: scan.status === 'failed' ? 'failed' : scan.status === 'complete' ? 'complete' : 'updated',
+    title: scan.status === 'complete' ? 'Scan complete' : scan.status === 'failed' ? 'Scan failed' : 'Scan queued',
+    description: `${scan.project} — ${Object.values(scan.findings).reduce((a, b) => a + b, 0)} findings`,
+    time: scan.date,
+  }))
 
   return (
     <AppShell currentPage="dashboard" onNewScan={() => setShowScanModal(true)}>
@@ -81,7 +115,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="m-0 text-[30px] font-normal tracking-[-0.02em] text-[#f2f6f2]">Dashboard</h1>
             <p className="m-0 mt-2 text-[13.5px] text-sec">
-              Welcome back, Alex. Here&apos;s your security overview.
+              {session?.user?.name ? `Welcome back, ${session.user.name.split(' ')[0]}.` : 'Welcome back.'} Here&apos;s your security overview.
             </p>
           </div>
           <button
@@ -102,7 +136,7 @@ export default function DashboardPage() {
             style={{ background: 'radial-gradient(closest-side,rgba(52,211,153,0.1),transparent)' }}
           />
           <div className="relative grid grid-cols-2 overflow-hidden rounded-[18px] border border-white/[0.06] lg:grid-cols-4">
-            {METRICS.map((m, i) => (
+            {metrics.map((m, i) => (
               <div
                 key={m.label}
                 className={`p-5 ${i < 3 ? 'lg:border-r lg:border-white/[0.06]' : ''} ${
@@ -126,21 +160,22 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between border-b border-white/[0.06] px-[22px] py-[18px]">
               <h2 className="m-0 text-[16px] font-medium text-text">Recent scans</h2>
               <span className="font-mono text-[10.5px] tracking-[0.1em] text-acc-text">
-                {SCANS.length} TOTAL
+                {scans.length} TOTAL
               </span>
             </div>
             <div className="overflow-x-auto">
               <div className="min-w-[540px]">
                 <div className="grid grid-cols-[1.6fr_0.7fr_1fr_0.9fr_0.9fr] border-b border-white/[0.05] px-[22px] py-[11px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[#4d564f]">
                   <span>Project</span>
-                  <span>Chain</span>
+                  <span>Engine</span>
                   <span>Findings</span>
                   <span>Date</span>
                   <span>Status</span>
                 </div>
-                {SCANS.map((scan) => (
-                  <div
+                {scans.map((scan) => (
+                  <Link
                     key={scan.id}
+                    href={`/reports/${scan.id}`}
                     className="grid grid-cols-[1.6fr_0.7fr_1fr_0.9fr_0.9fr] items-center border-b border-white/[0.04] px-[22px] py-[15px] last:border-b-0"
                   >
                     <div>
@@ -163,8 +198,9 @@ export default function DashboardPage() {
                     >
                       {scan.status.toUpperCase()}
                     </span>
-                  </div>
+                  </Link>
                 ))}
+                {!loading && scans.length === 0 && <div className="px-6 py-10 text-center text-sm text-sec">No scans yet. Start your first analysis.</div>}
               </div>
             </div>
           </div>
@@ -174,7 +210,7 @@ export default function DashboardPage() {
             <div className="border-b border-white/[0.06] px-5 py-[18px]">
               <h2 className="m-0 text-[16px] font-medium text-text">Activity</h2>
             </div>
-            {ACTIVITY.map((a, i) => {
+            {activity.map((a, i) => {
               const { cls, symbol } = ACTIVITY_ICON[a.type]
               return (
                 <div key={i} className="flex gap-3 border-b border-white/[0.04] px-5 py-[15px] last:border-b-0">

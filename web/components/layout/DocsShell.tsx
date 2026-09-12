@@ -51,7 +51,6 @@ export function DocsShell({
     {
       title: 'SECURITY',
       items: [
-        { label: 'Invariant Library', href: '/library' },
         { label: 'AI Co-Auditor', href: '/docs/ai', badge: 'Pro' },
         { label: 'Audit Report Guide', href: '/docs/reports' },
       ],

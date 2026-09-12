@@ -143,7 +143,7 @@ export function SampleReportModal({ isOpen, onClose }: SampleReportModalProps) {
               </div>
               <div>
                 <span className="text-sec">Invariants Applied</span>
-                <p className="font-[600] text-text">50+</p>
+                <p className="font-[600] text-text">174</p>
               </div>
               <div>
                 <span className="text-sec">Scan Duration</span>

@@ -8,7 +8,6 @@ import { AsciiLogo } from '@/components/ui/AsciiLogo'
 
 const shortcuts = [
   { icon: '⬡', label: 'Homepage', href: '/' },
-  { icon: '◈', label: 'Library', href: '/library' },
   { icon: '▦', label: 'Dashboard', href: '/dashboard' },
 ]
 
