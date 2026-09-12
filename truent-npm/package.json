@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "detect-libc": "^2.0.3",
-    "https-proxy-agent": "^7.0.0"
+    "https-proxy-agent": "^9.1.0"
   },
   "devDependencies": {
     "jest": "^29.0.0"
