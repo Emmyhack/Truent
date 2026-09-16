@@ -1,231 +1,156 @@
 # Truent Web Authentication Setup
 
-This guide explains how to set up and use the authentication system in the Truent web application.
+How sign-in works in the Truent dashboard and how to configure it.
 
 ## Overview
 
-The authentication system uses:
-- **Next Auth 4.24.14** for session management
-- **Prisma 7** for database models, via `@prisma/adapter-better-sqlite3` (Prisma 7 requires
-  an explicit driver adapter - `new PrismaClient()` with no arguments no longer works)
-- **SQLite** for data storage by default (`prisma/dev.db`); `@prisma/adapter-pg` is installed
-  for a future Postgres migration but not wired up - switching requires changing
-  `schema.prisma`'s provider and regenerating migrations, not just swapping the adapter
-- **Bcrypt** for password hashing, with a constant-time comparison against a dummy hash on
-  an unknown email so response timing can't be used to enumerate accounts
-- Four providers: **Credentials** (email/password), **GitHub**, **Google**, and **Web3
-  Wallet** (signature-based)
+- **Civic Auth** (`@civic/auth`) is the primary sign-in: Google, email, passkeys and
+  embedded wallets through one provider, rendered in Civic's own modal.
+- **Email / password** (bcrypt, constant-time compare against a dummy hash so an unknown
+  email cannot be told apart from a wrong password by response time).
+- **Web3 wallet** (MetaMask-style `personal_sign` over a server-issued, single-use nonce).
+- **NextAuth 4** owns the application session (a JWT cookie, 7-day lifetime). Every
+  provider above, Civic included, ends in the same NextAuth session, so API routes,
+  the middleware and billing never have to know which provider signed the user in.
+- **Prisma 7 + PostgreSQL** store users, scans and subscriptions.
 
-All provider/session config lives in `web/lib/auth-options.ts`, imported by both the
-NextAuth route handler and any API route that needs the current session server-side.
+Provider and session config lives in `web/lib/auth-options.ts`. Civic's route config
+lives in `web/next.config.js` and `web/lib/civic.ts`.
 
-## Setup Instructions
+## How the Civic bridge works
 
-### 1. Generate NEXTAUTH_SECRET
+1. The user clicks **Continue with Civic** in the auth modal. The Civic React SDK opens
+   its modal and completes the OAuth flow against `https://auth.civic.com`.
+2. Civic's Next.js route handler (`/api/civic/*`) validates the tokens and sets Civic's
+   own signed session cookies.
+3. The modal then calls NextAuth's `civic` provider. That provider reads **nothing** from
+   the request body: it calls `getUser()` from `@civic/auth/nextjs`, which verifies the
+   Civic cookie server-side, and maps the identity onto an application user
+   (`web/lib/civic-user.ts`):
+   - a user already linked by `civicId`, or
+   - an existing account with the same email (linked on first use, so a password user
+     keeps their scans and plan), or
+   - a new account.
+4. NextAuth issues the application session. `session.user.provider` is `"civic"`.
 
-Generate a secure secret for NextAuth:
+Sign-out ends the NextAuth session first, then Civic's, so a failed Civic round-trip can
+never leave the dashboard session alive.
 
-```bash
-openssl rand -base64 32
-```
+Civic's routes are deliberately under `/api/civic`, not `/api/auth`, because NextAuth's
+catch-all owns `/api/auth`. Route protection stays with the NextAuth middleware
+(`web/middleware.ts`); Civic's middleware is not used.
 
-Copy this value to your `.env.local` file.
+## Setup
 
-### 2. Configure Database
-
-Set your `DATABASE_URL` in `.env.local` (defaults to a local SQLite file if unset):
-
-```bash
-DATABASE_URL="file:./prisma/dev.db"
-```
-
-### 3. Run Prisma Migrations
+### 1. Environment
 
 ```bash
 cd web
-npx prisma migrate dev
-```
-
-This creates the necessary tables:
-- `User` - User account information
-- `Account` - OAuth account links
-- `Session` - User sessions
-- `VerificationToken` - For email verification (optional)
-
-### 4. GitHub OAuth Setup (Optional)
-
-To enable GitHub sign-in:
-
-1. Go to GitHub Settings → Developer settings → OAuth Apps
-2. Create a new OAuth App:
-   - **Application name**: Truent
-   - **Homepage URL**: http://localhost:3000 (development)
-   - **Authorization callback URL**: http://localhost:3000/api/auth/callback/github
-3. Copy the **Client ID** and **Client Secret**
-4. Add to `.env.local`:
-   ```
-   GITHUB_ID="your-client-id"
-   GITHUB_SECRET="your-client-secret"
-   ```
-
-### 5. Required Environment Variables
-
-Copy `.env.example` to `.env.local` and fill in the values:
-
-```bash
 cp .env.example .env.local
 ```
 
+Required:
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `NEXTAUTH_URL` | Public URL of the site (`http://localhost:3000` in development) |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` |
+| `NEXT_PUBLIC_CIVIC_CLIENT_ID` | Civic client id (public). Empty hides the Civic button. |
+
+### 2. Civic client id
+
+1. Create an app at <https://auth.civic.com>.
+2. Add the redirect URL `http://localhost:3000/api/civic/callback` (and the production
+   equivalent, `https://<your-domain>/api/civic/callback`).
+3. Put the client id in `NEXT_PUBLIC_CIVIC_CLIENT_ID`. The value is baked in at build
+   time by the Civic Next.js plugin, so rebuild after changing it.
+
+### 3. Database
+
+```bash
+npx prisma migrate deploy   # or `migrate dev` while developing
+```
+
+The `20260914120000_civic_id` migration adds the nullable, unique `User.civicId` column.
+
 ## Usage
 
-### For Users
-
-Users can sign in using:
-
-1. **Email/Password** - Create an account with email and password
-2. **GitHub** - Quick sign-in with GitHub account
-
-### For Developers
-
-#### Check Authentication Status
+### Client components
 
 ```tsx
 'use client'
-
 import { useSession } from 'next-auth/react'
 
-export function MyComponent() {
+export function Greeting() {
   const { data: session, status } = useSession()
-
-  if (status === 'loading') return <div>Loading...</div>
-  if (status === 'unauthenticated') return <div>Not signed in</div>
-
-  return <div>Welcome {session?.user?.name}</div>
+  if (status === 'loading') return null
+  if (status === 'unauthenticated') return <p>Not signed in</p>
+  return <p>Welcome {session?.user?.name} ({session?.user?.provider})</p>
 }
 ```
 
-#### Sign Out
+### Server (API routes)
 
-```tsx
-import { signOut } from 'next-auth/react'
+```ts
+import { getCurrentUser } from '@/lib/current-user'
 
-<button onClick={() => signOut()}>Sign Out</button>
+const user = await getCurrentUser() // null when signed out
 ```
 
-#### Protect Routes
+### Sign out
 
-Routes under `/dashboard/*` and `/reports/*` are automatically protected by the middleware in `middleware.ts`.
+`AppShell` already does this; if you need it elsewhere, sign out of NextAuth first
+(`signOut({ redirect: false })`), then call `signOut()` from `useUser()` in
+`@civic/auth/react`, then navigate.
 
-## API Endpoints
+### Protected routes
 
-### `POST /api/auth/signup`
+`/dashboard/*` and `/reports/*` are protected by `web/middleware.ts` (NextAuth JWT).
 
-Create a new user account.
+## Endpoints
 
-**Request:**
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "securepassword"
-}
-```
+| Route | Owner | Purpose |
+|---|---|---|
+| `POST /api/auth/signup` | app | Create an email/password account |
+| `POST /api/auth/callback/credentials` | NextAuth | Email/password sign-in |
+| `POST /api/auth/callback/wallet` | NextAuth | Wallet signature sign-in |
+| `POST /api/auth/callback/civic` | NextAuth | Bridge a verified Civic session into the app session |
+| `GET /api/auth/session` | NextAuth | Current session |
+| `GET /api/civic/login`, `/callback`, `/refresh`, `/user`, `/logout`, `/clearsession` | Civic | Civic's own OAuth flow and cookies |
 
-**Response (201):**
-```json
-{
-  "id": "user-id",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "createdAt": "2024-01-01T00:00:00Z"
-}
-```
+## Content-Security-Policy
 
-### `POST /api/auth/callback/credentials`
+`next.config.js` allows `https://auth.civic.com` in `frame-src` and `connect-src` for
+the Civic modal. Nothing else changed.
 
-Sign in with email and password (handled by Next Auth).
+## Security notes
 
-### `GET /api/auth/session`
-
-Get current user session (protected route).
-
-## Database Schema
-
-### User Model
-
-```
-- id: String (primary key)
-- name: String?
-- email: String (unique)
-- emailVerified: DateTime?
-- password: String? (for credentials provider)
-- image: String?
-- createdAt: DateTime
-- updatedAt: DateTime
-- accounts: Account[] (OAuth accounts)
-- sessions: Session[] (Active sessions)
-```
-
-### Account Model
-
-```
-- id: String (primary key)
-- userId: String (foreign key)
-- type: String
-- provider: String
-- providerAccountId: String
-- refresh_token: String?
-- access_token: String?
-- expires_at: Int?
-- token_type: String?
-- scope: String?
-- id_token: String?
-- session_state: String?
-```
-
-### Session Model
-
-```
-- id: String (primary key)
-- sessionToken: String (unique)
-- userId: String (foreign key)
-- expires: DateTime
-```
-
-## Security Considerations
-
-1. **Passwords**: Always hashed with bcrypt before storage
-2. **Secrets**: Store NEXTAUTH_SECRET securely (never commit to git)
-3. **HTTPS**: Use HTTPS in production
-4. **Session Timeout**: Sessions expire after 7 days
-5. **CSRF Protection**: Built into Next Auth
+1. The Civic bridge trusts only Civic's server-verified cookie, never a client-supplied
+   profile. Posting to `/api/auth/callback/civic` without a valid Civic session yields
+   `CredentialsSignin` and no session.
+2. Email linking on first Civic sign-in relies on Civic having verified the email.
+3. Passwords are bcrypt-hashed; wallet nonces are single-use and expire.
+4. Keep `NEXTAUTH_SECRET` out of git. `NEXT_PUBLIC_CIVIC_CLIENT_ID` is not secret.
 
 ## Troubleshooting
 
-### "Missing credentials" error
+- **No "Continue with Civic" button** — `NEXT_PUBLIC_CIVIC_CLIENT_ID` was empty at build
+  time. Set it and rebuild.
+- **Civic modal completes but the dashboard does not open** — check the server log for
+  `Civic sign-in error`; usually the Civic callback URL registered in the Civic dashboard
+  does not match `/api/civic/callback` on this origin.
+- **`NO_SECRET` in the log** — `NEXTAUTH_SECRET` is unset.
+- **Database connection error** — verify `DATABASE_URL` and that PostgreSQL is running.
 
-Ensure `NEXTAUTH_URL` and `NEXTAUTH_SECRET` are set correctly in `.env.local`.
+## Not yet implemented
 
-### OAuth callback fails
-
-Check that the callback URL matches exactly in your OAuth provider settings:
-- Development: `http://localhost:3000/api/auth/callback/[provider]`
-- Production: `https://yourdomain.com/api/auth/callback/[provider]`
-
-### Database connection error
-
-Verify `DATABASE_URL` is correct and the database is running.
-
-## Not Yet Implemented
-
-1. Email verification
-2. "Forgot Password" flow
-3. Additional OAuth providers (Microsoft)
-4. User profile management page
-5. Role-based access control (RBAC)
+1. "Forgot password" flow for email/password accounts
+2. Email verification for email/password accounts (Civic accounts arrive verified)
+3. Role-based access control
 
 ## Resources
 
-- [Next Auth Documentation](https://next-auth.js.org/)
-- [Prisma Documentation](https://www.prisma.io/docs/)
-- [GitHub OAuth Documentation](https://docs.github.com/en/developers/apps/building-oauth-apps)
+- [Civic Auth docs](https://docs.civic.com/)
+- [NextAuth documentation](https://next-auth.js.org/)
+- [Prisma documentation](https://www.prisma.io/docs/)

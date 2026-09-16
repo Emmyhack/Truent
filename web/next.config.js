@@ -1,3 +1,24 @@
+const { createCivicAuthPlugin } = require('@civic/auth/nextjs')
+
+// Civic Auth. The client id is public (see .env.example); an empty value keeps
+// the build working with Civic hidden. Routes live under /api/civic so they do
+// not collide with the NextAuth catch-all that owns the application session.
+const civicClientId = process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID ?? ''
+const withCivicAuth = createCivicAuthPlugin({
+  clientId: civicClientId,
+  loginInitUrl: '/api/civic/login',
+  challengeUrl: '/api/civic/challenge',
+  callbackUrl: '/api/civic/callback',
+  refreshUrl: '/api/civic/refresh',
+  userUrl: '/api/civic/user',
+  logoutUrl: '/api/civic/logout',
+  clearSessionUrl: '/api/civic/clearsession',
+  logoutCallbackUrl: '/',
+  // Route protection stays with the NextAuth middleware; Civic only signs in.
+  include: [],
+  autoRedirect: false,
+})
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
@@ -22,8 +43,8 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: https:",
-              "connect-src 'self' https://api.stripe.com",
-              "frame-src https://js.stripe.com https://checkout.stripe.com",
+              "connect-src 'self' https://api.stripe.com https://auth.civic.com",
+              "frame-src https://js.stripe.com https://checkout.stripe.com https://auth.civic.com",
               "frame-ancestors 'none'",
               "object-src 'none'",
               "base-uri 'self'",
@@ -51,4 +72,4 @@ const nextConfig = {
   reactStrictMode: true,
 }
 
-module.exports = nextConfig
+module.exports = withCivicAuth(nextConfig)

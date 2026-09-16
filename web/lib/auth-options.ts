@@ -1,9 +1,10 @@
 import { type NextAuthOptions } from 'next-auth'
-import GithubProvider from 'next-auth/providers/github'
-import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
+import { getUser as getCivicUser } from '@civic/auth/nextjs'
 import prisma from '@/lib/prisma'
+import { CIVIC_ENABLED } from '@/lib/civic'
+import { resolveCivicUser } from '@/lib/civic-user'
 import bcrypt from 'bcrypt'
 import { ethers } from 'ethers'
 import { createHash } from 'crypto'
@@ -46,13 +47,25 @@ async function verifyWalletSignature(
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    GithubProvider({
-      clientId: process.env.GITHUB_ID || '',
-      clientSecret: process.env.GITHUB_SECRET || '',
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_ID || '',
-      clientSecret: process.env.GOOGLE_SECRET || '',
+    CredentialsProvider({
+      id: 'civic',
+      name: 'Civic',
+      // Nothing is read from the request body. The only input is Civic's own
+      // signed session cookie, validated server-side, so a caller cannot mint
+      // an application session by posting a made-up profile.
+      credentials: {},
+      async authorize() {
+        if (!CIVIC_ENABLED) return null
+        try {
+          const civic = await getCivicUser()
+          if (!civic?.id) return null
+          const user = await resolveCivicUser(civic)
+          return { id: user.id, email: user.email, name: user.name, image: user.image }
+        } catch (error) {
+          console.error('Civic sign-in error:', error)
+          return null
+        }
+      },
     }),
     CredentialsProvider({
       id: 'credentials',
@@ -144,12 +157,16 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === 'wallet') {
         token.walletAddress = user?.email
       }
+      if (account?.provider) {
+        token.provider = account.provider
+      }
       return token
     },
     async session({ session, token, user }) {
       if (session.user) {
         session.user.id = user?.id || (token.id as string)
-        ;(session.user as any).walletAddress = token.walletAddress
+        session.user.walletAddress = token.walletAddress
+        session.user.provider = token.provider
       }
       return session
     },

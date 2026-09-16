@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import '../styles/globals.css'
+import { CivicAuthProvider } from '@civic/auth/nextjs'
 import { AuthProvider } from './providers'
 
 export const metadata: Metadata = {
@@ -41,9 +42,11 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <CivicAuthProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </CivicAuthProvider>
       </body>
     </html>
   )

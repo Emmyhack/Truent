@@ -18,10 +18,7 @@ env:
   DATABASE_URL: "file:./prisma/dev.db"
   NEXTAUTH_URL: "http://localhost:3000"
   NEXTAUTH_SECRET: "ci-placeholder-secret-not-for-production"
-  GITHUB_ID: "ci-placeholder"
-  GITHUB_SECRET: "ci-placeholder"
-  GOOGLE_ID: "ci-placeholder"
-  GOOGLE_SECRET: "ci-placeholder"
+  NEXT_PUBLIC_CIVIC_CLIENT_ID: "ci-placeholder"
   STRIPE_SECRET_KEY: "sk_test_ci_placeholder"
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_ci_placeholder"
 

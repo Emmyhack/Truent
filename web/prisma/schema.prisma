@@ -48,6 +48,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   password      String? // For credentials provider
+  civicId       String?   @unique // Civic Auth subject, set on first Civic sign-in
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

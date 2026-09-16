@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
+import { useUser } from '@civic/auth/react'
 import {
   LayoutDashboard,
   Shield,
@@ -35,6 +36,20 @@ const NAV_ITEMS = [
 export function AppShell({ children, rightPanel, currentPage = 'dashboard', onNewScan }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session } = useSession()
+  const civic = useUser()
+  const handleSignOut = async () => {
+    // End the application session first, then Civic's, so a failure in the
+    // Civic round-trip can never leave the dashboard session alive.
+    await signOut({ redirect: false })
+    if (civic.user) {
+      try {
+        await civic.signOut()
+      } catch (error) {
+        console.error('Civic sign-out error:', error)
+      }
+    }
+    window.location.href = '/'
+  }
   const displayName = session?.user?.name || session?.user?.email || 'Signed in'
   const initial = displayName.trim().charAt(0).toUpperCase() || 'T'
 
@@ -113,7 +128,7 @@ export function AppShell({ children, rightPanel, currentPage = 'dashboard', onNe
             <span>Documentation</span>
           </Link>
           <button
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sec hover:bg-panel hover:text-text transition-colors text-body-md"
           >
             <LogOut size={16} />

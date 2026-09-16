@@ -5,6 +5,8 @@ declare module 'next-auth' {
     user: {
       id: string
       walletAddress?: string
+      /** 'civic' | 'credentials' | 'wallet' — which provider issued this session */
+      provider?: string
     } & DefaultSession['user']
   }
 
@@ -17,5 +19,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string
     walletAddress?: string
+    provider?: string
   }
 }
