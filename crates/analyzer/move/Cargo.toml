@@ -7,7 +7,7 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-description = "Truent: Move language analyzer with static analysis and invariant checking for Aptos and other Move-based networks."
+description = "Truent: Move language analyzer for Aptos and Sui — AST-based detectors for access control, capabilities, oracles, randomness and arithmetic."
 
 keywords = ["truent", "move", "security", "smart-contracts", "static-analysis"]
 categories = ["development-tools", "development-tools::testing"]

@@ -91,6 +91,16 @@ fn solana_corpus_output_is_unchanged() {
 }
 
 #[test]
+fn move_corpus_output_is_unchanged() {
+    let files = corpus("crates/analyzer/move/tests/corpus");
+    let mut all = Vec::new();
+    for (p, s) in &files {
+        all.extend(truent_analyzer_move::run_all_detectors(s, p));
+    }
+    insta::assert_json_snapshot!("move_corpus", rows(all));
+}
+
+#[test]
 fn taxonomy_ids_are_unchanged() {
     // Renaming or removing a detector id is a breaking change for every
     // SARIF consumer and every `.truent.toml` acceptance; make it visible.

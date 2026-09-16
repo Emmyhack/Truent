@@ -1,47 +1,70 @@
 #![deny(unsafe_code)]
 #![allow(missing_docs)]
 
-//! Move (Aptos/Sui) program analyzer.
+//! Move (Aptos / Sui) program analyzer.
+//!
+//! One grammar, two object models. Files are parsed with the vendored Sui
+//! Move tree-sitter grammar extended for Aptos (`acquires`, `inline`, `for`
+//! loops, scripts, address blocks); every detector then reads the AST model
+//! in [`ast`], with the dialect-specific rules for what counts as shared
+//! state and what counts as authorization living in [`privilege`].
 
 pub mod analyzer;
-/// Vulnerability detectors for Move modules
+/// Structural model of a Move file, both dialects.
+pub mod ast;
+/// Vulnerability detectors for Move modules.
 pub mod detectors;
 pub mod move_manual_overflow_check;
-pub mod move_resource_destruction;
-pub mod move_type_safety_violation;
-/// Chain-agnostic semantic-model extraction (Epic 6.1 shared IR)
+/// Reachability, shared state and authorization analysis.
+pub mod privilege;
+/// Chain-agnostic semantic-model extraction (shared IR).
 pub mod semantic_model;
-/// Real structural parsing via a vendored Sui Move tree-sitter grammar
+/// Real structural parsing via the vendored tree-sitter grammar.
 pub mod tree_sitter_grammar;
 
 pub use analyzer::MoveAnalyzer;
+pub use ast::Dialect;
 pub use detectors::*;
 pub use move_manual_overflow_check::detect_move_manual_overflow_check;
-pub use move_resource_destruction::detect_move_resource_destruction;
-pub use move_type_safety_violation::detect_move_type_safety_violation;
 pub use semantic_model::build_semantic_model;
 
 /// Run every live Move detector against the given source text.
 ///
-/// This is the single entry point the CLI should use for Move analysis: each
-/// detector operates directly on raw source text, no Move AST parse is required.
+/// This is the single entry point the CLI uses for Move analysis. When the
+/// grammar cannot parse a file cleanly, only the text-based detectors run
+/// and the result is labelled so a reader knows the AST detectors were
+/// skipped rather than silent.
 pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Finding> {
-    // Line-based detectors see code only — comments and string contents
-    // removed — so prose can neither raise nor suppress a finding. The
-    // tree-sitter semantic model still receives the raw source.
-    let code = truent_core::text::normalize(source, truent_core::text::CommentPolicy::StripAll);
-    let mut findings = detectors::detect_all(&code, file_path);
+    let mut findings = Vec::new();
 
-    findings.extend(detect_move_resource_destruction(&code, file_path));
-    findings.extend(detect_move_type_safety_violation(&code, file_path));
+    // Line-based detector sees code only — comments and string contents
+    // removed — so prose can neither raise nor suppress a finding.
+    let code = truent_core::text::normalize(source, truent_core::text::CommentPolicy::StripAll);
     findings.extend(detect_move_manual_overflow_check(&code, file_path));
 
-    // Chain-agnostic shared-IR rule (Epic 6.1): flags privileged mutations
-    // with no authorization guard, using the same rule EVM and Solana share.
-    let model = build_semantic_model(source, file_path);
-    findings.extend(truent_ir::rules::find_unauthorized_privileged_mutations(
-        &model,
-    ));
+    match ast::parse(source) {
+        Some(file) => {
+            findings.extend(detectors::detect_all(&file, file_path));
+            let model = semantic_model::build_from_ast(&file, file_path);
+            findings.extend(
+                truent_ir::rules::find_unauthorized_privileged_mutations(&model)
+                    .into_iter()
+                    .map(|f| {
+                        f.with_metadata("dialect".to_string(), file.dialect.label().to_string())
+                    }),
+            );
+        }
+        None => {
+            let model = build_semantic_model(source, file_path);
+            findings.extend(
+                truent_ir::rules::find_unauthorized_privileged_mutations(&model)
+                    .into_iter()
+                    .map(|f| {
+                        f.with_metadata("extraction".to_string(), "regex-fallback".to_string())
+                    }),
+            );
+        }
+    }
 
     truent_core::text::restore_snippets(source, &mut findings);
 

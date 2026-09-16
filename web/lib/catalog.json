@@ -1,10 +1,10 @@
 {
  "generated_from": "truent 0.6.0",
- "total_detectors": 174,
+ "total_detectors": 184,
  "by_chain": {
   "evm": 59,
   "general": 49,
-  "move": 12,
+  "move": 22,
   "runtime": 12,
   "supply-chain": 8,
   "solana": 18,
@@ -1350,7 +1350,7 @@
    "prereq": "condition",
    "swc": [],
    "vector": "network",
-   "verify": "`truent symbolic` reports the check as passed or failed \u2014 not unresolved."
+   "verify": "`truent symbolic` reports the check as passed or failed — not unresolved."
   },
   {
    "attack": [],
@@ -1487,7 +1487,7 @@
     "SWC-128"
    ],
    "vector": "network",
-   "verify": "Test: the function completes at 10\u00d7 the expected array length within the block gas limit."
+   "verify": "Test: the function completes at 10× the expected array length within the block gas limit."
   },
   {
    "attack": [],
@@ -1833,7 +1833,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Taint test: source\u2192eval flow no longer present."
+   "verify": "Taint test: source→eval flow no longer present."
   },
   {
    "attack": [
@@ -1863,7 +1863,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Taint test: source\u2192shell flow no longer present."
+   "verify": "Taint test: source→shell flow no longer present."
   },
   {
    "attack": [
@@ -1942,7 +1942,7 @@
     "Inclusion of Functionality from Untrusted Control Sphere"
    ],
    "dasp": [],
-   "fix": "Pin base images by digest (`FROM image@sha256:\u2026`) and update via Dependabot/Renovate.",
+   "fix": "Pin base images by digest (`FROM image@sha256:…`) and update via Dependabot/Renovate.",
    "impact": "partial",
    "interaction": "none",
    "invariant_id": "gen_docker_unpinned_base",
@@ -2064,7 +2064,7 @@
     "Improper Access Control"
    ],
    "dasp": [],
-   "fix": "Restrict ingress CIDRs to known ranges; never expose admin/database ports to 0.0.0.0/0 \u2014 use a bastion or VPN.",
+   "fix": "Restrict ingress CIDRs to known ranges; never expose admin/database ports to 0.0.0.0/0 — use a bastion or VPN.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "gen_iac_open_ingress",
@@ -2441,7 +2441,7 @@
     "Improper Synchronization"
    ],
    "dasp": [],
-   "fix": "Wrap the writes in one database transaction; use SELECT \u2026 FOR UPDATE or optimistic versioning for the balance rows.",
+   "fix": "Wrap the writes in one database transaction; use SELECT … FOR UPDATE or optimistic versioning for the balance rows.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "gen_non_atomic_multi_write",
@@ -2541,7 +2541,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Taint test: source\u2192shell flow no longer present."
+   "verify": "Taint test: source→shell flow no longer present."
   },
   {
    "attack": [
@@ -2629,7 +2629,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Taint test: source\u2192query flow no longer present."
+   "verify": "Taint test: source→query flow no longer present."
   },
   {
    "attack": [
@@ -3103,7 +3103,7 @@
    "dasp": [
     "DASP-2"
    ],
-   "fix": "Require `&signer` for privileged entry functions and check `signer::address_of` against the stored admin/capability holder.",
+   "fix": "Take a capability parameter (`&AdminCap`, `&SignerCapability`) or a `&signer` whose `signer::address_of` / `ctx.sender()` is asserted against the stored admin before the write.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_access_control",
@@ -3114,7 +3114,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Test: call from a non-admin signer aborts."
+   "verify": "Test: a non-admin sender aborts; the admin succeeds."
   },
   {
    "attack": [],
@@ -3131,7 +3131,7 @@
    "dasp": [
     "DASP-2"
    ],
-   "fix": "Require `&signer` for privileged entry functions and check `signer::address_of` against the stored admin/capability holder.",
+   "fix": "Take a capability parameter (`&AdminCap`, `&SignerCapability`) or a `&signer` whose `signer::address_of` / `ctx.sender()` is asserted against the stored admin before the write.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_access_control_missing",
@@ -3142,7 +3142,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Test: call from a non-admin signer aborts."
+   "verify": "Test: a non-admin sender aborts; the admin succeeds."
   },
   {
    "attack": [],
@@ -3159,7 +3159,7 @@
    "dasp": [
     "DASP-2"
    ],
-   "fix": "Route admin actions through a timelock resource with a published delay and a multisig account.",
+   "fix": "Stage the change in a pending field with an `effective_at` timestamp and apply it in a second call once the delay has passed; hold the admin key in a multisig.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_admin_no_timelock",
@@ -3170,7 +3170,143 @@
    "prereq": "privileged",
    "swc": [],
    "vector": "network",
-   "verify": "Config review: admin is a multisig; delay enforced in code."
+   "verify": "Test: apply before the delay aborts; after it succeeds. Config review: admin is a multisig."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-841",
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Improper Enforcement of Behavioral Workflow",
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Write the proposed address to `pending_admin`; only a call from that address may copy it into `admin`.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_admin_transfer_single_step",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a wrong proposed address can be overwritten; only the pending address can accept."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-862",
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Create capabilities only in `init` / `init_module` and transfer them to the deployer; any later grant must itself require the capability.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_capability_transferred_to_caller",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: calling the grant function without the capability aborts; the capability count never grows."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Declare capability structs with `key` only, so they can be moved solely through this module's own transfer functions.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "move_capability_with_store",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Compile check: `public_transfer` on the capability fails outside the module."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-1339",
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Insufficient Precision or Accuracy of a Real Number",
+    "Incorrect Calculation"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Reorder so all multiplications happen before the division, using a u128 / u256 intermediate if the product can overflow.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "move_divide_before_multiply",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test with amounts below the divisor: the result is no longer zero."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-693",
+    "CWE-841"
+   ],
+   "cwe_names": [
+    "Protection Mechanism Failure",
+    "Improper Enforcement of Behavioral Workflow"
+   ],
+   "dasp": [],
+   "fix": "Declare the receipt with no abilities at all so the only way to dispose of it is the module's repay function in the same transaction.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_hot_potato_has_abilities",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Compile check: a transaction that borrows and does not repay fails to build."
   },
   {
    "attack": [],
@@ -3185,7 +3321,7 @@
    "dasp": [
     "DASP-3"
    ],
-   "fix": "Rely on Move's abort-on-overflow and remove manual wraparound; use u128/u256 intermediates for products.",
+   "fix": "Rely on Move's abort-on-overflow and remove manual wraparound; use u128 / u256 intermediates for products.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_integer_overflow",
@@ -3196,7 +3332,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Test boundary values; operations abort instead of wrapping."
+   "verify": "Test boundary values: operations abort instead of wrapping."
   },
   {
    "attack": [],
@@ -3209,7 +3345,7 @@
     "Incorrect Calculation"
    ],
    "dasp": [],
-   "fix": "Assert reserve conservation (k invariant / total supply == sum of balances) at the end of every swap/mint/burn.",
+   "fix": "Assert the pool invariant (x*y >= k, or total supply == sum of balances) at the end of every swap, mint and burn.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_liquidity_conservation",
@@ -3220,7 +3356,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Invariant test over random sequences holds."
+   "verify": "Invariant test over random operation sequences holds."
   },
   {
    "attack": [],
@@ -3237,7 +3373,7 @@
    "dasp": [
     "DASP-3"
    ],
-   "fix": "Rely on Move's abort-on-overflow and remove manual wraparound; use u128/u256 intermediates for products.",
+   "fix": "Rely on Move's abort-on-overflow and remove hand-rolled shift-and-mask checks; use u128 / u256 intermediates for products.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_manual_overflow_check",
@@ -3248,7 +3384,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Test boundary values; operations abort instead of wrapping."
+   "verify": "Test boundary values: operations abort instead of wrapping."
   },
   {
    "attack": [],
@@ -3263,7 +3399,7 @@
     "Improper Input Validation"
    ],
    "dasp": [],
-   "fix": "Use a TWAP or external oracle with staleness checks instead of instantaneous pool reserves.",
+   "fix": "Use a TWAP or an external oracle with a staleness check instead of instantaneous pool reserves.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_oracle_spot_price",
@@ -3274,33 +3410,91 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Test: same-transaction manipulation does not change the price used."
+   "verify": "Test: same-transaction reserve manipulation does not change the price used."
   },
   {
    "attack": [],
    "attack_names": [],
    "chain": "move",
    "cwe": [
-    "CWE-404",
-    "CWE-772"
+    "CWE-672",
+    "CWE-807"
    ],
    "cwe_names": [
-    "Improper Resource Shutdown or Release",
-    "Missing Release of Resource after Effective Lifetime"
+    "Operation on a Resource after Expiration or Release",
+    "Reliance on Untrusted Inputs in a Security Decision"
    ],
-   "dasp": [],
-   "fix": "Ensure every resource is either stored, returned, or explicitly destroyed by its declaring module; never drop coins by unpacking.",
-   "impact": "partial",
+   "dasp": [
+    "DASP-8"
+   ],
+   "fix": "Read the feed with `get_price_no_older_than` (or compare `publish_time` against the clock) and abort when the reading is older than the protocol's maximum age.",
+   "impact": "full",
    "interaction": "none",
-   "invariant_id": "move_resource_destruction",
+   "invariant_id": "move_oracle_stale_price",
    "nist_csf": [],
    "owasp_sc": [
-    "SC03"
+    "SC02"
    ],
    "prereq": "condition",
    "swc": [],
    "vector": "network",
-   "verify": "Move Prover / unit tests cover every destroy path."
+   "verify": "Test: a reading older than the maximum age aborts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-862",
+    "CWE-250"
+   ],
+   "cwe_names": [
+    "Missing Authorization",
+    "Execution with Unnecessary Privileges"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Make the function private or `public(friend)` / `public(package)`, or require the capability that the returned handle represents.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_privileged_handle_exposed",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: the handle cannot be obtained from an arbitrary transaction."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-330",
+    "CWE-693"
+   ],
+   "cwe_names": [
+    "Use of Insufficiently Random Values",
+    "Protection Mechanism Failure"
+   ],
+   "dasp": [
+    "DASP-6"
+   ],
+   "fix": "Consume randomness only from a private `entry fun` (Aptos: with `#[randomness]`), never from a `public` function that can be composed with a check-and-abort.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_randomness_public_function",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC09"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: the function is not callable from another module or a programmable transaction block."
   },
   {
    "attack": [],
@@ -3315,7 +3509,7 @@
     "Improper Resource Shutdown or Release"
    ],
    "dasp": [],
-   "fix": "Ensure every resource is either stored, returned, or explicitly destroyed by its declaring module; never drop coins by unpacking.",
+   "fix": "Ensure every resource is stored, returned, or destroyed by its declaring module; never discard a coin by unpacking it.",
    "impact": "partial",
    "interaction": "none",
    "invariant_id": "move_resource_leaks",
@@ -3343,7 +3537,7 @@
    "dasp": [
     "DASP-2"
    ],
-   "fix": "Require `&signer` for privileged entry functions and check `signer::address_of` against the stored admin/capability holder.",
+   "fix": "Take a capability parameter (`&AdminCap`, `&SignerCapability`) or a `&signer` whose `signer::address_of` / `ctx.sender()` is asserted against the stored admin before the write.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_signer_requirement",
@@ -3354,7 +3548,7 @@
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Test: call from a non-admin signer aborts."
+   "verify": "Test: a non-admin sender aborts; the admin succeeds."
   },
   {
    "attack": [],
@@ -3367,7 +3561,7 @@
     "Access of Resource Using Incompatible Type ('Type Confusion')"
    ],
    "dasp": [],
-   "fix": "Restrict struct abilities (`key`, `store`, `copy`, `drop`) to what is needed and validate generic type arguments against an allowlist.",
+   "fix": "Restrict struct abilities to what is needed and validate generic type arguments against an allowlist (`type_name::get<T>()` / `type_info::type_of<T>()`).",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "move_type_safety",
@@ -3385,24 +3579,106 @@
    "attack_names": [],
    "chain": "move",
    "cwe": [
-    "CWE-843"
+    "CWE-20",
+    "CWE-1284"
    ],
    "cwe_names": [
-    "Access of Resource Using Incompatible Type ('Type Confusion')"
+    "Improper Input Validation",
+    "Improper Validation of Specified Quantity in Input"
    ],
    "dasp": [],
-   "fix": "Restrict struct abilities (`key`, `store`, `copy`, `drop`) to what is needed and validate generic type arguments against an allowlist.",
+   "fix": "Assert an upper bound (`assert!(fee_bps <= MAX_FEE_BPS)`) before writing any fee, rate or threshold from an argument.",
    "impact": "full",
    "interaction": "none",
-   "invariant_id": "move_type_safety_violation",
+   "invariant_id": "move_unbounded_parameter",
    "nist_csf": [],
    "owasp_sc": [
-    "SC03"
+    "SC04"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a value above the bound aborts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-400",
+    "CWE-770"
+   ],
+   "cwe_names": [
+    "Uncontrolled Resource Consumption",
+    "Allocation of Resources Without Limits or Throttling"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Cap the vector length, charge for entries, or replace the vector with a `Table` / dynamic fields so no transaction has to walk every entry.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "move_unbounded_vector_growth",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
    ],
    "prereq": "none",
    "swc": [],
    "vector": "network",
-   "verify": "Test: calling with an unexpected type argument aborts."
+   "verify": "Test: appending beyond the cap aborts; existing paths stay under the gas limit at the cap."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-843",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Access of Resource Using Incompatible Type ('Type Confusion')",
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Key the store by the asset type (`Pool<phantom T>`, `Table<TypeName, ...>`) or check `type_name::get<T>()` against an allowlist before crediting value.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_unconstrained_type_argument",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: depositing an unrelated coin type aborts or is credited separately."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "move",
+   "cwe": [
+    "CWE-330"
+   ],
+   "cwe_names": [
+    "Use of Insufficiently Random Values"
+   ],
+   "dasp": [
+    "DASP-6"
+   ],
+   "fix": "Use the framework randomness API (`aptos_framework::randomness`, `sui::random`) from a private entry function; never derive outcomes from timestamps, epochs, block heights or object ids.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "move_weak_randomness",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC09"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: the outcome cannot be predicted from on-chain state before the transaction."
   },
   {
    "attack": [
@@ -3849,7 +4125,7 @@
     "Inclusion of Functionality from Untrusted Control Sphere"
    ],
    "dasp": [],
-   "fix": "Commit the lockfile (`Cargo.lock`, `package-lock.json`, `poetry.lock`, \u2026) and use `--frozen`/`npm ci` in CI.",
+   "fix": "Commit the lockfile (`Cargo.lock`, `package-lock.json`, `poetry.lock`, …) and use `--frozen`/`npm ci` in CI.",
    "impact": "partial",
    "interaction": "none",
    "invariant_id": "sca_missing_lockfile",
@@ -4555,7 +4831,7 @@
    "dasp": [
     "DASP-1"
    ],
-   "fix": "Update state before cross-contract calls; Soroban forbids reentrancy by default \u2014 do not re-enable it and do not rely on post-call state.",
+   "fix": "Update state before cross-contract calls; Soroban forbids reentrancy by default — do not re-enable it and do not rely on post-call state.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "sor_no_reentrancy",
@@ -4611,7 +4887,7 @@
    "dasp": [
     "DASP-1"
    ],
-   "fix": "Update state before cross-contract calls; Soroban forbids reentrancy by default \u2014 do not re-enable it and do not rely on post-call state.",
+   "fix": "Update state before cross-contract calls; Soroban forbids reentrancy by default — do not re-enable it and do not rely on post-call state.",
    "impact": "full",
    "interaction": "none",
    "invariant_id": "sor_reentrancy_external_call",

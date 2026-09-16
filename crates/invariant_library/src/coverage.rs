@@ -122,7 +122,7 @@ pub static COVERAGE: &[(&str, Coverage)] = &[
     ),
     (
         "move_resource_leaks",
-        Coverage::Detector("move_resource_destruction"),
+        Coverage::Detector("move_hot_potato_has_abilities"),
     ),
     (
         "move_signer_requirement",
@@ -130,7 +130,7 @@ pub static COVERAGE: &[(&str, Coverage)] = &[
     ),
     (
         "move_type_safety",
-        Coverage::Detector("move_type_safety_violation"),
+        Coverage::Detector("move_unconstrained_type_argument"),
     ),
     // ---- Soroban ---------------------------------------------------------
     (

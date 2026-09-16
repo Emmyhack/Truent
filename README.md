@@ -296,7 +296,7 @@ chain-agnostic detection layer on top of it.
 
 - ✅ **71 Smart Contract Vulnerability Detectors** — Comprehensive coverage of critical and high-priority exploits, wired end-to-end into `truent check`/`truent scan`
 - ✅ **Chain-agnostic shared rule** — `unauthorized_privileged_mutation` runs against a common semantic model built by each chain's own analyzer, so one rule (missing an authorization check on a privileged mutation) is written once and applies to all four chains
-- ✅ **Real Move parsing** — a vendored Sui Move tree-sitter grammar backs Move's semantic extraction, with the original regex heuristic kept as an automatic fallback if a file fails to parse
+- ✅ **Real Move parsing, both dialects** — a vendored Sui Move tree-sitter grammar, extended for Aptos (`acquires`, `inline`, `for`, scripts, address blocks), backs every Move detector; shared-vs-owned objects (Sui) and global-vs-signer storage (Aptos) are modelled explicitly, and a file that fails to parse is labelled rather than silently under-scanned
 - ✅ **Soroban (Stellar) support** — a fourth full chain analyzer covering `require_auth` gaps, unprotected contract upgrades, re-initialization, unchecked arithmetic, storage TTL/expiry, and reentrancy-shaped checks-effects-interactions violations
 - ✅ **Real fuzzing** — `truent fuzz` mutates real source files and runs them through the live detectors looking for crashes, instead of a no-op stub
 - ✅ **Production Ready** — All tests passing, security audit complete, reproducible builds
@@ -304,7 +304,7 @@ chain-agnostic detection layer on top of it.
 **Detector Coverage:**
 - **EVM**: 44 detectors (reentrancy incl. read-only reentrancy, missing checks, oracle manipulation incl. stale-price feeds, proxy issues, insufficient multisig threshold, arbitrary function-selector dispatch, fee-on-transfer/rebasing incompatibility, cross-chain signature replay, unbounded pricing input, ERC-4337 validation side effects, EIP-7702 EOA assumptions, and 20+ named historical-exploit patterns)
 - **Solana**: 11 detectors (PDA validation, authority checks, replay attacks, durable nonce, rent exemption, unchecked token/mint account substitution, fake sysvar instructions account)
-- **Move**: 7 detectors (resource destruction, type safety, access control, hand-rolled overflow checks)
+- **Move (Aptos / Sui)**: 17 detectors (shared-state access control, capability grants and `store`, hot potatoes, spot and stale oracle prices, weak and test-and-abort randomness, exposed signers, divide-before-multiply, fake-token deposits, unbounded vectors and parameters, hand-rolled overflow checks)
 - **Soroban**: 9 detectors (missing require_auth, unprotected upgrade, re-initialization, unchecked arithmetic, storage TTL/expiry, reentrancy, thin-liquidity oracle price)
 
 Truent also ships a web dashboard (`web/`) — sign-up, scan submission, and

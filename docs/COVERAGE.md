@@ -8,7 +8,7 @@ cell means no honest mapping exists — SWC, OWASP SC and DASP are contract
 registries, so repository rows leave them empty, and MITRE ATT&CK / NIST CSF
 are populated only for repository findings, where they are precise.
 
-**174 detectors.**
+**184 detectors.**
 
 ## EVM (59 detectors)
 
@@ -97,22 +97,32 @@ are populated only for repository findings, where they are precise.
 | `sol_treasury_single_authority` | [CWE-654](https://cwe.mitre.org/data/definitions/654.html) |  | SC01 | DASP-2 |  |  |
 | `sol_unchecked_token_account_type` | [CWE-843](https://cwe.mitre.org/data/definitions/843.html)<br>[CWE-345](https://cwe.mitre.org/data/definitions/345.html) |  | SC04 |  |  |  |
 
-## Move (12 detectors)
+## Move (22 detectors)
 
 | Detector | CWE | SWC | OWASP SC Top 10 | DASP | MITRE ATT&CK | NIST CSF |
 |---|---|---|---|---|---|---|
 | `move_access_control` | [CWE-284](https://cwe.mitre.org/data/definitions/284.html)<br>[CWE-862](https://cwe.mitre.org/data/definitions/862.html) |  | SC01 | DASP-2 |  |  |
 | `move_access_control_missing` | [CWE-862](https://cwe.mitre.org/data/definitions/862.html)<br>[CWE-284](https://cwe.mitre.org/data/definitions/284.html) |  | SC01 | DASP-2 |  |  |
 | `move_admin_no_timelock` | [CWE-654](https://cwe.mitre.org/data/definitions/654.html)<br>[CWE-732](https://cwe.mitre.org/data/definitions/732.html) |  | SC01 | DASP-2 |  |  |
+| `move_admin_transfer_single_step` | [CWE-841](https://cwe.mitre.org/data/definitions/841.html)<br>[CWE-732](https://cwe.mitre.org/data/definitions/732.html) |  | SC01 | DASP-2 |  |  |
+| `move_capability_transferred_to_caller` | [CWE-862](https://cwe.mitre.org/data/definitions/862.html)<br>[CWE-732](https://cwe.mitre.org/data/definitions/732.html) |  | SC01 | DASP-2 |  |  |
+| `move_capability_with_store` | [CWE-732](https://cwe.mitre.org/data/definitions/732.html) |  | SC01 | DASP-2 |  |  |
+| `move_divide_before_multiply` | [CWE-1339](https://cwe.mitre.org/data/definitions/1339.html)<br>[CWE-682](https://cwe.mitre.org/data/definitions/682.html) |  | SC03 | DASP-3 |  |  |
+| `move_hot_potato_has_abilities` | [CWE-693](https://cwe.mitre.org/data/definitions/693.html)<br>[CWE-841](https://cwe.mitre.org/data/definitions/841.html) |  | SC03 |  |  |  |
 | `move_integer_overflow` | [CWE-190](https://cwe.mitre.org/data/definitions/190.html) |  | SC08 | DASP-3 |  |  |
 | `move_liquidity_conservation` | [CWE-682](https://cwe.mitre.org/data/definitions/682.html) |  | SC03 |  |  |  |
 | `move_manual_overflow_check` | [CWE-190](https://cwe.mitre.org/data/definitions/190.html)<br>[CWE-682](https://cwe.mitre.org/data/definitions/682.html) |  | SC08 | DASP-3 |  |  |
 | `move_oracle_spot_price` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html)<br>[CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC02 |  |  |  |
-| `move_resource_destruction` | [CWE-404](https://cwe.mitre.org/data/definitions/404.html)<br>[CWE-772](https://cwe.mitre.org/data/definitions/772.html) |  | SC03 |  |  |  |
+| `move_oracle_stale_price` | [CWE-672](https://cwe.mitre.org/data/definitions/672.html)<br>[CWE-807](https://cwe.mitre.org/data/definitions/807.html) |  | SC02 | DASP-8 |  |  |
+| `move_privileged_handle_exposed` | [CWE-862](https://cwe.mitre.org/data/definitions/862.html)<br>[CWE-250](https://cwe.mitre.org/data/definitions/250.html) |  | SC01 | DASP-2 |  |  |
+| `move_randomness_public_function` | [CWE-330](https://cwe.mitre.org/data/definitions/330.html)<br>[CWE-693](https://cwe.mitre.org/data/definitions/693.html) |  | SC09 | DASP-6 |  |  |
 | `move_resource_leaks` | [CWE-772](https://cwe.mitre.org/data/definitions/772.html)<br>[CWE-404](https://cwe.mitre.org/data/definitions/404.html) |  | SC03 |  |  |  |
 | `move_signer_requirement` | [CWE-862](https://cwe.mitre.org/data/definitions/862.html)<br>[CWE-284](https://cwe.mitre.org/data/definitions/284.html) |  | SC01 | DASP-2 |  |  |
 | `move_type_safety` | [CWE-843](https://cwe.mitre.org/data/definitions/843.html) |  | SC03 |  |  |  |
-| `move_type_safety_violation` | [CWE-843](https://cwe.mitre.org/data/definitions/843.html) |  | SC03 |  |  |  |
+| `move_unbounded_parameter` | [CWE-20](https://cwe.mitre.org/data/definitions/20.html)<br>[CWE-1284](https://cwe.mitre.org/data/definitions/1284.html) |  | SC04 |  |  |  |
+| `move_unbounded_vector_growth` | [CWE-400](https://cwe.mitre.org/data/definitions/400.html)<br>[CWE-770](https://cwe.mitre.org/data/definitions/770.html) |  | SC10 | DASP-5 |  |  |
+| `move_unconstrained_type_argument` | [CWE-843](https://cwe.mitre.org/data/definitions/843.html)<br>[CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC04 |  |  |  |
+| `move_weak_randomness` | [CWE-330](https://cwe.mitre.org/data/definitions/330.html) |  | SC09 | DASP-6 |  |  |
 
 ## Soroban (15 detectors)
 

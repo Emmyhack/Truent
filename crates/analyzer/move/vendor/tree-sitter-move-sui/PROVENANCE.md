@@ -44,3 +44,26 @@ as a best-effort structural parser, not a validating compiler
 front-end - Truent's detectors should degrade gracefully (as they
 already do for solc-dependent EVM analysis) if a real-world Move file
 fails to parse.
+
+## Local modifications (2026-09-16)
+
+Upstream targets Sui Move 2024 only. `grammar.js` is extended here so Aptos
+sources parse without error nodes; `src/parser.c`, `src/grammar.json`,
+`src/node-types.json` and `src/tree_sitter/parser.h` were regenerated with
+`tree-sitter-cli 0.25.3` at ABI 14 (the version the workspace's
+`tree-sitter` crate expects).
+
+- `acquires_clause` / `access_specifier`: `fun f(): T acquires R1, R2` and
+  the Move 2 access specifiers (`reads`, `writes`, `pure`, `!`, `*`,
+  address filters) on function and macro signatures.
+- `modifier`: `inline`, and `public(script)`.
+- `for_expression`: `for (i in lo..hi) body`. `for` is now a keyword, so
+  `macro_module_access` also accepts the literal `for` to keep Sui's
+  `for!` macro lexing.
+- `function_type`: the return type arrow is optional (`|u64|u64`).
+- `script_definition`: top-level `script { ... }` blocks.
+- `address_block` / `address_module_definition` / `braced_module_body`:
+  legacy `address 0x1 { module m { ... } }` blocks.
+
+Upstream's own test corpus (`tests/*.move`) still parses cleanly after these
+changes, and both dialects are exercised by the crate's tests.

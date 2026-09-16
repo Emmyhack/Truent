@@ -185,7 +185,7 @@ truent check ./programs/geekslibrary/src/lib.rs --chain solana --fail-on high
 
 - `solana` — Solana smart contracts
 - `evm` — Ethereum and EVM-compatible chains (default)
-- `move` — Move (Aptos, Sui)
+- `move` — Move (Aptos and Sui; the dialect is detected per file and reported on every finding)
 
 **Output Format Options:**
 

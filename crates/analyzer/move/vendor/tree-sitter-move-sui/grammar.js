@@ -54,7 +54,51 @@ module.exports = grammar({
   ],
 
   rules: {
-    source_file: $ => repeat(choice($.module_extension_definition, $.module_definition)),
+    source_file: $ => repeat(choice(
+      $.module_extension_definition,
+      $.module_definition,
+      $.script_definition,
+      $.address_block,
+    )),
+
+    // Aptos / core Move: a transaction script is a brace-delimited block holding
+    // uses, constants and exactly one function.
+    script_definition: $ => seq(
+      'script',
+      '{',
+      repeat(choice($.use_declaration, $.constant, $._function_item, $.spec_block)),
+      '}',
+    ),
+    // Legacy core-Move address block: `address 0x1 { module m { ... } }`.
+    address_block: $ => seq(
+      'address',
+      field('address', choice($.num_literal, $._module_identifier)),
+      '{',
+      repeat($.address_module_definition),
+      '}',
+    ),
+    // A module inside an address block is named bare (`module m { ... }`).
+    address_module_definition: $ => seq(
+      'module',
+      field('module_identity', alias($._module_identifier, $.module_identity)),
+      field('module_body', alias($.braced_module_body, $.module_body)),
+    ),
+    // Brace-only module body (the semicolon form is not valid inside an
+    // address block, and its optional closing brace would be ambiguous here).
+    braced_module_body: $ => seq(
+      '{',
+      repeat(
+        choice(
+          $.use_declaration,
+          $.friend_declaration,
+          $.constant,
+          $._function_item,
+          $._struct_item,
+          $._enum_item,
+          $.spec_block,
+        )),
+      '}',
+    ),
 
     // parse use declarations
     use_declaration: $ => seq(
@@ -97,11 +141,13 @@ module.exports = grammar({
           choice(
             'package',
             'friend',
+            'script',
           ),
           ')',
         ))),
       'entry',
       'native',
+      'inline',
     ),
     ability: $ => choice(
       'copy',
@@ -282,6 +328,7 @@ module.exports = grammar({
       optional(field('type_parameters', $.type_parameters)),
       field('parameters', $.function_parameters),
       optional(field('return_type', $.ret_type)),
+      optional(field('acquires', $.acquires_clause)),
     ),
     function_definition: $ => seq(
       $._function_signature,
@@ -296,6 +343,19 @@ module.exports = grammar({
       optional(field('type_parameters', $.type_parameters)),
       field('parameters', $.function_parameters),
       optional(field('return_type', $.ret_type)),
+      optional(field('acquires', $.acquires_clause)),
+    ),
+    // Aptos: `fun f(): T acquires R1, R2` — the global resources a function
+    // may read or write. Move 2 access specifiers (`reads`, `writes`, `pure`,
+    // `!`, wildcards and address filters) are accepted as well.
+    acquires_clause: $ => prec.right(repeat1(seq(
+      optional('!'),
+      choice('acquires', 'reads', 'writes', 'pure'),
+      optional(sepBy1(',', $.access_specifier)),
+    ))),
+    access_specifier: $ => seq(
+      choice($.module_access, '*'),
+      optional(seq('(', choice('*', $._expression), ')')),
     ),
     function_parameters: $ => seq(
       '(',
@@ -529,7 +589,10 @@ module.exports = grammar({
       field('fully_qualified_module', $.module_identity),
     ),
 
-    macro_module_access: $ => seq(field("access", $.module_access), "!"),
+    macro_module_access: $ => seq(
+      field("access", choice($.module_access, alias('for', $.module_access))),
+      "!",
+    ),
 
     module_identity: $ =>
       seq(
@@ -544,15 +607,15 @@ module.exports = grammar({
       '>'
     ),
 
-    function_type: $ => seq(
+    function_type: $ => prec.right(seq(
       field('param_types', $.function_type_parameters),
       optional(
         seq(
-          '->',
+          optional('->'),
           field('return_type', $._type)
         )
       )
-    ),
+    )),
     function_type_parameters: $ => seq('|', sepBy(',', $._type), '|'),
 
     // `mut <function_parameter>`
@@ -615,6 +678,7 @@ module.exports = grammar({
       $.lambda_expression,
       $.if_expression,
       $.while_expression,
+      $.for_expression,
       $.return_expression,
       $.abort_expression,
       $.assign_expression,
@@ -626,6 +690,7 @@ module.exports = grammar({
       $.match_expression,
       $.vector_expression,
       $.loop_expression,
+      $.for_expression,
       $.identified_expression,
     ),
 
@@ -701,6 +766,17 @@ module.exports = grammar({
 
     // loop expression
     loop_expression: $ => seq('loop', field('body', $._expression)),
+
+    // Aptos Move 2: `for (i in lo..hi) body`.
+    for_expression: $ => seq(
+      'for',
+      '(',
+      field('bind', $._variable_identifier),
+      'in',
+      field('iter', $._expression),
+      ')',
+      field('body', $._expression),
+    ),
 
     // return expression
     return_expression: $ => choice(

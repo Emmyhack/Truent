@@ -432,7 +432,8 @@ Include:
 |----------|--------|
 | Solidity (EVM) | ✅ Full support |
 | Rust (Solana) | ✅ Full support |
-| Move (Aptos/SUI) | ✅ Full support |
+| Move (Aptos) | ✅ Full support — global storage, `&signer`, `acquires`, `#[view]`, scripts, `#[randomness]` |
+| Move (Sui) | ✅ Full support — Move 2024 syntax, shared vs owned objects, capabilities, hot potatoes, `sui::random` |
 | AssemblyScript | ⚠️ Experimental |
 | Other | ❌ Not supported |
 

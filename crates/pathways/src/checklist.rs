@@ -119,6 +119,9 @@ const ALL_AUTHZ_CONTRACT: &[&str] = &[
     "move_access_control",
     "move_access_control_missing",
     "move_signer_requirement",
+    "move_capability_transferred_to_caller",
+    "move_capability_with_store",
+    "move_privileged_handle_exposed",
     "sor_missing_require_auth",
     "sor_require_auth_checks",
     "unauthorized_privileged_mutation",
@@ -158,6 +161,8 @@ const ORACLE: &[&str] = &[
     "sol_oracle_self_trade",
     "sol_oracle_rate_account",
     "move_oracle_spot_price",
+    "move_oracle_stale_price",
+    "move_divide_before_multiply",
     "sor_thin_liquidity_oracle_price",
 ];
 const REPLAY: &[&str] = &[
@@ -197,7 +202,11 @@ const CI_ATTACKS: &[&str] = &[
     "gen_ci_secret_exposed",
     "gen_ci_unpinned_action",
 ];
-const DOS_CONTRACT: &[&str] = &["evm_unbounded_loop", "evm_push_payment_in_loop"];
+const DOS_CONTRACT: &[&str] = &[
+    "evm_unbounded_loop",
+    "evm_push_payment_in_loop",
+    "move_unbounded_vector_growth",
+];
 const DOS_WEB: &[&str] = &[
     "gen_regex_dos",
     "gen_unbounded_query_limit",
@@ -230,7 +239,7 @@ pub static SECTIONS: &[Section] = &[
         d("SQL injection detection", Web, &["gen_sql_injection"]), d("Command injection detection", Web, &["gen_command_injection", "gen_pipe_to_shell"]),
         d("Cross-site scripting (XSS) detection", Web, &["gen_xss_sink"]), d("Server-side request forgery (SSRF) detection", Web, &["gen_web_ssrf"]),
         d("Path traversal detection", Web, &["gen_web_path_traversal"]), d("Insecure deserialization detection", Web, &["gen_unsafe_deserialization", "gen_xxe"]),
-        d("Hardcoded secrets detection", Any, SECRETS), d("Weak/unsafe cryptography detection", Any, &["gen_weak_hash", "gen_insecure_randomness", "gen_tls_verification_disabled"]),
+        d("Hardcoded secrets detection", Any, SECRETS), d("Weak/unsafe cryptography detection", Any, &["gen_weak_hash", "gen_insecure_randomness", "move_weak_randomness", "move_randomness_public_function", "gen_tls_verification_disabled"]),
         d("Authentication flaws", Any, &["gen_web_jwt_unverified", "gen_missing_rate_limit", "evm_missing_signer_check", "sol_missing_signer", "sor_missing_require_auth"]),
         d("Authorization flaws", Any, ALL_AUTHZ_CONTRACT), d("Dangerous function/API usage", Web, &["gen_code_injection", "gen_unsafe_deserialization", "gen_insecure_temp_file", "gen_insecure_file_permissions"]),
         d("Unsafe configuration detection", Any, &["gen_web_debug_enabled", "gen_web_cors_wildcard", "gen_web_csrf_disabled", "gen_web_insecure_cookie", "gen_container_privileged", "gen_docker_root_user"]),
@@ -267,7 +276,7 @@ pub static SECTIONS: &[Section] = &[
     Section { number: 8, name: "Business-Logic Testing", items: &[
         m("Business-rule validation", "Rules are specific to the product; encode them as invariants (`.sinv`) so `truent scan`/`fuzz` enforce them"),
         d("Unauthorized workflow testing", Any, ALL_AUTHZ_CONTRACT), d("Workflow-bypass testing", Contracts, UPGRADE),
-        d("Price manipulation testing", Contracts, ORACLE), d("Quantity manipulation testing", Any, &["gen_mass_assignment", "evm_unbounded_pricing_input"]),
+        d("Price manipulation testing", Contracts, ORACLE), d("Quantity manipulation testing", Any, &["gen_mass_assignment", "evm_unbounded_pricing_input", "move_unbounded_parameter", "move_unconstrained_type_argument", "move_type_safety"]),
         m("Discount/coupon abuse testing", "Product-specific; test coupon reuse, stacking and negative totals in the E2E suite"),
         d("Fee manipulation testing", Contracts, &["evm_fee_on_transfer_incompatibility", "evm_router_slippage_validation"]), d("Balance manipulation testing", Any, &["evm_token_balance_manipulation", "gen_mass_assignment", "gen_non_atomic_multi_write"]),
         d("Duplicate-operation testing", Any, &["gen_non_atomic_multi_write", "evm_reentrancy_classic"]), d("Replay testing", Contracts, REPLAY), d("Double-spending testing", Any, REENTRANCY),
@@ -282,7 +291,7 @@ pub static SECTIONS: &[Section] = &[
         sig("Test state rollback", S::MigrationRollback), d("Test repeated transitions", Contracts, &["evm_unprotected_initializer", "sor_reinitialization", "gen_non_atomic_multi_write"]),
         d("Test skipped states", Contracts, &["evm_zero_challenge_period", "evm_constructor_race_condition"]), sig("Test failed transitions", S::Invariants),
         d("Test partial transitions", Any, &["gen_non_atomic_multi_write", "evm_state_mutation_ordering"]), d("Test concurrent transitions", Any, REENTRANCY),
-        d("Verify terminal states cannot be improperly reversed", Contracts, &["sor_storage_ttl_not_extended", "sor_temporary_storage_critical_state", "move_resource_destruction"]),
+        d("Verify terminal states cannot be improperly reversed", Contracts, &["sor_storage_ttl_not_extended", "sor_temporary_storage_critical_state", "move_hot_potato_has_abilities"]),
     ]},
     Section { number: 10, name: "Authorization & Access-Control Testing", items: &[
         d("Role-based access-control testing", Any, ALL_AUTHZ_CONTRACT), d("Permission testing", Any, &["gen_iac_wildcard_iam", "gen_insecure_file_permissions"]),
@@ -452,7 +461,7 @@ pub static SECTIONS: &[Section] = &[
         Item { name: "No LIKELY-exploitable finding", scope: Any, evidence: Evidence::Exposure },
         d("Move money or tokens", Any, REENTRANCY), d("Change balances", Any, CONSERVATION), d("Transfer ownership", Contracts, &["evm_access_control", "evm_shallow_auth", "evm_single_eoa_admin"]),
         d("Change permissions", Any, &["gen_mass_assignment", "gen_iac_wildcard_iam", "unauthorized_privileged_mutation"]), d("Execute privileged operations", Any, ALL_AUTHZ_CONTRACT),
-        d("Modify critical configuration", Contracts, &["evm_upgrade_path_verification", "sol_admin_no_timelock", "move_admin_no_timelock"]), d("Access sensitive user data", Web, &["gen_object_level_auth_missing", "gen_log_sensitive_data", "gen_sql_injection"]),
+        d("Modify critical configuration", Contracts, &["evm_upgrade_path_verification", "sol_admin_no_timelock", "move_admin_no_timelock", "move_admin_transfer_single_step"]), d("Access sensitive user data", Web, &["gen_object_level_auth_missing", "gen_log_sensitive_data", "gen_sql_injection"]),
         d("Delete or corrupt data", Web, &["gen_sql_injection", "gen_non_atomic_multi_write", "gen_insecure_file_permissions"]), d("Execute smart contracts", Contracts, &["evm_delegatecall_injection", "evm_arbitrary_function_selector_dispatch", "evm_arbitrary_call_msg_value"]),
         d("Sign transactions", Contracts, &["evm_signature_replay_protection", "evm_aa_entropy_weakness"]), d("Modify prices or exchange rates", Contracts, ORACLE), d("Control oracles", Contracts, ORACLE),
         d("Upgrade contracts", Contracts, UPGRADE), d("Pause/unpause systems", Contracts, &["evm_missing_pause_mechanism"]), d("Shut down or exhaust the application", Any, DOS_WEB),

@@ -1,4 +1,4 @@
-// EXPECT: move_access_control_missing
+// EXPECT: unauthorized_privileged_mutation
 module demo::treasury {
     struct Treasury has key {
         admin: address,
