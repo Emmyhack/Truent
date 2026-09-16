@@ -7,7 +7,8 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/Button'
 import { SeverityBadge } from '@/components/ui/SeverityBadge'
 import { EvidenceBadge, ExploitabilityBadge } from '@/components/ui/EngineBadges'
-import { ENGINE, LANGUAGES, languageForExtension, staticDetectorCount, type LanguageId } from '@/lib/engine'
+import { ChainLogo } from '@/components/ui/ChainLogo'
+import { ENGINE, LANGUAGES, languageForExtension, networksForTag, staticDetectorCount, type LanguageId } from '@/lib/engine'
 
 type SubmissionMethod = 'code' | 'file'
 
@@ -129,9 +130,15 @@ export default function ScanPage() {
           </optgroup>
         ))}
       </select>
-      <p className="text-xs text-sec mt-2">
-        Runs the <span className="font-mono text-acc-text">{lang.chain}</span> engine — {ENGINE.byChain[lang.chain] ?? 0} detectors
-        {lang.chain === 'general' ? ', including taint tracking across lines' : ''}.
+      <p className="text-xs text-sec mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        {networksForTag(lang.chain).map((n) => (
+          <ChainLogo key={n} network={n} size={14} brand />
+        ))}
+        <span>
+          Runs the <span className="font-mono text-acc-text">{lang.chain}</span> engine — {ENGINE.byChain[lang.chain] ?? 0} detectors
+          {lang.chain === 'general' ? ', including taint tracking across lines' : ''}
+          {lang.chain === 'move' ? '; the Aptos or Sui dialect is detected per file' : ''}.
+        </span>
       </p>
     </div>
   )
@@ -314,7 +321,7 @@ export default function ScanPage() {
             {
               icon: <ShieldCheck size={20} className="text-acc-text" />,
               title: `${staticDetectorCount()} static detectors`,
-              description: `EVM ${ENGINE.byChain.evm}, Solana ${ENGINE.byChain.solana}, Move ${ENGINE.byChain.move}, Soroban ${ENGINE.byChain.soroban}, any repository ${ENGINE.byChain.general}, supply chain ${ENGINE.byChain['supply-chain']}.`,
+              description: `EVM ${ENGINE.byChain.evm}, Solana ${ENGINE.byChain.solana}, Move ${ENGINE.byChain.move} (Aptos and Sui), Soroban ${ENGINE.byChain.soroban}, any repository ${ENGINE.byChain.general}, supply chain ${ENGINE.byChain['supply-chain']}.`,
             },
             {
               icon: <Workflow size={20} className="text-acc-text" />,

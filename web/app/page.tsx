@@ -9,36 +9,50 @@ import { MarketingNav } from '@/components/layout/MarketingNav'
 import { MarketingFooter } from '@/components/layout/MarketingFooter'
 import { AuthModal } from '@/components/ui/AuthModal'
 import { SampleReportModal } from '@/components/ui/SampleReportModal'
-import { CHAIN_LABEL, CHAIN_ORDER, ENGINE, type Chain } from '@/lib/engine'
+import { ChainLogo } from '@/components/ui/ChainLogo'
+import { CHAIN_LABEL, CHAIN_ORDER, ENGINE, EVM_COMPATIBLE, NETWORKS, networksForChain, type Chain } from '@/lib/engine'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Content — counts come from lib/catalog.json, regenerated from the binary.
+// Copy. Every number is read from lib/catalog.json, which is regenerated from
+// the binary — the page can never promise a detector the engine lacks.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const steps = [
-  { num: '01', icon: '⎇', title: 'Point it at the tree you ship', desc: 'Contracts, application code, Dockerfiles, Terraform, CI workflows, lockfiles — one command picks the engine per file. Or upload a file in the dashboard.' },
-  { num: '02', icon: '◉', title: 'Every detector, every engine', desc: `${ENGINE.totalDetectors} detectors with taint tracking across lines, dependency advisories, a live probe for targets you own, and a driver for halmos / hevm / Mythril.` },
-  { num: '03', icon: '▤', title: 'Findings you can act on', desc: 'Each one is a lead or proven, rated LIKELY → THEORETICAL, with the fix and the command that verifies it. Then release-check tells you if you are ready.' },
+  {
+    num: '01',
+    title: 'Point it at what you ship',
+    desc: 'A contract, a service, an infrastructure file, a whole repository. One command chooses the right engine for every file; the dashboard takes a single file in seconds.',
+  },
+  {
+    num: '02',
+    title: 'Let the engine do the whole job',
+    desc: `${ENGINE.totalDetectors} detectors follow untrusted input to the sink, check protocol invariants, match dependencies against advisories, and — when you ask — probe the live edge or hand a Foundry project to a solver.`,
+  },
+  {
+    num: '03',
+    title: 'Fix what matters first',
+    desc: 'Every finding says whether it is a traced lead or a proven fact, how likely it is to be exploited, the change that closes it, and the command that proves the change worked.',
+  },
 ]
 
 const exploits = [
-  { protocol: 'Euler Finance', amount: '$197M', year: '2023', type: 'Flash loan + missing post-state health check', invariant: 'evm_missing_post_state_health_check' },
-  { protocol: 'Nomad Bridge', amount: '$190M', year: '2022', type: 'Merkle root initialised to zero', invariant: 'evm_merkle_root_zero_default' },
-  { protocol: 'KelpDAO', amount: '$292M', year: '2024', type: 'DVN single point of failure', invariant: 'evm_dvn_single_point_failure' },
+  { protocol: 'Euler Finance', amount: '$197M', year: '2023', type: 'A flash loan met a vault that never re-checked its own health after the trade.', invariant: 'evm_missing_post_state_health_check' },
+  { protocol: 'Nomad Bridge', amount: '$190M', year: '2022', type: 'A Merkle root left at zero made every forged proof valid.', invariant: 'evm_merkle_root_zero_default' },
+  { protocol: 'KelpDAO', amount: '$292M', year: '2024', type: 'A cross-chain message needed only one verifier, and that verifier was the weak point.', invariant: 'evm_dvn_single_point_failure' },
 ]
 
 const reportPerks = [
-  'Lead or proven — never a guess',
-  'Exploitability rating with the reasons',
-  'Attack chains the findings complete',
-  'Fix + verify step on every finding',
-  'JSON, SARIF, HTML, Markdown',
+  'Lead or proven — the evidence class is on every finding',
+  'Exploitability, from LIKELY to THEORETICAL, with the reasons',
+  'The attack chains your findings complete, and where to cut them',
+  'A fix and a verify step for all of them',
+  'JSON here; SARIF, HTML and Markdown from the CLI',
 ]
 
 const plans = [
-  { name: 'Starter', price: '$0', per: ' / month', accent: '#8fdcb2', href: '/pricing', caption: 'Every engine, 5 dashboard scans a month' },
-  { name: 'Professional', price: '$499', per: ' / month', accent: '#34d399', href: '/pricing', caption: '10,000 scans, priority support', featured: true },
-  { name: 'Enterprise', price: 'Custom', per: '', accent: '#a3e635', href: '/contact', caption: 'Managed probes, SSO, on-premises' },
+  { name: 'Starter', price: '$0', per: ' / month', accent: '#8fdcb2', href: '/pricing', caption: 'The whole engine, five dashboard scans a month' },
+  { name: 'Professional', price: '$499', per: ' / month', accent: '#34d399', href: '/pricing', caption: 'Ten thousand scans, custom invariants, priority support', featured: true },
+  { name: 'Enterprise', price: 'Custom', per: '', accent: '#a3e635', href: '/contact', caption: 'Managed probes, SSO, on-premises, an engineer on call' },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,25 +84,23 @@ function useInView<T extends HTMLElement>(threshold = 0.2) {
   return { ref, seen }
 }
 
-function Eyebrow({ children, tone = 'green' }: { children: React.ReactNode; tone?: 'green' | 'red' }) {
-  const tones = {
-    green: 'text-[#8fdcb2] border-acc-text/20 bg-acc-text/[0.06]',
-    red: 'text-[#f87171] border-[#ef4444]/25 bg-[#ef4444]/[0.07]',
-  }
-  return <span className={`inline-block rounded-full border px-4 py-[7px] font-mono text-[11px] uppercase tracking-[0.2em] ${tones[tone]}`}>{children}</span>
-}
-
 function SectionHeading({ children }: { children: React.ReactNode }) {
-  return <h2 className="m-0 mt-5 text-[clamp(30px,4vw,44px)] font-normal tracking-[-0.02em] text-[#f2f6f2]">{children}</h2>
+  return <h2 className="m-0 text-[clamp(30px,4vw,44px)] font-normal leading-[1.15] tracking-[-0.02em] text-[#f2f6f2]">{children}</h2>
 }
 
-function PrimaryCta({ onClick, children, className = '' }: { onClick?: () => void; children: React.ReactNode; className?: string }) {
-  return (
-    <button onClick={onClick} className={`inline-flex items-center gap-3 rounded-full bg-[#eef2ef] py-[7px] pl-[22px] pr-[7px] text-[14px] font-semibold text-[#0a0d0b] transition-all hover:-translate-y-0.5 hover:bg-white ${className}`}>
+function Lede({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <p className={`m-0 mt-4 text-[14.5px] leading-[1.75] text-sec ${className}`}>{children}</p>
+}
+
+function PrimaryCta({ onClick, href, children, className = '' }: { onClick?: () => void; href?: string; children: React.ReactNode; className?: string }) {
+  const cls = `inline-flex items-center gap-3 rounded-full bg-[#eef2ef] py-[7px] pl-[22px] pr-[7px] text-[14px] font-semibold text-[#0a0d0b] transition-all hover:-translate-y-0.5 hover:bg-white ${className}`
+  const inner = (
+    <>
       {children}
       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-acc-text text-[15px] text-on-acc">→</span>
-    </button>
+    </>
   )
+  return href ? <Link href={href} className={cls}>{inner}</Link> : <button onClick={onClick} className={cls}>{inner}</button>
 }
 
 function GhostCta({ onClick, href, children }: { onClick?: () => void; href?: string; children: React.ReactNode }) {
@@ -96,10 +108,10 @@ function GhostCta({ onClick, href, children }: { onClick?: () => void; href?: st
   return href ? <Link href={href} className={cls}>{children}</Link> : <button onClick={onClick} className={cls}>{children}</button>
 }
 
-function Reveal({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function Reveal({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
   const { ref, seen } = useInView<HTMLDivElement>(0.02)
   return (
-    <div ref={ref} className={className} style={{ opacity: seen ? 1 : 0.06, transition: 'opacity 0.9s cubic-bezier(0.16,0.84,0.28,1)' }}>
+    <div ref={ref} id={id} className={className} style={{ opacity: seen ? 1 : 0.06, transition: 'opacity 0.9s cubic-bezier(0.16,0.84,0.28,1)' }}>
       {children}
     </div>
   )
@@ -120,7 +132,7 @@ function CoverageChart() {
     <div ref={ref} className="relative mt-12 overflow-hidden rounded-[20px] border border-hair bg-white/[0.015] px-[30px] pb-[22px] pt-[26px]">
       <div className="pointer-events-none absolute left-[12%] top-[16%] h-[260px] w-[420px]" style={{ background: 'radial-gradient(closest-side,rgba(52,211,153,0.1),transparent)', animation: 'glowpulse 6s ease-in-out infinite' }} />
       <div className="relative mb-[26px] flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#8fdcb2]">Detectors in the engine, by analyzer</span>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#8fdcb2]">Detectors by engine</span>
         <span className="font-mono text-[11px] text-[#8a948d]">truent taxonomy --format json · {ENGINE.version}</span>
       </div>
       <div className="relative grid grid-cols-[34px_1fr] gap-3.5">
@@ -163,12 +175,54 @@ function CoverageChart() {
           <div className="grid gap-[14px] pt-3" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}>
             {bars.map((bar) => (
               <div key={bar.id} className="text-center">
+                <div className="mb-1.5 flex h-[15px] items-center justify-center gap-1">
+                  {networksForChain(bar.id as Chain).map((n) => (
+                    <ChainLogo key={n} network={n} size={14} className="text-[#8fa398]" />
+                  ))}
+                </div>
                 <div className="font-mono text-[10.5px] tracking-[0.04em] text-[#c5cec8]">{bar.label}</div>
                 <div className="mt-[5px] font-mono text-[10px] text-[#5c665f]">{bar.id}</div>
               </div>
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** The networks the chain analyzers target, each with its own mark. */
+function NetworkBand() {
+  return (
+    <div className="mt-12">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="m-0 text-[15px] font-medium text-text">Chains Truent reads natively</h3>
+        <span className="font-mono text-[11px] text-[#8a948d]">truent scan . --chain auto</span>
+      </div>
+
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+        {NETWORKS.map((n) => (
+          <div key={n.id} className="flex flex-col rounded-[16px] border border-hair bg-white/[0.02] p-5 transition-colors duration-200 hover:border-acc-text/[0.35]">
+            <ChainLogo network={n.id} size={26} brand />
+            <div className="mt-3.5 text-[15px] font-medium text-text">{n.name}</div>
+            <div className="mt-0.5 font-mono text-[11px] text-[#8fa398]">{n.language}</div>
+            <p className="m-0 mt-3 flex-1 text-[12px] leading-[1.6] text-[#748078]">{n.note}</p>
+            <div className="mt-4 border-t border-white/[0.07] pt-3 font-mono text-[10.5px] tracking-[0.04em] text-[#5c665f]">
+              {CHAIN_LABEL[n.chain]} engine · {ENGINE.byChain[n.chain] ?? 0} detectors
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[14px] border border-hair bg-white/[0.015] px-5 py-4">
+        <span className="text-[12.5px] leading-[1.5] text-[#8fa398]">
+          The Solidity engine runs unchanged on every EVM-compatible chain
+        </span>
+        <span className="flex flex-wrap items-center gap-3.5">
+          {EVM_COMPATIBLE.map((id) => (
+            <ChainLogo key={id} network={id} size={19} className="text-[#6f7a73] transition-colors duration-200 hover:text-text" />
+          ))}
+        </span>
       </div>
     </div>
   )
@@ -230,11 +284,12 @@ export default function HomePage() {
   const [authOpen, setAuthOpen] = useState(false)
   const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin')
   const [sampleReportOpen, setSampleReportOpen] = useState(false)
-  const startTrial = () => {
+  const startFree = () => {
     setAuthTab('signup')
     setAuthOpen(true)
   }
   const staticCount = ENGINE.totalDetectors - (ENGINE.byChain.runtime ?? 0)
+  const engineCount = CHAIN_ORDER.length - 1
 
   return (
     <div className="min-h-screen bg-bg p-2.5">
@@ -246,23 +301,23 @@ export default function HomePage() {
           wordmark="TRUENT"
           headline={
             <>
-              Don&apos;t get hacked.{' '}
-              <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(100deg,#d7ffe9 0%,#34d399 55%,#8fdcb2 100%)' }}>Know what is real.</span>
+              Security findings you can act on.{' '}
+              <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(100deg,#d7ffe9 0%,#34d399 55%,#8fdcb2 100%)' }}>Not a list of maybes.</span>
             </>
           }
           subline={
             <>
-              <span className="text-acc-text">{ENGINE.totalDetectors} detectors</span> across EVM, Solana, Move, Soroban, any repository, its dependencies and its live edge. Every finding is a{' '}
-              <span className="text-acc-text">lead or proven</span> — never a guess — with an exploitability rating and the fix.
+              Truent is one security engine for everything you ship — smart contracts, application code, infrastructure, dependencies and the live service. It tells you what
+              it found, how sure it is, how likely an attacker is to reach it, and exactly how to close it.
             </>
           }
           bullets={
             <>
               {[
-                ['◆', 'Lead vs proven, always'],
-                ['◇', `${CHAIN_ORDER.length - 1} engines, one command`],
-                ['◇', 'Fix + verify on every finding'],
-                ['◇', 'Zero false positives on correct code'],
+                ['◆', 'Lead or proven, on every finding'],
+                ['◇', `${engineCount} engines, one command`],
+                ['◇', 'The fix and how to verify it'],
+                ['◇', 'Silent on correct code'],
               ].map(([mark, label]) => (
                 <span key={label} className="flex items-center gap-1.5">
                   <span className="text-acc-text">{mark}</span>
@@ -273,58 +328,59 @@ export default function HomePage() {
           }
           actions={
             <>
-              <PrimaryCta onClick={startTrial} className="shadow-[0_0_40px_rgba(52,211,153,0.15)]">Start free</PrimaryCta>
-              <GhostCta onClick={() => setSampleReportOpen(true)}>View a sample report</GhostCta>
+              <PrimaryCta onClick={startFree} className="shadow-[0_0_40px_rgba(52,211,153,0.15)]">Scan something free</PrimaryCta>
+              <GhostCta href="#how-it-works">See how it works</GhostCta>
             </>
           }
+          hint="Scroll ↓"
         />
 
         {/* ─── Coverage ─── */}
         <Reveal className="relative mx-auto max-w-[1180px] px-6 pb-24 pt-[110px]">
           <div className="grid items-end gap-14 md:grid-cols-[0.9fr_1.1fr]">
             <div>
-              <span className="font-mono text-[10.5px] tracking-[0.18em] text-[#4d564f]">[ The engine ]</span>
-              <h2 className="m-0 mt-5 text-[clamp(28px,3.6vw,42px)] font-normal leading-[1.16] tracking-[-0.025em] text-[#f2f6f2]">
-                One engine for the whole system, mapped to{' '}
-                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(96deg,#34d399 0%,#a3e635 45%,#fde047 100%)' }}>CWE, ATT&amp;CK and NIST CSF</span>
-              </h2>
+              <SectionHeading>
+                One engine for the whole system —{' '}
+                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(96deg,#34d399 0%,#a3e635 45%,#fde047 100%)' }}>not five tools stitched together.</span>
+              </SectionHeading>
             </div>
-            <p className="m-0 max-w-[420px] text-[13.5px] leading-[1.8] text-[#8a948d]">
-              Every detector has a taxonomy row, an attack profile, a fix and a regression corpus; a build-time test fails if any of them drifts. The chart is the catalogue itself, regenerated from the binary.
-            </p>
+            <Lede className="max-w-[440px]">
+              Most teams run a contract scanner here, a SAST tool there, a dependency bot, a header checker, and reconcile the results by hand. Truent runs all of it through one
+              engine, one taxonomy and one report, so a finding in a Solidity vault and a finding in the Python service that calls it look, rank and fix the same way.
+            </Lede>
           </div>
 
           <div className="mt-14 grid grid-cols-1 border-t border-white/[0.09] sm:grid-cols-3">
             {[
-              { value: ENGINE.totalDetectors, suffix: '', label: 'Detectors, each with a fix and a verify step' },
-              { value: ENGINE.pathways.length, suffix: '', label: 'Security pathways mapped: native, hosted, manual' },
-              { value: ENGINE.attackChains.length, suffix: '', label: 'Attack chains recognised across findings' },
+              { value: ENGINE.totalDetectors, label: 'detectors, each mapped to CWE, MITRE ATT&CK and NIST CSF, each shipping its own fix' },
+              { value: ENGINE.attackChains.length, label: 'attack chains the engine recognises when separate findings add up to a real attack path' },
+              { value: ENGINE.pathways.length, label: 'security pathways covered, from design to recovery, with what is checked natively and what needs a person' },
             ].map((s, i) => (
               <div key={s.label} className={`py-[26px] ${i === 0 ? 'sm:pr-[30px]' : i === 1 ? 'sm:px-[30px]' : 'sm:pl-[30px]'} ${i < 2 ? 'sm:border-r sm:border-white/[0.07]' : ''}`}>
                 <div className="text-[clamp(34px,4vw,46px)] font-normal leading-none tracking-[-0.03em] text-text">
                   <AnimatedCounter value={s.value} decimals={0} />
-                  <span className="text-acc-text">{s.suffix}</span>
                 </div>
-                <div className="mt-2.5 text-[12.5px] leading-[1.5] text-[#748078]">{s.label}</div>
+                <div className="mt-2.5 text-[12.5px] leading-[1.55] text-[#748078]">{s.label}</div>
               </div>
             ))}
           </div>
 
           <CoverageChart />
+          <NetworkBand />
         </Reveal>
 
         {/* ─── See it run ─── */}
         <Reveal className="mx-auto grid max-w-[1100px] items-center gap-14 px-6 pb-[100px] pt-16 md:grid-cols-[0.85fr_1.15fr]">
           <div>
-            <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-acc-text">See it run</span>
-            <h2 className="m-0 mt-[18px] text-[38px] font-normal leading-[1.15] tracking-[-0.02em] text-[#f2f6f2]">
+            <SectionHeading>
               One command.
               <br />
-              Every engine.
-            </h2>
-            <p className="m-0 mt-[18px] text-[14px] leading-[1.75] text-sec">
-              <code className="text-acc-text">truent scan . --chain auto</code> picks the analyzer per file, follows tainted input across lines to the sink, names the detector, the CWE and the technique, rates how exploitable it is, and tells CI whether to block the merge.
-            </p>
+              A verdict, not a pile.
+            </SectionHeading>
+            <Lede>
+              <code className="text-acc-text">truent scan . --chain auto</code> picks the analyzer for each file, follows untrusted input across lines to the place it does damage, names
+              the weakness and the technique behind it, and tells your pipeline whether this change is safe to merge. The output is the report — no second tool to interpret it.
+            </Lede>
             <Link href="/docs#cli" className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/[0.14] px-[22px] py-3 text-[13px] font-medium text-[#cfd6d1] transition-colors hover:border-acc-text/50 hover:text-text">
               Read the CLI reference →
             </Link>
@@ -335,72 +391,79 @@ export default function HomePage() {
         {/* ─── Capabilities ─── */}
         <Reveal className="mx-auto max-w-[1100px] px-6 pb-[100px] pt-10">
           <div id="features" className="mb-14 text-center">
-            <Eyebrow>Capabilities</Eyebrow>
-            <SectionHeading>Honest by construction.</SectionHeading>
-            <p className="mx-auto mt-4 max-w-[560px] text-[14px] leading-[1.7] text-sec">
-              Pattern matchers guess. Language models opine. Truent says exactly what it knows: a traced lead, or a concrete witness — and never calls one the other.
-            </p>
+            <SectionHeading>Built to be believed.</SectionHeading>
+            <Lede className="mx-auto max-w-[560px]">
+              A scanner that cries wolf gets ignored, and then the real one walks in. Truent is designed so that every line in a report is something you can stand behind.
+            </Lede>
           </div>
           <div className="grid gap-3.5 md:grid-cols-3">
             <FeatureCard
               icon="◈"
-              title="Lead or proven — the evidence class is part of the finding"
+              title="It never calls a guess a fact"
               span
               watermark="✓"
-              footer={<Link href="/docs#honesty" className="relative mt-4 inline-block text-[13px] font-semibold text-acc-text">Read the contract →</Link>}
+              footer={<Link href="/docs#honesty" className="relative mt-4 inline-block text-[13px] font-semibold text-acc-text">How evidence works →</Link>}
             >
               <p className="m-0 mb-3 max-w-[560px]">
-                {staticCount} static detectors trace patterns, invariants, taint flows and advisories: strong evidence, recorded as <strong className="text-text">leads</strong>. The live probe and the symbolic driver record what a target returned or what a solver produced: <strong className="text-acc-text">proven</strong>, with the witness.
+                {staticCount} static detectors trace patterns, invariants, dataflows and advisories through your source. That is strong evidence, and Truent labels it exactly that:
+                a <strong className="text-text">lead</strong>. Only two things earn the word <strong className="text-acc-text">proven</strong> — something the live probe observed
+                on the wire, or an input a solver produced that breaks a property.
               </p>
-              <p className="m-0 max-w-[560px]">Correct code produces zero findings — every analyzer is held to a good/bad regression corpus, and a build fails if that ever changes.</p>
+              <p className="m-0 max-w-[560px]">And correct code stays quiet. Every analyzer is held to a corpus of known-good code that must produce zero findings, checked on every build.</p>
             </FeatureCard>
-            <FeatureCard icon="◆" title="Exploitability, not exploitation">
-              Every finding is rated LIKELY → THEORETICAL from its attack profile and evidence, and {ENGINE.attackChains.length} attack chains show which findings compose. Truent never fires an exploit.
+            <FeatureCard icon="◆" title="It tells you how likely, not just how bad">
+              Severity says what an attack would cost. Exploitability says whether one is coming: from a network-reachable weakness that needs nothing in hand, down to a hardening gap
+              behind a privileged role. Findings are ranked by both.
             </FeatureCard>
-            <FeatureCard icon="↺" title="Fix, verify, prevent">
-              Each detector ships the change that closes it and the command that proves it. <code className="text-acc-text">harden</code> generates the controls that stop the class from returning.
+            <FeatureCard icon="⟁" title="It sees the attack, not just the bug">
+              A cookie without <code className="text-acc-text">Secure</code> is a gap. The same cookie on a site that still answers plain HTTP is a session hijack. Truent knows{' '}
+              {ENGINE.attackChains.length} of these shapes and shows you which step is cheapest to break.
             </FeatureCard>
-            <FeatureCard icon="⎇" title="CI-native">
-              SARIF with CWE / ATT&amp;CK tags and the fix in rule help; <code className="text-acc-text">--fail-on</code> gates; <code className="text-acc-text">release-check --strict</code> on the default branch.
+            <FeatureCard icon="↺" title="It closes the loop">
+              Each detector ships the change that fixes it and the command that proves the fix landed. <code className="text-acc-text">truent harden</code> then generates the controls —
+              CI gates, dependency updates, secret hygiene, security headers — that keep the whole class from coming back.
             </FeatureCard>
-            <FeatureCard icon="⟐" title="Symbolic execution, settled" featured>
-              <code className="text-acc-text">truent symbolic</code> drives halmos, hevm or Mythril on a Foundry project. A counterexample becomes a proven finding with the exact input; an undecided check stays a lead.
+            <FeatureCard icon="⟐" title="It brings in the heavy machinery honestly" featured>
+              <code className="text-acc-text">truent symbolic</code> drives halmos, hevm or Mythril on your Foundry project. A counterexample comes back as a proven finding with the exact
+              input; an undecided check stays a lead. If no solver is installed, you get an error — never a clean bill of health.
             </FeatureCard>
           </div>
         </Reveal>
 
         {/* ─── How it works ─── */}
-        <Reveal className="border-y border-white/[0.06] bg-white/[0.012] px-6 py-[100px]">
+        <Reveal id="how-it-works" className="border-y border-white/[0.06] bg-white/[0.012] px-6 py-[100px]">
           <div className="mx-auto max-w-[1100px]">
             <div className="mb-[60px] text-center">
-              <Eyebrow>How it works</Eyebrow>
-              <SectionHeading>From tree to READY</SectionHeading>
+              <SectionHeading>From your tree to a release you can defend.</SectionHeading>
+              <Lede className="mx-auto max-w-[520px]">Three steps, and the last one answers the only question that matters before you ship: are we ready?</Lede>
             </div>
             <div className="grid gap-3.5 md:grid-cols-3">
               {steps.map((s) => (
                 <div key={s.num} className="rounded-[18px] border border-hair bg-white/[0.02] p-[34px]">
-                  <div className="mb-[18px] flex items-baseline gap-3.5">
-                    <span className="text-[46px] font-light tracking-[-0.02em] text-[#8fdcb2]/35">{s.num}</span>
-                    <span className="text-[20px]">{s.icon}</span>
-                  </div>
+                  <div className="mb-[18px] text-[46px] font-light leading-none tracking-[-0.02em] text-[#8fdcb2]/35">{s.num}</div>
                   <h3 className="m-0 mb-2.5 text-[16.5px] font-medium text-text">{s.title}</h3>
                   <p className="m-0 text-[13px] leading-[1.7] text-sec">{s.desc}</p>
                 </div>
               ))}
             </div>
+            <p className="mx-auto mt-10 max-w-[640px] text-center text-[13px] leading-[1.7] text-[#8a948d]">
+              <code className="text-acc-text">truent release-check</code> walks a 33-section safety checklist against your repository and reports every item as passed, failed, missing,
+              or something only a person can sign off — and returns READY only when nothing is left hanging.
+            </p>
           </div>
         </Reveal>
 
-        {/* ─── Real exploits ─── */}
+        {/* ─── Real incidents ─── */}
         <Reveal className="mx-auto max-w-[1100px] px-6 py-[100px]">
           <div className="mb-[52px] text-center">
-            <Eyebrow tone="red">Written against real incidents</Eyebrow>
             <SectionHeading>
-              Every contract detector maps
+              Every contract detector was written
               <br />
-              to an exploit that happened.
+              against a loss that already happened.
             </SectionHeading>
-            <p className="mx-auto mt-4 max-w-[540px] text-[14px] leading-[1.7] text-sec">Each detector is kept alive by a regression case in the corpus. These are three of them.</p>
+            <Lede className="mx-auto max-w-[540px]">
+              Not from a taxonomy — from post-mortems. Each one stays in the engine only as long as its reproduction case keeps failing when the check is turned off.
+            </Lede>
           </div>
           <div className="grid gap-3.5 md:grid-cols-3">
             {exploits.map((e) => (
@@ -408,17 +471,13 @@ export default function HomePage() {
                 <div className="absolute left-0 right-0 top-0 h-0.5" style={{ background: 'linear-gradient(90deg,#ef4444,rgba(239,68,68,0.3),transparent)' }} />
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <div className="mb-1.5 font-mono text-[10.5px] tracking-[0.14em] text-[#748078]">{e.year} EXPLOIT</div>
+                    <div className="mb-1.5 font-mono text-[10.5px] tracking-[0.14em] text-[#748078]">{e.year}</div>
                     <div className="text-[19px] font-medium text-text">{e.protocol}</div>
                   </div>
                   <span className="text-[23px] font-semibold tracking-[-0.02em] text-[#ef4444]">{e.amount}</span>
                 </div>
-                <p className="m-0 mb-[18px] text-[13px] leading-[1.6] text-sec">{e.type}</p>
-                <div className="mb-4 flex flex-wrap items-center gap-2">
-                  <span className="rounded-[5px] border border-[#ef4444]/30 bg-[#ef4444]/10 px-2 py-[3px] font-mono text-[10px] tracking-[0.1em] text-[#ef4444]">CRITICAL</span>
-                  <code className="break-all rounded-[5px] border border-white/[0.08] bg-white/[0.03] px-2 py-[3px] font-mono text-[10.5px] text-[#8fa398]">{e.invariant}</code>
-                </div>
-                <div className="flex items-center gap-[7px] text-[12px] font-semibold text-acc-text">✓ Truent detects this pattern</div>
+                <p className="m-0 mb-[18px] text-[13px] leading-[1.65] text-sec">{e.type}</p>
+                <code className="break-all rounded-[5px] border border-white/[0.08] bg-white/[0.03] px-2 py-[3px] font-mono text-[10.5px] text-[#8fa398]">{e.invariant}</code>
               </div>
             ))}
           </div>
@@ -428,11 +487,11 @@ export default function HomePage() {
         <Reveal className="border-y border-white/[0.06] bg-white/[0.012] px-6 py-[100px]">
           <div className="mx-auto grid max-w-[1100px] items-center gap-16 md:grid-cols-2">
             <div>
-              <Eyebrow>Reports</Eyebrow>
-              <h2 className="m-0 mt-[22px] text-[clamp(30px,4vw,42px)] font-normal tracking-[-0.02em] text-[#f2f6f2]">Findings you can act on</h2>
-              <p className="mb-7 mt-[18px] text-[14px] leading-[1.75] text-sec">
-                The dashboard stores exactly what the engine emits. Triage by severity, evidence and exploitability; mark findings acknowledged or resolved; export JSON. The CLI adds SARIF, HTML and the release checklist.
-              </p>
+              <SectionHeading>A report that ends in a fix, not a meeting.</SectionHeading>
+              <Lede className="mb-7">
+                Open a finding and everything needed to close it is on the card: what the engine saw, how sure it is, who could reach it, the code change, and the check that proves the
+                change worked. Triage it, hand it off, mark it resolved — the dashboard keeps the history.
+              </Lede>
               <div className="mb-8 flex flex-col gap-3">
                 {reportPerks.map((perk) => (
                   <div key={perk} className="flex items-center gap-3 text-[13.5px] text-[#c5cec8]">
@@ -441,7 +500,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <GhostCta onClick={() => setSampleReportOpen(true)}>View sample report →</GhostCta>
+              <GhostCta onClick={() => setSampleReportOpen(true)}>View a sample report →</GhostCta>
             </div>
 
             <div className="rounded-[18px] border border-white/[0.08] bg-[rgba(6,10,8,0.85)] p-[26px] shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
@@ -489,9 +548,8 @@ export default function HomePage() {
         {/* ─── Pricing preview ─── */}
         <Reveal className="mx-auto max-w-[1100px] px-6 pb-20 pt-[100px]">
           <div className="mb-14 text-center">
-            <Eyebrow>Pricing</Eyebrow>
-            <SectionHeading>Same engine on every plan.</SectionHeading>
-            <p className="mx-auto mt-4 max-w-[440px] text-[14px] leading-[1.7] text-sec">Plans differ in dashboard quota and support — never in what the engine checks.</p>
+            <SectionHeading>The same engine on every plan.</SectionHeading>
+            <Lede className="mx-auto max-w-[460px]">You pay for dashboard capacity and support — never for which detectors run. The free tier scans with all of them.</Lede>
           </div>
           <div className="grid overflow-hidden rounded-[18px] border border-hair md:grid-cols-3">
             {plans.map((plan, i) => (
@@ -507,7 +565,7 @@ export default function HomePage() {
           </div>
           <div className="mt-7 text-center">
             <Link href="/pricing" className="inline-flex items-center gap-2.5 rounded-full border border-white/[0.16] px-5 py-[11px] font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-[#cfd6d1] transition-colors hover:border-acc-text/50 hover:text-text">
-              Compare plans in full
+              Compare plans
               <span className="text-[13px] tracking-[-0.12em]">❯❯</span>
             </Link>
           </div>
@@ -525,12 +583,12 @@ export default function HomePage() {
 
         {/* ─── Final CTA ─── */}
         <Reveal className="mx-auto max-w-[640px] px-6 pb-[90px] pt-[70px] text-center">
-          <h2 className="m-0 text-[clamp(26px,3.6vw,36px)] font-normal tracking-[-0.025em] text-[#f2f6f2]">Ready to know what is real?</h2>
-          <p className="mx-auto mt-4 max-w-[470px] text-[13.5px] leading-[1.8] text-[#8a948d]">
-            Scan a file in the dashboard in seconds, or install the CLI and run the whole engine — scan, deps, probe, exposure, harden, release-check — against the tree you ship.
-          </p>
+          <SectionHeading>Find out what is actually there.</SectionHeading>
+          <Lede className="mx-auto max-w-[470px]">
+            Paste a file into the dashboard and have a report in seconds — or install the CLI and run the entire engine against the tree you ship, on any plan, without an account.
+          </Lede>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <PrimaryCta onClick={startTrial}>Start free</PrimaryCta>
+            <PrimaryCta onClick={startFree}>Scan something free</PrimaryCta>
             <GhostCta href="/docs#getting-started">Install the CLI</GhostCta>
           </div>
         </Reveal>

@@ -82,7 +82,7 @@ const comparison = [
   {
     category: 'Engine (identical on every plan)',
     rows: [
-      row('Static detectors: EVM, Solana, Move, Soroban, any repository, supply chain', true, true, true),
+      row('Static detectors: EVM, Solana, Move (Aptos & Sui), Soroban, any repository, supply chain', true, true, true),
       row('Taint tracking across lines', true, true, true),
       row('Evidence class on every finding (lead / proven)', true, true, true),
       row('Exploitability rating + attack chains', true, true, true),
@@ -115,7 +115,7 @@ const faqs = [
   { q: 'Is the engine different on the free plan?', a: 'No. Every plan runs the same binary with every detector. Plans differ in monthly dashboard quota, support and deployment options.' },
   { q: 'What counts as a scan?', a: 'One submission through the dashboard: a file the engine runs every applicable detector over. Each finding is stored as a lead or proven, with an exploitability rating and a fix. The CLI is not metered.' },
   { q: 'Do I need an account to use the CLI?', a: 'No. cargo install truent-cli and run scan, deps, exposure, harden, release-check, probe and symbolic locally or in CI. The dashboard adds hosted history, triage and team access.' },
-  { q: 'What does the engine cover?', a: 'Smart contracts (EVM/Solidity, Solana/Anchor, Move, Soroban), application code (Python, JavaScript/TypeScript, Go, shell), infrastructure (Dockerfile, Kubernetes, Terraform, CloudFormation, CI workflows), dependencies (Cargo, npm, pip, Go — RustSec/OSV, pinning, confusion, typosquats), live targets you own, and Foundry projects under a symbolic executor.' },
+  { q: 'What does the engine cover?', a: 'Smart contracts (Ethereum and every EVM chain in Solidity, Solana in Anchor/Rust, Aptos and Sui in Move, Stellar in Soroban), application code (Python, JavaScript/TypeScript, Go, shell), infrastructure (Dockerfile, Kubernetes, Terraform, CloudFormation, CI workflows), dependencies (Cargo, npm, pip, Go — RustSec/OSV, pinning, confusion, typosquats), live targets you own, and Foundry projects under a symbolic executor.' },
   { q: 'What does Professional add if the engine is the same?', a: 'Quota (10,000 scans a month), custom .sinv invariants, attack-chain reports in the dashboard, priority support, and hands-on help wiring the probe, symbolic execution and the release check into your pipeline.' },
   { q: 'How does billing work?', a: 'Professional is billed monthly through Stripe and can be cancelled any time; access runs to the end of the paid period. Enterprise is an annual agreement with custom terms.' },
 ]

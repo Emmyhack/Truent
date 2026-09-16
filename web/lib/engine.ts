@@ -75,6 +75,100 @@ export const CHAIN_LABEL: Record<Chain, string> = {
 
 export const CHAIN_ORDER: Chain[] = ['evm', 'solana', 'move', 'soroban', 'general', 'supply-chain', 'runtime', 'chain-agnostic']
 
+// ─── Networks ──────────────────────────────────────────────────────────────
+// A chain in the engine is an *analyzer*; a network is what people actually
+// ship to. One analyzer can cover several networks (the EVM analyzer reads
+// Solidity wherever it runs; the Move analyzer covers both Aptos and Sui and
+// detects the dialect per file), so the two are listed separately and the
+// detector count always names the engine it belongs to.
+
+export type NetworkId =
+  | 'ethereum'
+  | 'solana'
+  | 'aptos'
+  | 'sui'
+  | 'stellar'
+  | 'arbitrum'
+  | 'optimism'
+  | 'base'
+  | 'polygon'
+  | 'bnb'
+  | 'avalanche'
+
+export interface Network {
+  id: NetworkId
+  name: string
+  /** The analyzer that reads this network's source. */
+  chain: Chain
+  /** What you write for it. */
+  language: string
+  /** What the engine understands about this network specifically. */
+  note: string
+}
+
+export const NETWORKS: Network[] = [
+  {
+    id: 'ethereum',
+    name: 'Ethereum',
+    chain: 'evm',
+    language: 'Solidity',
+    note: 'Reentrancy, upgrade paths, oracle manipulation, ERC-4626 and ERC-4337 handling, cross-chain message verification.',
+  },
+  {
+    id: 'solana',
+    name: 'Solana',
+    chain: 'solana',
+    language: 'Rust / Anchor',
+    note: 'Signer and account validation, PDA derivation, sysvar spoofing, rent exemption, lamport conservation.',
+  },
+  {
+    id: 'aptos',
+    name: 'Aptos',
+    chain: 'move',
+    language: 'Move',
+    note: 'Global storage versus signer-scoped resources, acquires clauses, view functions, resource accounts and framework randomness.',
+  },
+  {
+    id: 'sui',
+    name: 'Sui',
+    chain: 'move',
+    language: 'Move 2024',
+    note: 'Shared versus owned objects, capability abilities, hot-potato receipts and package-visibility reachability.',
+  },
+  {
+    id: 'stellar',
+    name: 'Stellar',
+    chain: 'soroban',
+    language: 'Rust / Soroban',
+    note: 'Authorization gaps, unprotected upgrades, re-initialization, storage TTL and expiry, unchecked arithmetic.',
+  },
+]
+
+/** Every EVM-compatible network the Solidity analyzer reads unchanged. */
+export const EVM_COMPATIBLE: NetworkId[] = ['arbitrum', 'optimism', 'base', 'polygon', 'bnb', 'avalanche']
+
+/** The networks an analyzer covers, for labelling engine rows with marks. */
+export const CHAIN_NETWORKS: Partial<Record<Chain, NetworkId[]>> = {
+  evm: ['ethereum'],
+  solana: ['solana'],
+  move: ['aptos', 'sui'],
+  soroban: ['stellar'],
+}
+
+export const networksForChain = (chain: Chain): NetworkId[] => CHAIN_NETWORKS[chain] ?? []
+
+/**
+ * Marks for a tag that may be either an engine id (`move`, `evm`) or a
+ * dashboard language id (`solidity`, `soroban`) — findings carry the first,
+ * scans the second.
+ */
+export const networksForTag = (value: string): NetworkId[] => {
+  const direct = CHAIN_NETWORKS[value as Chain]
+  if (direct) return direct
+  const lang = LANGUAGES.find((l) => l.id === value)
+  return lang ? CHAIN_NETWORKS[lang.chain as Chain] ?? [] : []
+}
+
 export const detectorCount = (chain: Chain) => ENGINE.byChain[chain] ?? 0
 
 /** Detectors whose ids the web analyzer can run (static engines, not probe/symbolic). */
@@ -100,7 +194,7 @@ export const LANGUAGES = [
   { id: 'solidity', label: 'Solidity', chain: 'evm', ext: '.sol', group: 'Smart contracts' },
   { id: 'rust', label: 'Solana / Anchor (Rust)', chain: 'solana', ext: '.rs', group: 'Smart contracts' },
   { id: 'soroban', label: 'Soroban (Rust)', chain: 'soroban', ext: '.rs', group: 'Smart contracts' },
-  { id: 'move', label: 'Move (Aptos / Sui)', chain: 'move', ext: '.move', group: 'Smart contracts' },
+  { id: 'move', label: 'Move — Aptos & Sui', chain: 'move', ext: '.move', group: 'Smart contracts' },
   { id: 'python', label: 'Python', chain: 'general', ext: '.py', group: 'Application code' },
   { id: 'javascript', label: 'JavaScript', chain: 'general', ext: '.js', group: 'Application code' },
   { id: 'typescript', label: 'TypeScript', chain: 'general', ext: '.ts', group: 'Application code' },

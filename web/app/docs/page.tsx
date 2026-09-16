@@ -6,7 +6,18 @@ import { MarketingNav } from '@/components/layout/MarketingNav'
 import { PageShell } from '@/components/layout/PageShell'
 import { SlimFooter } from '@/components/layout/SlimFooter'
 import { AsciiLogo } from '@/components/ui/AsciiLogo'
-import { CHAIN_LABEL, CHAIN_ORDER, COMMANDS, ENGINE, EXPLOITABILITY, type Chain } from '@/lib/engine'
+import { ChainLogo } from '@/components/ui/ChainLogo'
+import {
+  CHAIN_LABEL,
+  CHAIN_ORDER,
+  COMMANDS,
+  ENGINE,
+  EVM_COMPATIBLE,
+  EXPLOITABILITY,
+  NETWORKS,
+  networksForChain,
+  type Chain,
+} from '@/lib/engine'
 
 const PAGES = [
   { id: 'overview', label: 'Overview' },
@@ -143,10 +154,46 @@ function Overview({ go }: { go: (p: PageId) => void }) {
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-hair bg-white/[0.07] sm:grid-cols-4">
         {CHAIN_ORDER.filter((c) => c !== 'chain-agnostic').map((c) => (
           <div key={c} className="bg-[#080c0a] px-4 py-4">
+            <div className="mb-2 flex h-4 items-center gap-1.5">
+              {networksForChain(c as Chain).map((n) => (
+                <ChainLogo key={n} network={n} size={15} className="text-[#8fa398]" />
+              ))}
+            </div>
             <div className="text-[22px] font-medium tracking-[-0.02em] text-text">{ENGINE.byChain[c] ?? 0}</div>
             <div className="mt-1 text-[11.5px] text-[#748078]">{CHAIN_LABEL[c as Chain]}</div>
           </div>
         ))}
+      </div>
+
+      <H2>Chains</H2>
+      <P>
+        A chain in the engine is an <em>analyzer</em>; a network is what you ship to. One analyzer can cover several networks — the Solidity engine reads
+        contracts for any EVM chain, and the Move engine covers both Aptos and Sui, detecting the dialect per file and reporting it on every finding.
+      </P>
+      <div className="mt-6 flex flex-col gap-px overflow-hidden rounded-[14px] border border-hair bg-white/[0.07]">
+        {NETWORKS.map((n) => (
+          <div key={n.id} className="flex flex-col gap-3 bg-[#080c0a] px-[18px] py-4 sm:flex-row sm:items-start sm:gap-4">
+            <ChainLogo network={n.id} size={24} brand className="mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                <span className="text-[14.5px] font-medium text-text">{n.name}</span>
+                <span className="font-mono text-[11px] text-[#8fa398]">{n.language}</span>
+                <span className="font-mono text-[10.5px] tracking-[0.04em] text-[#5c665f]">
+                  --chain {n.chain} · {ENGINE.byChain[n.chain] ?? 0} detectors
+                </span>
+              </div>
+              <p className="m-0 mt-1.5 text-[12.5px] leading-[1.6] text-sec">{n.note}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[14px] border border-hair bg-white/[0.015] px-[18px] py-3.5">
+        <span className="text-[12.5px] text-[#8fa398]">Every EVM-compatible chain runs the same Solidity engine</span>
+        <span className="flex flex-wrap items-center gap-3.5">
+          {EVM_COMPATIBLE.map((id) => (
+            <ChainLogo key={id} network={id} size={18} className="text-[#6f7a73] transition-colors hover:text-text" />
+          ))}
+        </span>
       </div>
 
       <h2 className="mb-[22px] mt-14 text-[23px] font-normal tracking-[-0.02em] text-[#f2f6f2]">Explore the docs</h2>
@@ -202,8 +249,9 @@ function GettingStarted() {
       <H2>First scan</H2>
       <Cmd>truent scan . --chain auto</Cmd>
       <P>
-        <Code>auto</Code> picks the engine per file: Solidity → EVM, Anchor/Soroban → Solana/Soroban, Move → Move, and everything else (Python, JS/TS, Go, shell,
-        Dockerfile, Kubernetes, Terraform, CI workflows) → the general analyzer. Test corpora are not skipped, so scan the tree you ship.
+        <Code>auto</Code> picks the engine per file: Solidity → EVM, Anchor → Solana, Soroban → Soroban, <Code>.move</Code> → Move (Aptos or Sui, whichever the
+        file is written for), and everything else (Python, JS/TS, Go, shell, Dockerfile, Kubernetes, Terraform, CI workflows) → the general analyzer. Test corpora
+        are not skipped, so scan the tree you ship.
       </P>
       <H3>Then</H3>
       <Cmd>truent deps . --advisory-db ./advisory-db --sbom sbom.cdx.json</Cmd>
