@@ -83,7 +83,7 @@ proc-macro2 = "1"
 
 # Solidity/EVM specific
 solc = "0.0.9"
-revm = { version = "14", features = [
+revm = { version = "43", features = [
     "std",
     "serde",
     "optional_block_gas_limit",
