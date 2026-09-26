@@ -6,8 +6,8 @@
   "skills": [
     {
       "name": "truent-audit",
-      "description": "Deterministic-first smart-contract security audit. Runs Truent's compiled engine (static analysis + dynamic invariant fuzzing with real EVM execution) for machine-verified, reproducible findings, then amplifies coverage with specialized LLM attacker lenses whose findings are verified back through the engine before they are reported. Multi-chain: EVM, Solana, Move, Soroban. Triggers on 'truent audit', 'audit this contract', 'security review', 'check for vulnerabilities', 'review for security'.",
-      "version": "0.1.0",
+      "description": "Engine-first smart-contract security audit across EVM, Solana, Move and Soroban. Truent's compiled engine runs first (static detectors on every chain, a real revm invariant fuzzer on the EVM) and is the ground truth; twelve LLM attacker lenses then hunt the residual, and every property they state is pushed back through the engine. Findings carry one of three evidence tiers, never blurred: VERIFIED-PROVEN (the engine executed it), VERIFIED-STATIC (a compiled detector matched real code), REASONED (a model proposed it, nothing executed it). Modes - default (full repo) or a specific filename. Loop mode runs several passes in one scan, each pass told what the earlier ones found, and ends in one combined report; it remembers findings between scans in a ledger. Triggers on 'truent audit', 'audit', 'audit this contract', 'check this contract', 'security review', 'check for vulnerabilities', 'review for security', 'solidity auditor', 'run the auditor', 'run the auditor in loop mode', 'loop mode', 'run 3 passes'.",
+      "version": "0.2.0",
       "domain": "smart-contract-security",
       "subdomain": "audit",
       "chains": [
@@ -60,8 +60,8 @@
     },
     {
       "name": "truent-fuzz",
-      "description": "Stateful invariant fuzzing for smart contracts. Default path runs Truent's native revm-backed fuzzer — auto-detected invariants, adversarial call sequences, and minimal-PoC shrinking in one binary, no external toolchain. Optionally emits an equivalent Echidna/Medusa harness for teams standardized on those runners (strict superset, not lock-in). Triggers on 'truent fuzz', 'fuzz this', 'invariant fuzzing', 'stateful fuzzing', 'build a fuzz harness', 'property testing', 'generate fuzz suite'.",
-      "version": "0.1.0",
+      "description": "Stateful invariant fuzzing for smart contracts on EVM, Solana, Move and Soroban. Default path runs Truent's native revm-backed fuzzer — auto-detected invariants, user-written .invar properties, adversarial call sequences, and minimal-PoC shrinking in one binary, no external toolchain. On demand it generates a full fizz-grade Echidna/Medusa suite (setup, handlers, ghost/snapshot properties, coverage loop, campaigns, Foundry repros, report, convert/sync sub-commands) as a strict superset, never lock-in, plus Solana fuzz plans and Move Prover / Soroban test harnesses. Triggers on 'truent fuzz', 'fuzz this', 'fizz', 'invariant fuzzing', 'stateful fuzzing', 'generate fuzz suite', 'build fuzz harness', 'build a fuzz harness', 'fuzzing harness', 'property testing', 'invariant suite'.",
+      "version": "0.2.0",
       "domain": "smart-contract-security",
       "subdomain": "fuzzing",
       "chains": [
@@ -77,8 +77,12 @@
         "property-testing",
         "echidna",
         "medusa",
+        "foundry",
         "revm",
         "evm",
+        "solana",
+        "move",
+        "soroban",
         "proof-of-concept"
       ],
       "path": "skills/truent-fuzz"
@@ -134,8 +138,8 @@
     },
     {
       "name": "truent-recon",
-      "description": "Pre-audit reconnaissance for a smart-contract codebase. Produces a recon report (overview, threat model, entry points, synthesized invariants, git-history risk map, test/coverage gaps, and a prioritized audit plan) — and, unlike a report-only recon, feeds the synthesized invariants straight into Truent's engine to auto-check them. Multi-chain. Triggers on 'truent recon', 'pre-audit', 'audit readiness', 'readiness report', 'prep this protocol', 'map this codebase', 'where should I audit'.",
-      "version": "0.1.0",
+      "description": "Pre-audit reconnaissance for a smart-contract codebase, engine-verified. Produces a recon/ folder (recon.md readiness report with threat model, entry-point map, full invariant map, architecture diagram, git-history risk mining, test and doc gaps, verdict) and, unlike a report-only recon, feeds the synthesized invariants into Truent's compiled engine so checkable items come back already checked and the engine's own findings, STRIDE model and exposure chains are part of the map. Multi-chain: EVM, Solana, Move (Aptos, Sui), Soroban. Triggers on 'truent recon', 'recon', 'x-ray', 'pre-audit', 'pre-audit report', 'audit readiness', 'readiness report', 'prep this protocol', 'protocol prep', 'summarize this protocol', 'map this codebase', 'where should I audit'.",
+      "version": "0.2.0",
       "domain": "smart-contract-security",
       "subdomain": "reconnaissance",
       "chains": [
@@ -147,6 +151,7 @@
       "tags": [
         "smart-contract",
         "pre-audit",
+        "x-ray",
         "threat-model",
         "recon",
         "invariants",

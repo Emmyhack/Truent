@@ -140,9 +140,20 @@ pub fn compiled_contract_from_solc_entry(
         .and_then(|b| b.as_str())
         .ok_or_else(|| anyhow::anyhow!("solc output missing 'bin' field"))?;
 
+    let constructor_inputs = abi
+        .as_array()
+        .and_then(|entries| {
+            entries
+                .iter()
+                .find(|e| e.get("type").and_then(|t| t.as_str()) == Some("constructor"))
+        })
+        .and_then(|c| c.get("inputs").and_then(|i| i.as_array()).map(|i| i.len()))
+        .unwrap_or(0);
+
     Ok(CompiledContract {
         init_code: parse_bytecode(bin)?,
         functions: parse_abi(&abi),
+        constructor_inputs,
     })
 }
 

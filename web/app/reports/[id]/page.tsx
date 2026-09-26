@@ -102,12 +102,12 @@ function FindingCard({ finding, onStatus }: { finding: Finding; onStatus: (id: s
         <div className="px-6 pb-6 border-t border-hair/50 pt-5 space-y-5">
           <div className="flex flex-wrap items-center gap-2">
             {finding.invariantId && (
-              <code className="rounded-[5px] border border-white/[0.08] bg-white/[0.03] px-2 py-[3px] font-mono text-[10.5px] text-[#8fa398]">{finding.invariantId}</code>
+              <code className="rounded-[5px] border border-hair bg-surface-2 px-2 py-[3px] font-mono text-[10.5px] text-sec">{finding.invariantId}</code>
             )}
             <ChainTag chain={finding.chain} />
-            {finding.cwe && <span className="font-mono text-[10.5px] text-[#748078]">{finding.cwe}</span>}
+            {finding.cwe && <span className="font-mono text-[10.5px] text-sec">{finding.cwe}</span>}
             {detector?.attack.map((a) => (
-              <span key={a} className="rounded-[5px] border border-white/[0.06] px-2 py-[3px] font-mono text-[10px] text-[#5c665f]" title="MITRE ATT&CK">
+              <span key={a} className="rounded-[5px] border border-hair px-2 py-[3px] font-mono text-[10px] text-sec" title="MITRE ATT&CK">
                 {a}
               </span>
             ))}
@@ -273,9 +273,9 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
             { label: 'Open / resolved', value: `${open} / ${resolved}`, hint: `${findings.length} total`, accent: 'text-text' },
           ].map((m) => (
             <div key={m.label} className="bg-panel p-5">
-              <div className="text-[12px] text-[#748078]">{m.label}</div>
+              <div className="text-[12px] text-sec">{m.label}</div>
               <div className={clsx('mt-1 text-[28px] font-medium tracking-[-0.02em]', m.accent)}>{m.value}</div>
-              <div className="mt-1 font-mono text-[10.5px] text-[#5c665f]">{m.hint}</div>
+              <div className="mt-1 font-mono text-[10.5px] text-sec">{m.hint}</div>
             </div>
           ))}
         </div>

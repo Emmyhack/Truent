@@ -47,7 +47,9 @@ interface ParticleHeroProps {
   bullets?: React.ReactNode
   actions?: React.ReactNode
   hint?: string
+  /** CSS colour token (custom-property name) for the sparks; resolved at runtime. */
   accent?: string
+  /** CSS colour token (custom-property name) for the dust; resolved at runtime. */
   base?: string
 }
 
@@ -55,6 +57,16 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min)
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 /** power3.out — quick departure, long settle. */
 const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3)
+
+/**
+ * Canvas cannot paint `var(--x)`, so read the token's current value from the
+ * root element. Falls back to the canvas's own inherited `color` (itself a
+ * token) if the property is missing, so no literal colour ever enters here.
+ */
+const resolveToken = (token: string, fallbackEl: Element) => {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim()
+  return value || getComputedStyle(fallbackEl).color
+}
 
 export function ParticleHero({
   ascii,
@@ -65,8 +77,8 @@ export function ParticleHero({
   bullets,
   actions,
   hint = 'Scroll to explore ↓',
-  accent = '#34D399',
-  base = '#9ab4a9',
+  accent = '--acc-text',
+  base = '--sec',
 }: ParticleHeroProps) {
   const sectionRef = useRef<HTMLElement | null>(null)
   const stageRef = useRef<HTMLDivElement | null>(null)
@@ -104,6 +116,13 @@ export function ParticleHero({
     /** Headline size at each end of the tween. */
     let bigSize = 0
     let smallSize = 0
+    /** Token values, re-read whenever the theme class flips. */
+    let baseColour = resolveToken(base, canvas)
+    let accentColour = resolveToken(accent, canvas)
+    const readColours = () => {
+      baseColour = resolveToken(base, canvas)
+      accentColour = resolveToken(accent, canvas)
+    }
 
     /** Fit the headline to the centre track, and record both tween endpoints. */
     const measureHeadline = () => {
@@ -142,7 +161,8 @@ export function ParticleHero({
       // Monospace advance ≈ 0.6em, so size follows the target band width.
       const size = Math.min((width * (width < 720 ? 0.92 : 0.62)) / (cols * 0.6), height * 0.13)
       const lh = size * 1.06
-      octx.fillStyle = '#fff'
+      // Only the alpha channel is sampled below; any opaque token will do.
+      octx.fillStyle = accentColour
       octx.font = `500 ${size}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim() || 'monospace'}`
       octx.textAlign = 'center'
       octx.textBaseline = 'middle'
@@ -199,8 +219,8 @@ export function ParticleHero({
       const dot = window.innerWidth < 768 ? 1.7 : 2
       const t = now * 0.001
       ctx.clearRect(0, 0, width, height)
-      paint(dust, base, t, p, dot)
-      paint(sparks, accent, t, p, dot)
+      paint(dust, baseColour, t, p, dot)
+      paint(sparks, accentColour, t, p, dot)
       ctx.globalAlpha = 1
     }
 
@@ -285,11 +305,20 @@ export function ParticleHero({
     })
     io.observe(stage)
 
+    // The theme toggles by swapping a class on <html>; the tokens change with
+    // it, so re-read them and repaint (the rAF loop repaints on its own).
+    const themeObserver = new MutationObserver(() => {
+      readColours()
+      if (reduced) render(0, 1)
+    })
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+
     return () => {
       cancelAnimationFrame(raf)
       clearTimeout(timer)
       window.removeEventListener('resize', onResize)
       io.disconnect()
+      themeObserver.disconnect()
     }
   }, [ascii, accent, base])
 
@@ -304,7 +333,7 @@ export function ParticleHero({
       d.style.cssText =
         `position:absolute;left:${Math.random() * 100}%;top:${8 + Math.random() * 84}%;` +
         `width:${sz}px;height:${sz}px;border-radius:50%;` +
-        `background:rgba(134,239,172,${0.3 + Math.random() * 0.5});` +
+        `background:var(--acc-text);opacity:${(0.3 + Math.random() * 0.5).toFixed(2)};` +
         `animation:sparkle ${2.5 + Math.random() * 4}s ease-in-out ${Math.random() * 4}s infinite;`
       host.appendChild(d)
     }
@@ -317,13 +346,6 @@ export function ParticleHero({
         className="absolute left-0 top-0 grid h-screen w-full items-center justify-items-center overflow-hidden text-center"
         style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,720px) minmax(0,1fr)' }}
       >
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(700px 420px at 50% 8%, rgba(52,211,153,0.14), transparent 65%)',
-          }}
-        />
         <canvas
           ref={canvasRef}
           aria-hidden="true"
@@ -352,8 +374,8 @@ export function ParticleHero({
 
           <h1
             ref={headlineRef}
-            className="m-0 max-w-[1180px] text-[clamp(34px,7vw,96px)] font-normal leading-[0.98] tracking-[-0.03em]"
-            style={{ color: '#f2f6f2', textWrap: 'balance' } as React.CSSProperties}
+            className="m-0 max-w-[1180px] text-[clamp(34px,7vw,96px)] font-normal leading-[0.98] tracking-[-0.03em] text-text"
+            style={{ textWrap: 'balance' } as React.CSSProperties}
           >
             {headline}
           </h1>
@@ -363,7 +385,7 @@ export function ParticleHero({
         {hint && (
           <div
             ref={hintRef}
-            className="relative mb-[14vh] self-end justify-self-center font-mono text-[11px] tracking-[0.08em] text-[#5c665f]"
+            className="relative mb-[14vh] self-end justify-self-center font-mono text-[11px] tracking-[0.08em] text-sec"
             style={{ gridColumn: 2, gridRow: 1 }}
           >
             {hint}
@@ -381,17 +403,12 @@ export function ParticleHero({
             </p>
           )}
           {bullets && (
-            <div className="flex flex-wrap justify-center gap-5 font-mono text-[11.5px] text-[#748078]">
+            <div className="flex flex-wrap justify-center gap-5 font-mono text-[11.5px] text-sec">
               {bullets}
             </div>
           )}
           {actions && <div className="flex flex-wrap justify-center gap-3">{actions}</div>}
         </div>
-
-        <div
-          className="pointer-events-none absolute bottom-0 left-0 right-0 h-[120px]"
-          style={{ background: 'linear-gradient(to bottom,transparent,#060908)' }}
-        />
       </div>
     </header>
   )

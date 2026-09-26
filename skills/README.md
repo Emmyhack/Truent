@@ -6,15 +6,25 @@ Codex, Copilot, Windsurf). Unlike prompt-only audit skills, these are backed by
 analyzers plus a real `revm`-backed invariant fuzzer — so findings are
 machine-verified and reproducible, not an LLM's opinion.
 
-Every skill distinguishes two tiers and never blurs them: **`VERIFIED`** (the
-engine produced or reproduced it) and **`REASONED`** (an LLM lens proposed it,
-and nothing executed it).
+Every skill labels each finding with one of three evidence tiers and never
+blurs them: **`VERIFIED-PROVEN`** (the engine executed it: a fuzz
+proof-of-concept, a symbolic counterexample, or a live-probe observation),
+**`VERIFIED-STATIC`** (a compiled detector matched real code, deterministically
+and reproducibly, without executing it) and **`REASONED`** (an LLM lens proposed
+it and the engine could not verify it). Results from tools outside Truent
+(Echidna, Medusa, Foundry, Move Prover, `cargo test`) are labelled
+**`EXTERNAL`**.
+
+`truent-audit`, `truent-recon` and `truent-fuzz` adapt material from
+[pashov/skills](https://github.com/pashov/skills) (`solidity-auditor`, `x-ray`,
+`fizz`; MIT) on top of the engine and extend it to all four chains — see
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 | Skill | What it does |
 |-------|--------------|
-| [truent-audit](truent-audit/) | Deterministic-first, engine-verified smart-contract audit across EVM · Solana · Move · Soroban. Runs the compiled engine first, then amplifies with LLM attacker lenses whose findings are verified back through the engine before being reported. |
-| [truent-recon](truent-recon/) | Pre-audit recon: git-history risk mining + threat model + entry points + synthesized invariants — with the checkable invariants run through the engine, not just listed. |
-| [truent-fuzz](truent-fuzz/) | Stateful invariant fuzzing. Native revm-backed fuzzer (auto-detected invariants + minimal-PoC shrinking, no external toolchain) by default; emits an equivalent Echidna/Medusa harness on demand. |
+| [truent-audit](truent-audit/) | Engine-first audit across EVM · Solana · Move · Soroban: the compiled engine runs first, then 12 specialised attacker lenses (math precision, access control, economics, execution trace, invariants, periphery, first principles, asymmetry, boundary, and three gap-hunters) hunt the residual under a senior-auditor SOP; four validation gates, dedup, a shell assembler that is the only report producer, `--loop N` passes that learn from each other and `--memory` across scans. Every LLM finding is pushed back through the engine before it is reported. |
+| [truent-recon](truent-recon/) | x-ray-grade pre-audit recon: enumeration and nSLOC, protocol-type threat profiles, temporal and composability threats, grep-verified entry-point map with flow paths, a seven-step invariant synthesis walk (`invariants.md` with G/I/X/E blocks), git-history risk mining, architecture diagram (SVG), test gaps and a verdict — plus the engine's own findings, threat model and attack chains, with every engine-checkable invariant already run. |
+| [truent-fuzz](truent-fuzz/) | Stateful invariant fuzzing. Native revm-backed fuzzer (auto-detected invariants, Truent DSL properties, minimal-PoC shrinking, no external toolchain) by default; a full Echidna/Medusa suite generator (templates, handlers, coverage loop, five invariant-discovery agents, synthesizer, implementers, violation repros, `convert` and `sync`) for teams on those runners; Solana plan-based fuzzing; Move and Soroban harness guides for their native test tools. |
 | [truent-deps](truent-deps/) | Dependency supply-chain review. Finds forked/drifted libraries and unpinned versions, then runs the engine over the dependency code actually compiled into your contracts — the code every "exclude `lib/`" scanner misses. Also reviews CI for leaked deploy keys. |
 | [truent-keys](truent-keys/) | Key custody and deploy safety. Secrets in source, scripts and git history, paired with the engine's answer to the on-chain half — single-EOA admins, weak multisig thresholds, unprotected initializers and upgrade paths. |
 | [truent-ir](truent-ir/) | On-chain incident response. Scopes an exploit from its transaction, reproduces it against deployed bytecode with the fuzzer to establish the broken invariant, and keeps confirmed mechanism separate from hypothesis in the post-mortem. |

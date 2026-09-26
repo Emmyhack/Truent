@@ -107,7 +107,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleClose}>
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" onClick={handleClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -247,7 +247,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
                 </div>
                 <div className="w-full h-2 bg-panel rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-brand to-secondary transition-all"
+                    className="h-full bg-acc transition-all"
                     style={{ width: `${progress}%` }}
                   />
                 </div>

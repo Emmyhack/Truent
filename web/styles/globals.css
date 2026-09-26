@@ -15,65 +15,129 @@
     --font-fraunces: var(--font-display);
     --font-jetbrains: var(--font-mono);
 
-    /* ── Editorial surface system ──
-       A flat darkness ladder (bg → surface → panel) separated by hairline
-       borders rather than shadows, so panels read as inked areas on one
-       sheet instead of floating cards. Accent is Truent green: emerald-500
-       for fills, emerald-400 for foreground/text. */
-    --bg: #030504;
-    --surface-2: #060908;
-    --panel: #0a0f0c;
-    --hair: rgba(255, 255, 255, 0.07);
-    --hair-strong: rgba(255, 255, 255, 0.14);
-    --text: #eef2ef;
-    --sec: #96a19a;
-    --acc: #10b981;
-    --acc-text: #34d399;
-    --on-acc: #052012;
+    /* ── Two-colour system: white and dull green ──
+       Every colour on the site is one of these two hues. Light mode puts
+       dull green on white; dark mode puts white on a dull-green-black. Depth
+       comes from hairline borders and alpha tints of the same two colours,
+       never from gradients. Switch with the `dark` class on <html>
+       (components/theme). */
+    color-scheme: light;
 
-    /* Material Design 3 Base Colors */
-    --surface: #060908;
-    --surface-dim: #030504;
-    --surface-bright: #1c2420;
-    --surface-container-lowest: #020403;
-    --surface-container-low: #080c0a;
-    --surface-container: #0a0f0c;
-    --surface-container-high: #111815;
-    --surface-container-highest: #1c2420;
-    --on-surface: #eef2ef;
-    --on-surface-variant: #c5cec8;
-    --outline: #8a948d;
-    --outline-variant: #3a443e;
-    --primary: #c6dbd2;
-    --primary-container: #04140e;
-    --secondary: #a7f3d0;
-    --secondary-container: #065f46;
-    --on-secondary: #003d2b;
-    --on-secondary-container: #34d399;
-    --error: #f87171;
-    --error-container: #7f1d1d;
-    --background: #030504;
-    --on-background: #eef2ef;
-    --surface-variant: #1c2420;
+    --white: #ffffff;
+    --green: #4f7d63;            /* the dull green */
+    --green-deep: #24402f;
+    --green-ink: #1f3328;        /* text on white */
+    --green-black: #0f1a14;      /* page background in dark mode */
 
-    /* Severity System */
-    --critical: #EF4444;
-    --critical-bg: rgba(239, 68, 68, 0.12);
-    --critical-border: rgba(239, 68, 68, 0.4);
-    --high: #FBBF24;
-    --high-bg: rgba(251, 191, 36, 0.12);
-    --high-border: rgba(251, 191, 36, 0.4);
-    --medium: #818CF8;
-    --medium-bg: rgba(129, 140, 248, 0.12);
-    --medium-border: rgba(129, 140, 248, 0.4);
-    --low: #4ADE80;
-    --low-bg: rgba(74, 222, 128, 0.12);
-    --low-border: rgba(74, 222, 128, 0.4);
-    /* Brand accent, used for borders, fills and the focus ring. Was named
-       `--indigo` after the pre-green palette; renamed so the token says what
-       it is rather than what it used to be. */
-    --brand: #10B981;
-    --brand-container: #065f46;
+    --bg: var(--white);
+    --surface-2: #f6f9f7;
+    --panel: #eef4f0;
+    --hair: rgba(79, 125, 99, 0.16);
+    --hair-strong: rgba(79, 125, 99, 0.32);
+    --text: var(--green-ink);
+    --sec: #5b7a68;
+    --acc: var(--green);
+    --acc-text: #3f6b52;
+    --on-acc: var(--white);
+    --acc-soft: rgba(79, 125, 99, 0.10);
+    --overlay: rgba(31, 51, 40, 0.55);
+
+    /* Material-style aliases used by older components — same two hues. */
+    --surface: var(--surface-2);
+    --surface-dim: #eef4f0;
+    --surface-bright: var(--white);
+    --surface-container-lowest: var(--white);
+    --surface-container-low: #f6f9f7;
+    --surface-container: #eef4f0;
+    --surface-container-high: #e3ece6;
+    --surface-container-highest: #d9e5dd;
+    --on-surface: var(--green-ink);
+    --on-surface-variant: #46614f;
+    --outline: #7e9a89;
+    --outline-variant: #c5d6cb;
+    --primary: var(--green);
+    --primary-container: #dfeae3;
+    --secondary: #3f6b52;
+    --secondary-container: #dfeae3;
+    --on-secondary: var(--white);
+    --on-secondary-container: var(--green-deep);
+    --error: #3f6b52;
+    --error-container: #dfeae3;
+    --background: var(--white);
+    --on-background: var(--green-ink);
+    --surface-variant: #e3ece6;
+
+    /* Severity: one hue, four strengths. The label carries the meaning. */
+    --critical: #2f5a43;
+    --critical-bg: rgba(79, 125, 99, 0.26);
+    --critical-border: rgba(79, 125, 99, 0.80);
+    --high: #3f6b52;
+    --high-bg: rgba(79, 125, 99, 0.18);
+    --high-border: rgba(79, 125, 99, 0.55);
+    --medium: #4f7d63;
+    --medium-bg: rgba(79, 125, 99, 0.11);
+    --medium-border: rgba(79, 125, 99, 0.36);
+    --low: #5b7a68;
+    --low-bg: rgba(79, 125, 99, 0.06);
+    --low-border: rgba(79, 125, 99, 0.22);
+    --brand: var(--green);
+    --brand-container: #dfeae3;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --bg: var(--green-black);
+    --surface-2: #142219;
+    --panel: #1a2c21;
+    --hair: rgba(255, 255, 255, 0.09);
+    --hair-strong: rgba(255, 255, 255, 0.18);
+    --text: var(--white);
+    --sec: rgba(255, 255, 255, 0.66);
+    --acc: #6f9c82;
+    --acc-text: #9cc4ad;
+    --on-acc: var(--green-black);
+    --acc-soft: rgba(111, 156, 130, 0.16);
+    --overlay: rgba(4, 10, 7, 0.72);
+
+    --surface: #142219;
+    --surface-dim: var(--green-black);
+    --surface-bright: #24402f;
+    --surface-container-lowest: #0b130e;
+    --surface-container-low: #142219;
+    --surface-container: #1a2c21;
+    --surface-container-high: #21382b;
+    --surface-container-highest: #2a4636;
+    --on-surface: var(--white);
+    --on-surface-variant: rgba(255, 255, 255, 0.78);
+    --outline: rgba(255, 255, 255, 0.5);
+    --outline-variant: rgba(255, 255, 255, 0.18);
+    --primary: #9cc4ad;
+    --primary-container: #24402f;
+    --secondary: #9cc4ad;
+    --secondary-container: #24402f;
+    --on-secondary: var(--green-black);
+    --on-secondary-container: #9cc4ad;
+    --error: #9cc4ad;
+    --error-container: #24402f;
+    --background: var(--green-black);
+    --on-background: var(--white);
+    --surface-variant: #24402f;
+
+    --critical: #ffffff;
+    --critical-bg: rgba(111, 156, 130, 0.42);
+    --critical-border: rgba(156, 196, 173, 0.9);
+    --high: #c9dfd2;
+    --high-bg: rgba(111, 156, 130, 0.28);
+    --high-border: rgba(156, 196, 173, 0.6);
+    --medium: #9cc4ad;
+    --medium-bg: rgba(111, 156, 130, 0.16);
+    --medium-border: rgba(156, 196, 173, 0.4);
+    --low: rgba(255, 255, 255, 0.66);
+    --low-bg: rgba(111, 156, 130, 0.08);
+    --low-border: rgba(156, 196, 173, 0.24);
+    --brand: #6f9c82;
+    --brand-container: #24402f;
   }
 
   body {
@@ -108,7 +172,15 @@
   }
 
   ::selection {
-    background: rgba(52, 211, 153, 0.25);
+    background: var(--acc-soft);
+  }
+
+  /* Tailwind's preflight sets placeholders to a fixed grey; keep them in
+     the two-colour system. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--sec);
+    opacity: 0.6;
   }
 
   /* Remove default scrollbar styling for cleaner look */
@@ -274,20 +346,6 @@
   animation: fade-in-up 0.6s ease-out both;
 }
 
-@keyframes gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 8s ease infinite;
-}
-
 @keyframes count-glow {
   0%, 100% {
     text-shadow: 0 0 0px transparent;
@@ -322,7 +380,7 @@
 .lift-on-hover:hover {
   transform: translateY(-4px);
   border-color: var(--brand);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 32px -8px var(--overlay);
 }
 
 /* Grid pattern background utility */
@@ -425,18 +483,16 @@
 .stagger-5 { animation-delay: 0.5s; }
 .stagger-6 { animation-delay: 0.6s; }
 
-/* ─── Gradient text utility ─── */
+/* ─── Accent text utility (formerly gradient) ─── */
 .gradient-text {
-  background: linear-gradient(135deg, var(--text) 0%, var(--acc-text) 60%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  /* Name kept for existing call sites; the site has no gradients. */
+  color: var(--acc-text);
 }
 
 /* ─── Border glow animation (featured pricing card, etc.) ─── */
 @keyframes border-glow {
   0%, 100% { box-shadow: 0 0 0px transparent; }
-  50% { box-shadow: 0 0 20px rgba(129, 140, 248, 0.25), inset 0 0 20px rgba(129, 140, 248, 0.05); }
+  50% { box-shadow: 0 0 20px var(--acc-soft), inset 0 0 20px var(--acc-soft); }
 }
 
 .animate-border-glow {
@@ -460,12 +516,11 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, var(--panel) 25%, var(--surface-2) 50%, var(--panel) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--panel);
+  animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
-/* ─── Gradient card top border ─── */
+/* ─── Card top border ─── */
 .card-gradient-border {
   position: relative;
 }
@@ -476,7 +531,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--brand), transparent);
+  background: var(--brand);
 }
 
 /* ─── Enhanced reveal: add delay variants ─── */
@@ -502,10 +557,10 @@
   transform: translateY(0);
 }
 
-/* ─── Section divider gradient ─── */
+/* ─── Section divider ─── */
 .section-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--hair), transparent);
+  background: var(--hair);
 }
 
 /* ── Redesign motion primitives ──

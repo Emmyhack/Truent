@@ -241,11 +241,15 @@ export const EVIDENCE = {
   proven: { label: 'PROVEN', title: 'Observed on the wire (probe) or produced by a solver (symbolic): a concrete witness exists.' },
 } as const
 
+// One hue, four strengths: the site is white and dull green only, so the
+// rating is carried by intensity and by the label, never by a second colour.
+// `tone` names the severity token set (critical/high/medium/low) whose
+// text/bg/border variables the badge uses.
 export const EXPLOITABILITY = {
-  likely: { label: 'LIKELY', color: '#ef4444', title: 'Reachable from the network by anyone with nothing in hand — or observed live.' },
-  possible: { label: 'POSSIBLE', color: '#fbbf24', title: 'Reachable from the network with a common precondition.' },
-  unlikely: { label: 'UNLIKELY', color: '#818cf8', title: 'Needs a foothold, a condition, or a victim’s action.' },
-  theoretical: { label: 'THEORETICAL', color: '#96a19a', title: 'Requires privileged access or an unusual condition; a hardening gap more than an attack path.' },
+  likely: { label: 'LIKELY', tone: 'critical', title: 'Reachable from the network by anyone with nothing in hand — or observed live.' },
+  possible: { label: 'POSSIBLE', tone: 'high', title: 'Reachable from the network with a common precondition.' },
+  unlikely: { label: 'UNLIKELY', tone: 'medium', title: 'Needs a foothold, a condition, or a victim’s action.' },
+  theoretical: { label: 'THEORETICAL', tone: 'low', title: 'Requires privileged access or an unusual condition; a hardening gap more than an attack path.' },
 } as const
 
 export type ExploitabilityId = keyof typeof EXPLOITABILITY

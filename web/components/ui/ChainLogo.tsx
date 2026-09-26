@@ -10,15 +10,12 @@ import type { NetworkId } from '@/lib/engine'
 interface Mark {
   /** The name a screen reader reads out. */
   title: string
-  /** Official brand colour, for when the mark is shown in colour. */
-  brand: string
   body: React.ReactNode
 }
 
 const MARKS: Record<NetworkId, Mark> = {
   ethereum: {
     title: 'Ethereum',
-    brand: '#627EEA',
     body: (
       <>
         <path fill="currentColor" d="M12 3v6.652l5.625 2.516zm0 0-5.625 9.166L12 9.652zm0 13.478V21l5.625-7.785zM12 21v-4.522l-5.625-3.263z" />
@@ -40,7 +37,6 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   solana: {
     title: 'Solana',
-    brand: '#14F195',
     body: (
       <path
         fill="currentColor"
@@ -50,7 +46,6 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   aptos: {
     title: 'Aptos',
-    brand: '#FFFFFF',
     body: (
       <path
         fill="currentColor"
@@ -60,7 +55,6 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   sui: {
     title: 'Sui',
-    brand: '#4DA2FF',
     body: (
       <path
         fill="currentColor"
@@ -70,7 +64,6 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   stellar: {
     title: 'Stellar',
-    brand: '#FFFFFF',
     body: (
       <path
         fill="currentColor"
@@ -80,7 +73,6 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   arbitrum: {
     title: 'Arbitrum',
-    brand: '#12AAFF',
     body: (
       <>
         <path
@@ -98,7 +90,6 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   optimism: {
     title: 'OP Mainnet',
-    brand: '#FF0420',
     body: (
       <path
         fill="currentColor"
@@ -110,13 +101,11 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   base: {
     title: 'Base',
-    brand: '#0052FF',
     // A circle with the left edge cut flat, per Base's published mark.
     body: <path fill="currentColor" d="M5.8 5.48a9 9 0 1 1 0 13.04z" />,
   },
   polygon: {
     title: 'Polygon',
-    brand: '#8247E5',
     body: (
       <path
         fill="currentColor"
@@ -126,7 +115,6 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   bnb: {
     title: 'BNB Chain',
-    brand: '#F0B90B',
     body: (
       <path
         fill="currentColor"
@@ -136,7 +124,6 @@ const MARKS: Record<NetworkId, Mark> = {
   },
   avalanche: {
     title: 'Avalanche',
-    brand: '#E84142',
     body: (
       <path
         fill="currentColor"
@@ -150,14 +137,12 @@ interface ChainLogoProps {
   network: NetworkId
   /** Pixel size of the square mark. */
   size?: number
-  /** Paint the mark in the network's own colour instead of inheriting. */
-  brand?: boolean
   className?: string
   /** Hide from screen readers when the name is already written next to it. */
   decorative?: boolean
 }
 
-export function ChainLogo({ network, size = 20, brand = false, className, decorative = false }: ChainLogoProps) {
+export function ChainLogo({ network, size = 20, className = 'text-acc-text', decorative = false }: ChainLogoProps) {
   const mark = MARKS[network]
   if (!mark) return null
   return (
@@ -166,7 +151,6 @@ export function ChainLogo({ network, size = 20, brand = false, className, decora
       width={size}
       height={size}
       className={clsx('flex-shrink-0', className)}
-      style={brand ? { color: mark.brand } : undefined}
       role={decorative ? undefined : 'img'}
       aria-hidden={decorative || undefined}
       aria-label={decorative ? undefined : mark.title}
@@ -178,4 +162,5 @@ export function ChainLogo({ network, size = 20, brand = false, className, decora
 }
 
 export const networkTitle = (network: NetworkId) => MARKS[network]?.title ?? network
-export const networkBrand = (network: NetworkId) => MARKS[network]?.brand ?? 'currentColor'
+/** Marks inherit their colour, so the answer is always `currentColor`. */
+export const networkBrand = (_network: NetworkId) => 'currentColor'

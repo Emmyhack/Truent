@@ -8,6 +8,10 @@ import { CIVIC_ENABLED } from '@/lib/civic'
 import { Button } from './Button'
 import { useEscapeKey } from '@/components/hooks/useEscapeKey'
 
+function toHex(text: string): string {
+  return '0x' + Array.from(new TextEncoder().encode(text), (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
@@ -35,13 +39,15 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: true,
+        redirect: false,
         callbackUrl: '/dashboard',
       })
-      
-      if (!result?.ok) {
+
+      if (!result?.ok || result.error) {
         setError('Invalid email or password')
+        return
       }
+      window.location.href = result.url || '/dashboard'
     } catch (err) {
       setError('An error occurred. Please try again.')
       console.error('Sign in error:', err)
@@ -74,13 +80,15 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
       const signInResult = await signIn('credentials', {
         email,
         password,
-        redirect: true,
+        redirect: false,
         callbackUrl: '/dashboard',
       })
 
-      if (!signInResult?.ok) {
+      if (!signInResult?.ok || signInResult.error) {
         setError('Account created but sign in failed. Please try signing in.')
+        return
       }
+      window.location.href = signInResult.url || '/dashboard'
     } catch (err) {
       setError('An error occurred. Please try again.')
       console.error('Sign up error:', err)
@@ -112,25 +120,22 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     }
   }
 
+  // One button covers both sign-in and sign-up: the wallet provider creates the
+  // account on the first verified signature for an address.
   const handleWalletConnect = async () => {
     setIsLoading(true)
     setError(null)
     try {
-      // Request wallet connection (MetaMask, WalletConnect, etc.)
       if (!window.ethereum) {
-        setError('Web3 wallet not detected. Please install MetaMask or use WalletConnect.')
-        setIsLoading(false)
+        setError('No Web3 wallet detected. Install MetaMask (or another browser wallet) and reload.')
         return
       }
 
-      // Request account access
-      const accounts = await window.ethereum.request({
+      const accounts: string[] = await window.ethereum.request({
         method: 'eth_requestAccounts',
       })
-
       if (!accounts || accounts.length === 0) {
         setError('Wallet connection denied')
-        setIsLoading(false)
         return
       }
 
@@ -140,29 +145,40 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address }),
       })
-      if (!nonceResponse.ok) throw new Error('Unable to create wallet challenge')
+      if (!nonceResponse.ok) {
+        setError('Could not start wallet sign-in. Please try again.')
+        return
+      }
       const { message } = await nonceResponse.json()
 
-      // Request signature
+      // Hex-encode the message: MetaMask accepts plain text, but several other
+      // wallets only accept personal_sign data as 0x-prefixed hex.
       const signature = await window.ethereum.request({
         method: 'personal_sign',
-        params: [message, address],
+        params: [toHex(message), address],
       })
 
-      // Sign in with wallet
+      // redirect: false so a rejected signature surfaces here instead of
+      // bouncing the page to /?error=CredentialsSignin.
       const result = await signIn('wallet', {
         address,
         message,
         signature,
-        redirect: true,
+        redirect: false,
         callbackUrl: '/dashboard',
       })
-
-      if (!result?.ok) {
-        setError('Wallet authentication failed')
+      if (!result?.ok || result.error) {
+        setError('Wallet signature could not be verified. Please try again.')
+        return
       }
+      window.location.href = result.url || '/dashboard'
     } catch (err) {
-      setError('Wallet connection error. Please try again.')
+      // EIP-1193 code 4001: the user rejected the request in their wallet.
+      if ((err as { code?: number })?.code === 4001) {
+        setError('Request rejected in your wallet.')
+      } else {
+        setError('Wallet connection error. Please try again.')
+      }
       console.error('Wallet error:', err)
     } finally {
       setIsLoading(false)
@@ -170,7 +186,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"

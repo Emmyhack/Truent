@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import '../styles/globals.css'
 import { CivicAuthProvider } from '@civic/auth/nextjs'
 import { AuthProvider } from './providers'
+import { ThemeProvider } from '@/components/theme/ThemeProvider'
+import { THEME_INIT_SCRIPT } from '@/components/theme/constants'
 
 export const metadata: Metadata = {
   title: 'Truent | Security engine for contracts, code and infrastructure',
@@ -22,12 +24,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className="dark"
-      suppressHydrationWarning
-    >
+    <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Sets the `dark` class before first paint from the saved choice or
+            the OS preference, so there is no flash. See components/theme. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* Loaded via <link> rather than next/font because next/font resolves
             Google Fonts at build time, which fails in network-restricted build
             environments. Matches the source design's own font loading. */}
@@ -42,11 +43,13 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <CivicAuthProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </CivicAuthProvider>
+        <ThemeProvider>
+          <CivicAuthProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </CivicAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

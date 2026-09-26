@@ -13,14 +13,23 @@ export function EvidenceBadge({ evidence, className }: { evidence: 'lead' | 'pro
         'inline-flex items-center gap-1.5 whitespace-nowrap rounded border px-2 py-0.5 font-mono text-[9.5px] tracking-[0.12em]',
         proven
           ? 'border-acc-text/40 bg-acc-text/10 text-acc-text'
-          : 'border-white/[0.12] bg-white/[0.03] text-[#8fa398]',
+          : 'border-hair-strong bg-surface-2 text-sec',
         className,
       )}
     >
-      <span className={clsx('inline-block h-[5px] w-[5px] rounded-full', proven ? 'bg-acc-text' : 'bg-[#8fa398]')} />
+      <span className={clsx('inline-block h-[5px] w-[5px] rounded-full', proven ? 'bg-acc-text' : 'bg-sec')} />
       {meta.label}
     </span>
   )
+}
+
+type ExploitabilityTone = (typeof EXPLOITABILITY)[ExploitabilityId]['tone']
+
+const TONE_CLASSES: Record<ExploitabilityTone, string> = {
+  critical: 'border-critical-border bg-critical-bg text-critical',
+  high: 'border-high-border bg-high-bg text-high',
+  medium: 'border-medium-border bg-medium-bg text-medium',
+  low: 'border-low-border bg-low-bg text-low',
 }
 
 /** LIKELY → THEORETICAL: how possible exploitation is, judged from the attack profile — never by exploiting. */
@@ -30,8 +39,11 @@ export function ExploitabilityBadge({ level, className }: { level: Exploitabilit
   return (
     <span
       title={meta.title}
-      className={clsx('inline-block whitespace-nowrap rounded border px-2 py-0.5 font-mono text-[9.5px] tracking-[0.12em]', className)}
-      style={{ color: meta.color, borderColor: `${meta.color}4d`, background: `${meta.color}14` }}
+      className={clsx(
+        'inline-block whitespace-nowrap rounded border px-2 py-0.5 font-mono text-[9.5px] tracking-[0.12em]',
+        TONE_CLASSES[meta.tone],
+        className,
+      )}
     >
       {meta.label}
     </span>
@@ -45,7 +57,7 @@ export function ChainTag({ chain, className }: { chain?: string | null; classNam
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-[5px] border border-white/[0.08] bg-white/[0.03] px-2 py-[3px] font-mono text-[10px] text-[#8fa398]',
+        'inline-flex items-center gap-1.5 rounded-[5px] border border-hair bg-surface-2 px-2 py-[3px] font-mono text-[10px] text-sec',
         className,
       )}
     >

@@ -5,6 +5,7 @@ import { Search, X, Menu, ShieldCheck, ArrowLeft, Github } from 'lucide-react'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
+import { ThemeToggle } from '../theme/ThemeToggle'
 
 interface DocsSidebarItem {
   label: string
@@ -183,6 +184,7 @@ export function DocsShell({
             </div>
 
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               {editPath && (
                 <Link href={editPath} target="_blank" rel="noopener"
                   className="hidden md:inline-flex items-center gap-1.5 text-xs text-sec hover:text-text transition-colors border border-hair rounded-md px-2.5 py-1">
@@ -227,7 +229,7 @@ export function DocsShell({
 
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-overlay z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
     </div>
   )

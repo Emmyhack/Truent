@@ -11,4 +11,8 @@ use truent_dynamic_core::FunctionSpec;
 pub struct CompiledContract {
     pub init_code: Vec<u8>,
     pub functions: Vec<FunctionSpec>,
+    /// Number of constructor parameters in the ABI. The fuzzer deploys with
+    /// no arguments, so a non-zero count is the usual reason a deployment
+    /// reverts — worth naming in the error instead of guessing.
+    pub constructor_inputs: usize,
 }

@@ -25,7 +25,6 @@ const plans = [
     name: 'Starter',
     price: '$0',
     per: 'forever',
-    accent: '#8fdcb2',
     cta: 'Start free',
     tagline: 'For solo builders and first audits.',
     quota: `${starterQuota} dashboard scans / month`,
@@ -36,7 +35,6 @@ const plans = [
     name: 'Professional',
     price: `$${proPrice}`,
     per: 'per month',
-    accent: '#34d399',
     cta: 'Go Professional',
     featured: true,
     tagline: 'For teams shipping to production.',
@@ -48,7 +46,6 @@ const plans = [
     name: 'Enterprise',
     price: 'Custom',
     per: 'annual agreement',
-    accent: '#a3e635',
     cta: 'Talk to us',
     href: '/contact',
     tagline: 'For regulated and large-scale deployments.',
@@ -66,7 +63,7 @@ const included = [
 ]
 
 type Cell = boolean | string
-const cell = (v: Cell) => ({ text: v === true ? '✓' : v === false ? '—' : v, color: v === true ? '#34d399' : v === false ? '#3d453f' : '#96a19a' })
+const cell = (v: Cell) => ({ text: v === true ? '✓' : v === false ? '—' : v, className: v === true ? 'text-acc-text' : v === false ? 'text-hair-strong' : 'text-sec' })
 const row = (feature: string, starter: Cell, pro: Cell, enterprise: Cell) => ({ feature, starter: cell(starter), pro: cell(pro), enterprise: cell(enterprise) })
 
 const comparison = [
@@ -129,15 +126,15 @@ export default function PricingPage() {
   const [authOpen, setAuthOpen] = useState(false)
 
   return (
-    <PageShell glow="radial-gradient(1100px 500px at 50% -120px, rgba(52,211,153,0.12), rgba(6,9,8,0) 60%)">
+    <PageShell>
       <MarketingNav />
 
       {/* ─── Hero ─── */}
       <header className="mx-auto max-w-[900px] px-6 pb-14 pt-[90px] text-center">
-        <h1 className="m-0 text-[clamp(38px,5.6vw,62px)] font-normal leading-[1.05] tracking-[-0.03em] text-[#f2f6f2]">
+        <h1 className="m-0 text-[clamp(38px,5.6vw,62px)] font-normal leading-[1.05] tracking-[-0.03em] text-text">
           Same engine on every plan.
           <br />
-          <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(100deg,#d7ffe9,#34d399)' }}>
+          <span className="text-acc-text">
             Pay for the dashboard, not the detectors.
           </span>
         </h1>
@@ -154,7 +151,7 @@ export default function PricingPage() {
             <div
               key={plan.id}
               className={`relative flex flex-col overflow-hidden rounded-[20px] border p-8 ${
-                plan.featured ? 'border-acc-text/40 bg-acc-text/[0.05] shadow-[0_0_60px_rgba(52,211,153,0.08)]' : 'border-hair bg-white/[0.02]'
+                plan.featured ? 'border-acc-text/40 bg-acc-text/[0.05] shadow-[0_0_60px_var(--acc-soft)]' : 'border-hair bg-surface-2'
               }`}
             >
               {plan.featured && (
@@ -162,20 +159,20 @@ export default function PricingPage() {
                   MOST TEAMS
                 </span>
               )}
-              <div className="font-mono text-[10.5px] uppercase tracking-[0.18em]" style={{ color: plan.accent }}>
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-acc-text">
                 {plan.name}
               </div>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-[44px] font-normal leading-none tracking-[-0.03em] text-[#f2f6f2]">{plan.price}</span>
-                <span className="text-[12.5px] text-[#5c665f]">{plan.per}</span>
+                <span className="text-[44px] font-normal leading-none tracking-[-0.03em] text-text">{plan.price}</span>
+                <span className="text-[12.5px] text-sec">{plan.per}</span>
               </div>
-              <p className="m-0 mt-3 text-[13px] leading-[1.6] text-[#8a948d]">{plan.tagline}</p>
-              <div className="mt-5 rounded-[10px] border border-white/[0.07] bg-[#080c0a] px-4 py-3 font-mono text-[11.5px] text-[#c5cec8]">{plan.quota}</div>
+              <p className="m-0 mt-3 text-[13px] leading-[1.6] text-sec">{plan.tagline}</p>
+              <div className="mt-5 rounded-[10px] border border-hair bg-bg px-4 py-3 font-mono text-[11.5px] text-text">{plan.quota}</div>
 
               <div className="mt-6 flex flex-col gap-[10px]">
                 {plan.features.map((f) => (
-                  <div key={f} className="flex gap-2.5 text-[13px] leading-[1.5] text-[#d7e2da]">
-                    <span className="text-[#86efac]">✓</span>
+                  <div key={f} className="flex gap-2.5 text-[13px] leading-[1.5] text-text">
+                    <span className="text-acc-text">✓</span>
                     {f}
                   </div>
                 ))}
@@ -185,7 +182,7 @@ export default function PricingPage() {
                 {plan.href ? (
                   <Link
                     href={plan.href}
-                    className="inline-flex w-full items-center justify-center rounded-full border border-white/[0.18] px-5 py-3 text-[13px] font-medium text-[#cfd6d1] transition-colors hover:border-acc-text/50 hover:text-text"
+                    className="inline-flex w-full items-center justify-center rounded-full border border-hair-strong px-5 py-3 text-[13px] font-medium text-text transition-colors hover:border-acc-text/50 hover:text-text"
                   >
                     {plan.cta}
                   </Link>
@@ -193,7 +190,7 @@ export default function PricingPage() {
                   <button
                     onClick={() => setAuthOpen(true)}
                     className={`inline-flex w-full items-center justify-center gap-2.5 rounded-full py-3 text-[13px] font-semibold transition-colors ${
-                      plan.featured ? 'bg-[#eef2ef] text-[#0a0d0b] hover:bg-white' : 'border border-white/[0.18] text-[#cfd6d1] hover:border-acc-text/50 hover:text-text'
+                      plan.featured ? 'bg-text text-bg hover:bg-acc-text' : 'border border-hair-strong text-text hover:border-acc-text/50 hover:text-text'
                     }`}
                   >
                     {plan.cta} →
@@ -207,23 +204,23 @@ export default function PricingPage() {
 
       {/* ─── Included everywhere ─── */}
       <section className="mx-auto max-w-[1100px] px-6 pb-[90px]">
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[18px] border border-hair bg-white/[0.07] md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[18px] border border-hair bg-hair md:grid-cols-4">
           {included.map((s) => (
-            <div key={s.label} className="bg-[#080c0a] px-6 py-6">
+            <div key={s.label} className="bg-bg px-6 py-6">
               <div className="text-[34px] font-normal leading-none tracking-[-0.03em] text-text">{s.n}</div>
               <div className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.14em] text-acc-text">{s.label}</div>
-              <p className="m-0 mt-2 text-[12px] leading-[1.55] text-[#748078]">{s.sub}</p>
+              <p className="m-0 mt-2 text-[12px] leading-[1.55] text-sec">{s.sub}</p>
             </div>
           ))}
         </div>
-        <p className="m-0 mt-4 text-center font-mono text-[11px] text-[#5c665f]">Included on every plan · counts regenerated from the binary ({ENGINE.version})</p>
+        <p className="m-0 mt-4 text-center font-mono text-[11px] text-sec">Included on every plan · counts regenerated from the binary ({ENGINE.version})</p>
       </section>
 
       {/* ─── Comparison ─── */}
-      <section className="border-y border-white/[0.06] bg-white/[0.012] px-6 py-[90px]">
+      <section className="border-y border-hair bg-surface-2 px-6 py-[90px]">
         <div className="mx-auto max-w-[900px]">
           <div className="mb-12 text-center">
-            <h2 className="m-0 text-[clamp(26px,3.5vw,36px)] font-normal tracking-[-0.02em] text-[#f2f6f2]">What differs, exactly</h2>
+            <h2 className="m-0 text-[clamp(26px,3.5vw,36px)] font-normal tracking-[-0.02em] text-text">What differs, exactly</h2>
             <p className="m-0 mt-3 text-[13px] text-sec">Quota, support and deployment. The engine rows are identical by design.</p>
           </div>
           <div className="overflow-x-auto">
@@ -236,12 +233,12 @@ export default function PricingPage() {
               </div>
               {comparison.map((group) => (
                 <div key={group.category} className="mb-[18px] overflow-hidden rounded-[14px] border border-hair">
-                  <div className="border-b border-white/[0.06] bg-acc-text/[0.05] px-4 py-[11px] font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#8fdcb2]">{group.category}</div>
+                  <div className="border-b border-hair bg-acc-text/[0.05] px-4 py-[11px] font-mono text-[10.5px] uppercase tracking-[0.16em] text-acc-text">{group.category}</div>
                   {group.rows.map((r) => (
-                    <div key={r.feature} className="grid grid-cols-[1.8fr_1fr_1fr_1fr] items-center border-b border-white/[0.04] px-4 py-[11px] last:border-b-0">
+                    <div key={r.feature} className="grid grid-cols-[1.8fr_1fr_1fr_1fr] items-center border-b border-hair px-4 py-[11px] last:border-b-0">
                       <span className="text-[13px] text-sec">{r.feature}</span>
                       {[r.starter, r.pro, r.enterprise].map((c, i) => (
-                        <span key={i} className="text-center text-[12.5px]" style={{ color: c.color }}>{c.text}</span>
+                        <span key={i} className={`text-center text-[12.5px] ${c.className}`}>{c.text}</span>
                       ))}
                     </div>
                   ))}
@@ -255,16 +252,16 @@ export default function PricingPage() {
       {/* ─── FAQ ─── */}
       <section className="mx-auto max-w-[720px] px-6 py-[90px]">
         <div className="mb-11 text-center">
-          <h2 className="m-0 text-[clamp(26px,3.5vw,36px)] font-normal tracking-[-0.02em] text-[#f2f6f2]">Questions</h2>
+          <h2 className="m-0 text-[clamp(26px,3.5vw,36px)] font-normal tracking-[-0.02em] text-text">Questions</h2>
         </div>
         <div className="flex flex-col gap-2.5">
           {faqs.map((faq, i) => {
             const open = openFaq === i
             return (
-              <div key={faq.q} className="overflow-hidden rounded-[14px] border border-hair bg-white/[0.02]">
+              <div key={faq.q} className="overflow-hidden rounded-[14px] border border-hair bg-surface-2">
                 <button onClick={() => setOpenFaq(open ? null : i)} aria-expanded={open} className="flex w-full items-center justify-between gap-4 px-[22px] py-[18px] text-left">
                   <span className="text-[14.5px] font-medium text-text">{faq.q}</span>
-                  <span className="flex-shrink-0 text-[13px] text-[#748078]">{open ? '▲' : '▼'}</span>
+                  <span className="flex-shrink-0 text-[13px] text-sec">{open ? '▲' : '▼'}</span>
                 </button>
                 {open && <p className="m-0 px-[22px] pb-[18px] text-[13px] leading-[1.7] text-sec">{faq.a}</p>}
               </div>
@@ -276,16 +273,15 @@ export default function PricingPage() {
       {/* ─── CTA ─── */}
       <section className="mx-auto max-w-[760px] px-6 pb-[100px]">
         <div className="relative overflow-hidden rounded-[22px] border border-acc-text/[0.22] bg-acc-text/[0.04] px-10 py-14 text-center">
-          <div className="pointer-events-none absolute -top-[140px] left-1/2 h-[340px] w-[520px] -translate-x-1/2" style={{ background: 'radial-gradient(closest-side,rgba(52,211,153,0.14),transparent)' }} />
           <div className="relative">
-            <h2 className="m-0 text-[clamp(24px,3.5vw,34px)] font-normal tracking-[-0.02em] text-[#f2f6f2]">Start with the free plan. Upgrade when the quota is the limit.</h2>
+            <h2 className="m-0 text-[clamp(24px,3.5vw,34px)] font-normal tracking-[-0.02em] text-text">Start with the free plan. Upgrade when the quota is the limit.</h2>
             <p className="mx-auto mt-3.5 max-w-[440px] text-[13.5px] leading-[1.7] text-sec">Or skip the dashboard entirely: the CLI runs the whole engine locally and in CI, on any plan.</p>
             <div className="mt-[30px] flex flex-wrap justify-center gap-3">
-              <button onClick={() => setAuthOpen(true)} className="inline-flex items-center gap-2.5 rounded-full bg-[#eef2ef] py-1.5 pl-5 pr-1.5 text-[13px] font-semibold text-[#0a0d0b] transition-colors hover:bg-white">
+              <button onClick={() => setAuthOpen(true)} className="inline-flex items-center gap-2.5 rounded-full bg-text py-1.5 pl-5 pr-1.5 text-[13px] font-semibold text-bg transition-colors hover:bg-acc-text">
                 Start free
                 <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-acc-text text-[14px] text-on-acc">→</span>
               </button>
-              <Link href="/docs#getting-started" className="inline-flex items-center rounded-full border border-white/[0.16] px-[22px] py-3 text-[13px] font-medium text-[#cfd6d1] transition-colors hover:border-acc-text/50 hover:text-text">
+              <Link href="/docs#getting-started" className="inline-flex items-center rounded-full border border-hair-strong px-[22px] py-3 text-[13px] font-medium text-text transition-colors hover:border-acc-text/50 hover:text-text">
                 Install the CLI
               </Link>
             </div>

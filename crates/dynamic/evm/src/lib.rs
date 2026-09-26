@@ -209,6 +209,27 @@ pub fn fuzz_solidity_source_with(
     // directly (a borrow of config.actors can't outlive config itself
     // being consumed in the very same call).
     let actors = config.actors.clone();
+
+    // Prove the contract deploys before handing it to the search loop. The
+    // factory redeploys it on every attempt and treats a failure as an
+    // engine bug (it panics); a constructor that needs arguments is not an
+    // engine bug, it is a contract this fuzzer cannot deploy on its own, and
+    // the caller should be told that in words.
+    let deployer = actors.first().copied().unwrap_or([0xAAu8; 20]);
+    if let Err(e) = backend::RevmBackend::deploy(contract.init_code.clone(), deployer) {
+        let hint = if contract.constructor_inputs > 0 {
+            format!(
+                "\n\nThe constructor takes {} argument(s) and the fuzzer deploys with none. \
+                 Wrap the contract in one with a no-argument constructor that calls the real \
+                 one with concrete values, and fuzz the wrapper.",
+                contract.constructor_inputs
+            )
+        } else {
+            String::new()
+        };
+        anyhow::bail!("could not deploy the contract in the in-memory EVM: {e}{hint}");
+    }
+
     let factory = backend::backend_factory(&contract, &actors);
     Ok(fuzz(factory, &contract.functions, invariants, config))
 }

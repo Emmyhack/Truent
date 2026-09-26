@@ -50,9 +50,9 @@ const reportPerks = [
 ]
 
 const plans = [
-  { name: 'Starter', price: '$0', per: ' / month', accent: '#8fdcb2', href: '/pricing', caption: 'The whole engine, five dashboard scans a month' },
-  { name: 'Professional', price: '$499', per: ' / month', accent: '#34d399', href: '/pricing', caption: 'Ten thousand scans, custom invariants, priority support', featured: true },
-  { name: 'Enterprise', price: 'Custom', per: '', accent: '#a3e635', href: '/contact', caption: 'Managed probes, SSO, on-premises, an engineer on call' },
+  { name: 'Starter', price: '$0', per: ' / month', accent: 'text-sec', href: '/pricing', caption: 'The whole engine, five dashboard scans a month' },
+  { name: 'Professional', price: '$499', per: ' / month', accent: 'text-acc-text', href: '/pricing', caption: 'Ten thousand scans, custom invariants, priority support', featured: true },
+  { name: 'Enterprise', price: 'Custom', per: '', accent: 'text-sec', href: '/contact', caption: 'Managed probes, SSO, on-premises, an engineer on call' },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ function useInView<T extends HTMLElement>(threshold = 0.2) {
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
-  return <h2 className="m-0 text-[clamp(30px,4vw,44px)] font-normal leading-[1.15] tracking-[-0.02em] text-[#f2f6f2]">{children}</h2>
+  return <h2 className="m-0 text-[clamp(30px,4vw,44px)] font-normal leading-[1.15] tracking-[-0.02em] text-text">{children}</h2>
 }
 
 function Lede({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -93,7 +93,7 @@ function Lede({ children, className = '' }: { children: React.ReactNode; classNa
 }
 
 function PrimaryCta({ onClick, href, children, className = '' }: { onClick?: () => void; href?: string; children: React.ReactNode; className?: string }) {
-  const cls = `inline-flex items-center gap-3 rounded-full bg-[#eef2ef] py-[7px] pl-[22px] pr-[7px] text-[14px] font-semibold text-[#0a0d0b] transition-all hover:-translate-y-0.5 hover:bg-white ${className}`
+  const cls = `inline-flex items-center gap-3 rounded-full bg-text py-[7px] pl-[22px] pr-[7px] text-[14px] font-semibold text-bg transition-all hover:-translate-y-0.5 hover:bg-acc-text ${className}`
   const inner = (
     <>
       {children}
@@ -104,7 +104,7 @@ function PrimaryCta({ onClick, href, children, className = '' }: { onClick?: () 
 }
 
 function GhostCta({ onClick, href, children }: { onClick?: () => void; href?: string; children: React.ReactNode }) {
-  const cls = 'inline-flex items-center rounded-full border border-white/[0.16] px-6 py-3.5 text-[14px] font-medium text-[#cfd6d1] transition-colors hover:border-acc-text/50 hover:text-text'
+  const cls = 'inline-flex items-center rounded-full border border-hair-strong px-6 py-3.5 text-[14px] font-medium text-text transition-colors hover:border-acc-text/50 hover:text-text'
   return href ? <Link href={href} className={cls}>{children}</Link> : <button onClick={onClick} className={cls}>{children}</button>
 }
 
@@ -129,14 +129,14 @@ function CoverageChart() {
   const ticks = [max, Math.round(max * 0.75), Math.round(max * 0.5), Math.round(max * 0.25), 0]
 
   return (
-    <div ref={ref} className="relative mt-12 overflow-hidden rounded-[20px] border border-hair bg-white/[0.015] px-[30px] pb-[22px] pt-[26px]">
-      <div className="pointer-events-none absolute left-[12%] top-[16%] h-[260px] w-[420px]" style={{ background: 'radial-gradient(closest-side,rgba(52,211,153,0.1),transparent)', animation: 'glowpulse 6s ease-in-out infinite' }} />
+    <div ref={ref} className="relative mt-12 overflow-hidden rounded-[20px] border border-hair bg-surface-2 px-[30px] pb-[22px] pt-[26px]">
+      <div className="pointer-events-none absolute left-[12%] top-[16%] h-[260px] w-[420px] rounded-full blur-3xl" style={{ background: 'var(--acc-soft)', animation: 'glowpulse 6s ease-in-out infinite' }} />
       <div className="relative mb-[26px] flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#8fdcb2]">Detectors by engine</span>
-        <span className="font-mono text-[11px] text-[#8a948d]">truent taxonomy --format json · {ENGINE.version}</span>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-acc-text">Detectors by engine</span>
+        <span className="font-mono text-[11px] text-sec">truent taxonomy --format json · {ENGINE.version}</span>
       </div>
       <div className="relative grid grid-cols-[34px_1fr] gap-3.5">
-        <div className="relative h-[250px] font-mono text-[11px] text-[#8a948d]">
+        <div className="relative h-[250px] font-mono text-[11px] text-sec">
           {ticks.map((v, i) => (
             <span key={i} className="absolute right-0" style={{ top: `calc(${i * 25}% - 5px)` }}>{v}</span>
           ))}
@@ -145,16 +145,16 @@ function CoverageChart() {
           <div className="relative h-[250px]">
             <div className="pointer-events-none absolute inset-0">
               {[0, 25, 50, 75].map((t) => (
-                <div key={t} className="absolute left-0 right-0 h-px" style={{ top: `${t}%`, background: t === 0 ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.05)' }} />
+                <div key={t} className="absolute left-0 right-0 h-px bg-hair" style={{ top: `${t}%` }} />
               ))}
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-white/[0.14]" />
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-hair-strong" />
             </div>
             <div className="absolute bottom-px left-0 right-0 top-0 grid items-end gap-[14px]" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}>
               {bars.map((bar, i) => {
                 const hot = bar.id === 'evm' || bar.id === 'general'
                 return (
                   <div key={bar.id} className="relative flex h-full flex-col justify-end">
-                    <div className="mb-[9px] text-center font-mono text-[12px] font-semibold" style={{ color: hot ? '#86efac' : '#8a948d', opacity: seen ? 1 : 0, transition: `opacity 0.5s ease ${180 + i * 110}ms` }}>
+                    <div className={`mb-[9px] text-center font-mono text-[12px] font-semibold ${hot ? 'text-acc-text' : 'text-sec'}`} style={{ opacity: seen ? 1 : 0, transition: `opacity 0.5s ease ${180 + i * 110}ms` }}>
                       {bar.count}
                     </div>
                     <div
@@ -162,9 +162,9 @@ function CoverageChart() {
                         height: seen ? `${(bar.count / max) * 100}%` : '0%',
                         borderRadius: '6px 6px 0 0',
                         transition: `height 1.05s cubic-bezier(0.16,0.84,0.28,1) ${180 + i * 110}ms`,
-                        background: `linear-gradient(to top, ${hot ? 'rgba(52,211,153,0.75)' : 'rgba(52,211,153,0.4)'}, rgba(134,239,172,0.07))`,
-                        borderTop: `2px solid ${hot ? '#86efac' : 'rgba(134,239,172,0.6)'}`,
-                        boxShadow: hot ? '0 -8px 40px rgba(52,211,153,0.35)' : undefined,
+                        background: hot ? 'var(--acc-text)' : 'var(--hair-strong)',
+                        borderTop: `2px solid ${hot ? 'var(--acc-text)' : 'var(--acc)'}`,
+                        boxShadow: hot ? '0 -8px 40px var(--acc-soft)' : undefined,
                       }}
                     />
                   </div>
@@ -177,11 +177,11 @@ function CoverageChart() {
               <div key={bar.id} className="text-center">
                 <div className="mb-1.5 flex h-[15px] items-center justify-center gap-1">
                   {networksForChain(bar.id as Chain).map((n) => (
-                    <ChainLogo key={n} network={n} size={14} className="text-[#8fa398]" />
+                    <ChainLogo key={n} network={n} size={14} className="text-sec" />
                   ))}
                 </div>
-                <div className="font-mono text-[10.5px] tracking-[0.04em] text-[#c5cec8]">{bar.label}</div>
-                <div className="mt-[5px] font-mono text-[10px] text-[#5c665f]">{bar.id}</div>
+                <div className="font-mono text-[10.5px] tracking-[0.04em] text-text">{bar.label}</div>
+                <div className="mt-[5px] font-mono text-[10px] text-sec">{bar.id}</div>
               </div>
             ))}
           </div>
@@ -197,30 +197,30 @@ function NetworkBand() {
     <div className="mt-12">
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="m-0 text-[15px] font-medium text-text">Chains Truent reads natively</h3>
-        <span className="font-mono text-[11px] text-[#8a948d]">truent scan . --chain auto</span>
+        <span className="font-mono text-[11px] text-sec">truent scan . --chain auto</span>
       </div>
 
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
         {NETWORKS.map((n) => (
-          <div key={n.id} className="flex flex-col rounded-[16px] border border-hair bg-white/[0.02] p-5 transition-colors duration-200 hover:border-acc-text/[0.35]">
-            <ChainLogo network={n.id} size={26} brand />
+          <div key={n.id} className="flex flex-col rounded-[16px] border border-hair bg-surface-2 p-5 transition-colors duration-200 hover:border-acc-text/[0.35]">
+            <ChainLogo network={n.id} size={26} />
             <div className="mt-3.5 text-[15px] font-medium text-text">{n.name}</div>
-            <div className="mt-0.5 font-mono text-[11px] text-[#8fa398]">{n.language}</div>
-            <p className="m-0 mt-3 flex-1 text-[12px] leading-[1.6] text-[#748078]">{n.note}</p>
-            <div className="mt-4 border-t border-white/[0.07] pt-3 font-mono text-[10.5px] tracking-[0.04em] text-[#5c665f]">
+            <div className="mt-0.5 font-mono text-[11px] text-sec">{n.language}</div>
+            <p className="m-0 mt-3 flex-1 text-[12px] leading-[1.6] text-sec">{n.note}</p>
+            <div className="mt-4 border-t border-hair pt-3 font-mono text-[10.5px] tracking-[0.04em] text-sec">
               {CHAIN_LABEL[n.chain]} engine · {ENGINE.byChain[n.chain] ?? 0} detectors
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[14px] border border-hair bg-white/[0.015] px-5 py-4">
-        <span className="text-[12.5px] leading-[1.5] text-[#8fa398]">
+      <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[14px] border border-hair bg-surface-2 px-5 py-4">
+        <span className="text-[12.5px] leading-[1.5] text-sec">
           The Solidity engine runs unchanged on every EVM-compatible chain
         </span>
         <span className="flex flex-wrap items-center gap-3.5">
           {EVM_COMPATIBLE.map((id) => (
-            <ChainLogo key={id} network={id} size={19} className="text-[#6f7a73] transition-colors duration-200 hover:text-text" />
+            <ChainLogo key={id} network={id} size={19} className="text-sec transition-colors duration-200 hover:text-text" />
           ))}
         </span>
       </div>
@@ -234,23 +234,23 @@ function TerminalPanel() {
   const lines: Array<{ id: string; el: React.ReactNode }> = [
     { id: 'scan', el: <><span className="text-acc-text">SCAN</span><span className="text-sec">{'  '}chain=auto · 3 engines selected · {ENGINE.totalDetectors} detectors loaded</span></> },
     { id: 'gap-0', el: <>&nbsp;</> },
-    { id: 'high', el: <><span className="text-[#fbbf24]">HIGH</span><span className="text-[#d8ddd9]">{'  '}gen_sql_injection  api/orders.py:41  <span className="text-[#8fa398]">LEAD · LIKELY</span></span></> },
-    { id: 'h1', el: <span className="text-[#748078]">{'      '}tainted value `uid` reaches a SQL query (request.args → line 39 → execute)</span> },
-    { id: 'h2', el: <span className="text-[#748078]">{'      '}fix: parameterized query · verify: taint test source→query no longer present</span> },
+    { id: 'high', el: <><span className="text-high">HIGH</span><span className="text-text">{'  '}gen_sql_injection  api/orders.py:41  <span className="text-sec">LEAD · LIKELY</span></span></> },
+    { id: 'h1', el: <span className="text-sec">{'      '}tainted value `uid` reaches a SQL query (request.args → line 39 → execute)</span> },
+    { id: 'h2', el: <span className="text-sec">{'      '}fix: parameterized query · verify: taint test source→query no longer present</span> },
     { id: 'gap-1', el: <>&nbsp;</> },
-    { id: 'crit', el: <><span className="text-[#ef4444]">CRITICAL</span><span className="text-[#d8ddd9]">{'  '}evm_reentrancy_classic  contracts/Vault.sol:88  <span className="text-[#8fa398]">LEAD · LIKELY</span></span></> },
-    { id: 'c1', el: <span className="text-[#748078]">{'      '}external call before state update; no nonReentrant guard</span> },
+    { id: 'crit', el: <><span className="text-critical">CRITICAL</span><span className="text-text">{'  '}evm_reentrancy_classic  contracts/Vault.sol:88  <span className="text-sec">LEAD · LIKELY</span></span></> },
+    { id: 'c1', el: <span className="text-sec">{'      '}external call before state update; no nonReentrant guard</span> },
     { id: 'gap-2', el: <>&nbsp;</> },
-    { id: 'chain', el: <><span className="text-[#f87171]">CHAIN</span><span className="text-[#d8ddd9]">{'  '}injection-to-data-exfiltration · break at step 1</span></> },
+    { id: 'chain', el: <><span className="text-critical">CHAIN</span><span className="text-text">{'  '}injection-to-data-exfiltration · break at step 1</span></> },
     { id: 'done', el: <><span className="text-acc-text">GATE</span><span className="text-sec">{'  '}2 findings ≥ high. exit 1 — merge blocked.</span><span className="text-acc-text" style={{ animation: 'blink 1s infinite' }}>▊</span></> },
   ]
   return (
-    <div className="rounded-[18px] border border-white/[0.08] bg-[rgba(6,10,8,0.9)] p-1.5 shadow-[0_30px_80px_rgba(0,0,0,0.5),0_0_60px_rgba(52,211,153,0.05)]">
-      <div className="flex items-center gap-1.5 border-b border-white/[0.06] px-4 py-3">
-        <span className="h-2.5 w-2.5 rounded-full bg-[#ef4444] opacity-80" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#fbbf24] opacity-80" />
+    <div className="rounded-[18px] border border-hair bg-panel/90 p-1.5 shadow-[0_30px_80px_var(--overlay)]">
+      <div className="flex items-center gap-1.5 border-b border-hair px-4 py-3">
+        <span className="h-2.5 w-2.5 rounded-full bg-critical opacity-80" />
+        <span className="h-2.5 w-2.5 rounded-full bg-high opacity-80" />
         <span className="h-2.5 w-2.5 rounded-full bg-acc-text opacity-80" />
-        <span className="ml-2.5 font-mono text-[11px] text-[#5c665f]">truent scan . --chain auto --fail-on high</span>
+        <span className="ml-2.5 font-mono text-[11px] text-sec">truent scan . --chain auto --fail-on high</span>
       </div>
       <div ref={ref} className="overflow-x-auto px-5 pb-[22px] pt-[18px] text-left font-mono text-[12.5px] leading-[1.85]">
         <pre aria-hidden="true" className="mb-3.5 overflow-hidden whitespace-pre font-mono text-[clamp(3.4px,0.62vw,7.4px)] leading-[1.08] text-acc-text/50" style={{ opacity: seen ? 1 : 0, transition: 'opacity 0.25s ease 250ms' }}>
@@ -266,7 +266,7 @@ function TerminalPanel() {
 
 function FeatureCard({ icon, title, children, span = false, featured = false, watermark, footer }: { icon: string; title: string; children: React.ReactNode; span?: boolean; featured?: boolean; watermark?: string; footer?: React.ReactNode }) {
   return (
-    <div className={`relative overflow-hidden rounded-[18px] border p-[34px] transition-all duration-[250ms] hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.4)] ${span ? 'md:col-span-2' : ''} ${featured ? 'border-acc-text/[0.22] bg-acc-text/[0.04] hover:border-acc-text/[0.45]' : 'border-hair bg-white/[0.02] hover:border-acc-text/[0.35]'}`}>
+    <div className={`relative overflow-hidden rounded-[18px] border p-[34px] transition-all duration-[250ms] hover:-translate-y-1 hover:shadow-[0_20px_50px_var(--overlay)] ${span ? 'md:col-span-2' : ''} ${featured ? 'border-acc-text/[0.22] bg-acc-text/[0.04] hover:border-acc-text/[0.45]' : 'border-hair bg-surface-2 hover:border-acc-text/[0.35]'}`}>
       {watermark && <div className="pointer-events-none absolute -bottom-[60px] -right-10 font-mono text-[120px] text-acc-text/[0.04]">{watermark}</div>}
       <div className="relative mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-acc-text/20 bg-acc-text/[0.08] text-[19px]">{icon}</div>
       <h3 className="relative m-0 mb-3 text-[18px] font-medium text-text">{title}</h3>
@@ -293,7 +293,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-bg p-2.5">
-      <div className="relative overflow-clip rounded-[22px] border border-white/[0.05]" style={{ background: 'radial-gradient(1100px 600px at 50% -100px, rgba(52,211,153,0.16), rgba(6,9,8,0) 60%), #060908' }}>
+      <div className="relative overflow-clip rounded-[22px] border border-hair bg-bg">
         <MarketingNav />
 
         <ParticleHero
@@ -302,7 +302,7 @@ export default function HomePage() {
           headline={
             <>
               Security findings you can act on.{' '}
-              <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(100deg,#d7ffe9 0%,#34d399 55%,#8fdcb2 100%)' }}>Not a list of maybes.</span>
+              <span className="text-acc-text">Not a list of maybes.</span>
             </>
           }
           subline={
@@ -328,7 +328,7 @@ export default function HomePage() {
           }
           actions={
             <>
-              <PrimaryCta onClick={startFree} className="shadow-[0_0_40px_rgba(52,211,153,0.15)]">Scan something free</PrimaryCta>
+              <PrimaryCta onClick={startFree} className="shadow-[0_0_40px_var(--acc-soft)]">Scan something free</PrimaryCta>
               <GhostCta href="#how-it-works">See how it works</GhostCta>
             </>
           }
@@ -341,7 +341,7 @@ export default function HomePage() {
             <div>
               <SectionHeading>
                 One engine for the whole system —{' '}
-                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(96deg,#34d399 0%,#a3e635 45%,#fde047 100%)' }}>not five tools stitched together.</span>
+                <span className="text-acc-text">not five tools stitched together.</span>
               </SectionHeading>
             </div>
             <Lede className="max-w-[440px]">
@@ -350,17 +350,17 @@ export default function HomePage() {
             </Lede>
           </div>
 
-          <div className="mt-14 grid grid-cols-1 border-t border-white/[0.09] sm:grid-cols-3">
+          <div className="mt-14 grid grid-cols-1 border-t border-hair sm:grid-cols-3">
             {[
               { value: ENGINE.totalDetectors, label: 'detectors, each mapped to CWE, MITRE ATT&CK and NIST CSF, each shipping its own fix' },
               { value: ENGINE.attackChains.length, label: 'attack chains the engine recognises when separate findings add up to a real attack path' },
               { value: ENGINE.pathways.length, label: 'security pathways covered, from design to recovery, with what is checked natively and what needs a person' },
             ].map((s, i) => (
-              <div key={s.label} className={`py-[26px] ${i === 0 ? 'sm:pr-[30px]' : i === 1 ? 'sm:px-[30px]' : 'sm:pl-[30px]'} ${i < 2 ? 'sm:border-r sm:border-white/[0.07]' : ''}`}>
+              <div key={s.label} className={`py-[26px] ${i === 0 ? 'sm:pr-[30px]' : i === 1 ? 'sm:px-[30px]' : 'sm:pl-[30px]'} ${i < 2 ? 'sm:border-r sm:border-hair' : ''}`}>
                 <div className="text-[clamp(34px,4vw,46px)] font-normal leading-none tracking-[-0.03em] text-text">
                   <AnimatedCounter value={s.value} decimals={0} />
                 </div>
-                <div className="mt-2.5 text-[12.5px] leading-[1.55] text-[#748078]">{s.label}</div>
+                <div className="mt-2.5 text-[12.5px] leading-[1.55] text-sec">{s.label}</div>
               </div>
             ))}
           </div>
@@ -381,7 +381,7 @@ export default function HomePage() {
               <code className="text-acc-text">truent scan . --chain auto</code> picks the analyzer for each file, follows untrusted input across lines to the place it does damage, names
               the weakness and the technique behind it, and tells your pipeline whether this change is safe to merge. The output is the report — no second tool to interpret it.
             </Lede>
-            <Link href="/docs#cli" className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/[0.14] px-[22px] py-3 text-[13px] font-medium text-[#cfd6d1] transition-colors hover:border-acc-text/50 hover:text-text">
+            <Link href="/docs#cli" className="mt-6 inline-flex items-center gap-2 rounded-full border border-hair-strong px-[22px] py-3 text-[13px] font-medium text-text transition-colors hover:border-acc-text/50 hover:text-text">
               Read the CLI reference →
             </Link>
           </div>
@@ -431,7 +431,7 @@ export default function HomePage() {
         </Reveal>
 
         {/* ─── How it works ─── */}
-        <Reveal id="how-it-works" className="border-y border-white/[0.06] bg-white/[0.012] px-6 py-[100px]">
+        <Reveal id="how-it-works" className="border-y border-hair bg-surface-2 px-6 py-[100px]">
           <div className="mx-auto max-w-[1100px]">
             <div className="mb-[60px] text-center">
               <SectionHeading>From your tree to a release you can defend.</SectionHeading>
@@ -439,14 +439,14 @@ export default function HomePage() {
             </div>
             <div className="grid gap-3.5 md:grid-cols-3">
               {steps.map((s) => (
-                <div key={s.num} className="rounded-[18px] border border-hair bg-white/[0.02] p-[34px]">
-                  <div className="mb-[18px] text-[46px] font-light leading-none tracking-[-0.02em] text-[#8fdcb2]/35">{s.num}</div>
+                <div key={s.num} className="rounded-[18px] border border-hair bg-surface-2 p-[34px]">
+                  <div className="mb-[18px] text-[46px] font-light leading-none tracking-[-0.02em] text-acc-text/35">{s.num}</div>
                   <h3 className="m-0 mb-2.5 text-[16.5px] font-medium text-text">{s.title}</h3>
                   <p className="m-0 text-[13px] leading-[1.7] text-sec">{s.desc}</p>
                 </div>
               ))}
             </div>
-            <p className="mx-auto mt-10 max-w-[640px] text-center text-[13px] leading-[1.7] text-[#8a948d]">
+            <p className="mx-auto mt-10 max-w-[640px] text-center text-[13px] leading-[1.7] text-sec">
               <code className="text-acc-text">truent release-check</code> walks a 33-section safety checklist against your repository and reports every item as passed, failed, missing,
               or something only a person can sign off — and returns READY only when nothing is left hanging.
             </p>
@@ -467,24 +467,24 @@ export default function HomePage() {
           </div>
           <div className="grid gap-3.5 md:grid-cols-3">
             {exploits.map((e) => (
-              <div key={e.protocol} className="relative overflow-hidden rounded-[18px] border border-hair bg-white/[0.02] p-[30px] transition-all duration-[250ms] hover:-translate-y-1 hover:border-[#ef4444]/[0.35] hover:shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
-                <div className="absolute left-0 right-0 top-0 h-0.5" style={{ background: 'linear-gradient(90deg,#ef4444,rgba(239,68,68,0.3),transparent)' }} />
+              <div key={e.protocol} className="relative overflow-hidden rounded-[18px] border border-hair bg-surface-2 p-[30px] transition-all duration-[250ms] hover:-translate-y-1 hover:border-critical-border hover:shadow-[0_20px_50px_var(--overlay)]">
+                <div className="absolute left-0 right-0 top-0 h-0.5 bg-acc" />
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <div className="mb-1.5 font-mono text-[10.5px] tracking-[0.14em] text-[#748078]">{e.year}</div>
+                    <div className="mb-1.5 font-mono text-[10.5px] tracking-[0.14em] text-sec">{e.year}</div>
                     <div className="text-[19px] font-medium text-text">{e.protocol}</div>
                   </div>
-                  <span className="text-[23px] font-semibold tracking-[-0.02em] text-[#ef4444]">{e.amount}</span>
+                  <span className="text-[23px] font-semibold tracking-[-0.02em] text-critical">{e.amount}</span>
                 </div>
                 <p className="m-0 mb-[18px] text-[13px] leading-[1.65] text-sec">{e.type}</p>
-                <code className="break-all rounded-[5px] border border-white/[0.08] bg-white/[0.03] px-2 py-[3px] font-mono text-[10.5px] text-[#8fa398]">{e.invariant}</code>
+                <code className="break-all rounded-[5px] border border-hair bg-surface-2 px-2 py-[3px] font-mono text-[10.5px] text-sec">{e.invariant}</code>
               </div>
             ))}
           </div>
         </Reveal>
 
         {/* ─── Reports ─── */}
-        <Reveal className="border-y border-white/[0.06] bg-white/[0.012] px-6 py-[100px]">
+        <Reveal className="border-y border-hair bg-surface-2 px-6 py-[100px]">
           <div className="mx-auto grid max-w-[1100px] items-center gap-16 md:grid-cols-2">
             <div>
               <SectionHeading>A report that ends in a fix, not a meeting.</SectionHeading>
@@ -494,7 +494,7 @@ export default function HomePage() {
               </Lede>
               <div className="mb-8 flex flex-col gap-3">
                 {reportPerks.map((perk) => (
-                  <div key={perk} className="flex items-center gap-3 text-[13.5px] text-[#c5cec8]">
+                  <div key={perk} className="flex items-center gap-3 text-[13.5px] text-text">
                     <span className="text-acc-text">✓</span>
                     {perk}
                   </div>
@@ -503,42 +503,42 @@ export default function HomePage() {
               <GhostCta onClick={() => setSampleReportOpen(true)}>View a sample report →</GhostCta>
             </div>
 
-            <div className="rounded-[18px] border border-white/[0.08] bg-[rgba(6,10,8,0.85)] p-[26px] shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+            <div className="rounded-[18px] border border-hair bg-panel/85 p-[26px] shadow-[0_30px_80px_var(--overlay)]">
               <div className="mb-[22px] flex items-start justify-between gap-3">
                 <div>
-                  <div className="mb-1.5 font-mono text-[10px] tracking-[0.16em] text-[#748078]">REPORT</div>
+                  <div className="mb-1.5 font-mono text-[10px] tracking-[0.16em] text-sec">REPORT</div>
                   <div className="text-[19px] font-medium text-text">vault-v2</div>
-                  <div className="mt-1 text-[12px] text-[#748078]">chain=auto · 0.4s · {ENGINE.version}</div>
+                  <div className="mt-1 text-[12px] text-sec">chain=auto · 0.4s · {ENGINE.version}</div>
                 </div>
                 <span className="whitespace-nowrap rounded-[5px] border border-acc-text/25 bg-acc-text/[0.08] px-[9px] py-1 font-mono text-[10px] tracking-[0.12em] text-acc-text">COMPLETE</span>
               </div>
-              <div className="mb-5 grid grid-cols-4 gap-px overflow-hidden rounded-[10px] bg-white/[0.07]">
+              <div className="mb-5 grid grid-cols-4 gap-px overflow-hidden rounded-[10px] bg-hair">
                 {[
                   { label: 'CRITICAL', count: 1, color: 'var(--critical)' },
                   { label: 'HIGH', count: 2, color: 'var(--high)' },
                   { label: 'PROVEN', count: 1, color: 'var(--acc-text)' },
                   { label: 'LIKELY', count: 2, color: 'var(--critical)' },
                 ].map((sv) => (
-                  <div key={sv.label} className="bg-[#0a0f0c] px-2 py-4 text-center">
+                  <div key={sv.label} className="bg-bg px-2 py-4 text-center">
                     <div className="text-[26px] font-semibold" style={{ color: sv.color }}>{sv.count}</div>
-                    <div className="mt-1 font-mono text-[9.5px] tracking-[0.14em] text-[#748078]">{sv.label}</div>
+                    <div className="mt-1 font-mono text-[9.5px] tracking-[0.14em] text-sec">{sv.label}</div>
                   </div>
                 ))}
               </div>
               <div className="mb-5 flex flex-col gap-2">
                 {[
-                  { sev: 'CRITICAL', color: '#ef4444', text: 'evm_reentrancy_classic · Vault.sol:88', tag: 'LEAD · LIKELY' },
-                  { sev: 'HIGH', color: '#fbbf24', text: 'gen_sql_injection · api/orders.py:41', tag: 'LEAD · LIKELY' },
-                  { sev: 'HIGH', color: '#fbbf24', text: 'rt_exposed_sensitive_path · /.env', tag: 'PROVEN' },
+                  { sev: 'CRITICAL', cls: 'border-critical-border bg-critical-bg text-critical', text: 'evm_reentrancy_classic · Vault.sol:88', tag: 'LEAD · LIKELY' },
+                  { sev: 'HIGH', cls: 'border-high-border bg-high-bg text-high', text: 'gen_sql_injection · api/orders.py:41', tag: 'LEAD · LIKELY' },
+                  { sev: 'HIGH', cls: 'border-high-border bg-high-bg text-high', text: 'rt_exposed_sensitive_path · /.env', tag: 'PROVEN' },
                 ].map((f) => (
-                  <div key={f.text} className="flex items-center gap-3 rounded-[10px] border border-white/[0.05] bg-white/[0.02] px-3.5 py-[11px]">
-                    <span className="whitespace-nowrap rounded border px-[7px] py-0.5 font-mono text-[9.5px] tracking-[0.1em]" style={{ color: f.color, borderColor: `${f.color}4d`, background: `${f.color}1a` }}>{f.sev}</span>
-                    <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[#c5cec8]">{f.text}</span>
-                    <span className="whitespace-nowrap font-mono text-[9.5px] tracking-[0.1em] text-[#8fa398]">{f.tag}</span>
+                  <div key={f.text} className="flex items-center gap-3 rounded-[10px] border border-hair bg-surface-2 px-3.5 py-[11px]">
+                    <span className={`whitespace-nowrap rounded border px-[7px] py-0.5 font-mono text-[9.5px] tracking-[0.1em] ${f.cls}`}>{f.sev}</span>
+                    <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-text">{f.text}</span>
+                    <span className="whitespace-nowrap font-mono text-[9.5px] tracking-[0.1em] text-sec">{f.tag}</span>
                   </div>
                 ))}
               </div>
-              <button onClick={() => setSampleReportOpen(true)} className="block w-full rounded-full border border-white/[0.12] py-[11px] text-center text-[12.5px] font-medium text-[#cfd6d1] transition-colors hover:border-acc-text/50 hover:text-text">
+              <button onClick={() => setSampleReportOpen(true)} className="block w-full rounded-full border border-hair-strong py-[11px] text-center text-[12.5px] font-medium text-text transition-colors hover:border-acc-text/50 hover:text-text">
                 ↓ View full report
               </button>
             </div>
@@ -553,18 +553,18 @@ export default function HomePage() {
           </div>
           <div className="grid overflow-hidden rounded-[18px] border border-hair md:grid-cols-3">
             {plans.map((plan, i) => (
-              <Link key={plan.name} href={plan.href} className={`block px-[30px] py-7 transition-colors hover:bg-white/[0.03] ${i < 2 ? 'md:border-r md:border-white/[0.07]' : ''} ${plan.featured ? 'bg-acc-text/[0.05]' : ''}`}>
-                <div className="font-mono text-[10.5px] uppercase tracking-[0.16em]" style={{ color: plan.accent }}>{plan.name}</div>
-                <div className="mt-3.5 text-[34px] font-normal tracking-[-0.025em] text-[#f2f6f2]">
+              <Link key={plan.name} href={plan.href} className={`block px-[30px] py-7 transition-colors hover:bg-surface-2 ${i < 2 ? 'md:border-r md:border-hair' : ''} ${plan.featured ? 'bg-acc-text/[0.05]' : ''}`}>
+                <div className={`font-mono text-[10.5px] uppercase tracking-[0.16em] ${plan.accent}`}>{plan.name}</div>
+                <div className="mt-3.5 text-[34px] font-normal tracking-[-0.025em] text-text">
                   {plan.price}
-                  <span className="text-[12.5px] text-[#5c665f]">{plan.per}</span>
+                  <span className="text-[12.5px] text-sec">{plan.per}</span>
                 </div>
-                <p className="m-0 mt-2.5 text-[12.5px] leading-[1.6] text-[#8a948d]">{plan.caption}</p>
+                <p className="m-0 mt-2.5 text-[12.5px] leading-[1.6] text-sec">{plan.caption}</p>
               </Link>
             ))}
           </div>
           <div className="mt-7 text-center">
-            <Link href="/pricing" className="inline-flex items-center gap-2.5 rounded-full border border-white/[0.16] px-5 py-[11px] font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-[#cfd6d1] transition-colors hover:border-acc-text/50 hover:text-text">
+            <Link href="/pricing" className="inline-flex items-center gap-2.5 rounded-full border border-hair-strong px-5 py-[11px] font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-text transition-colors hover:border-acc-text/50 hover:text-text">
               Compare plans
               <span className="text-[13px] tracking-[-0.12em]">❯❯</span>
             </Link>
@@ -573,9 +573,8 @@ export default function HomePage() {
 
         {/* ─── Let's talk band ─── */}
         <section className="relative mt-10">
-          <div className="relative flex h-[190px] items-center justify-center overflow-hidden" style={{ background: 'linear-gradient(104deg,#08301e 0%,#0d6b45 24%,#16915f 48%,#1fae74 64%,#0f7a4f 82%,#062418 100%)' }}>
-            <div className="absolute inset-0" style={{ background: 'radial-gradient(60% 120% at 22% 40%, rgba(180,140,20,0.22), transparent 60%), radial-gradient(50% 120% at 68% 60%, rgba(16,120,80,0.45), transparent 65%)' }} />
-            <Link href="/contact" className="relative whitespace-nowrap text-center text-[clamp(78px,13vw,190px)] font-bold leading-[0.92] tracking-[-0.05em] text-[#f4faf6] drop-shadow-[0_2px_40px_rgba(3,20,12,0.45)]">
+          <div className="relative flex h-[190px] items-center justify-center overflow-hidden bg-acc">
+            <Link href="/contact" className="relative whitespace-nowrap text-center text-[clamp(78px,13vw,190px)] font-bold leading-[0.92] tracking-[-0.05em] text-on-acc drop-shadow-[0_2px_40px_var(--overlay)]">
               LET&apos;S TALK
             </Link>
           </div>

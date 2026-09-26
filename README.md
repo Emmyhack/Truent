@@ -271,8 +271,14 @@ rather than a guess. The previous mapper substring-matched the rule name and
 fell back to `CWE-676` for everything it did not recognise, which was most
 detectors.
 
-**Six agent skills, installable as a plugin.** `truent-audit`, `truent-recon`
-and `truent-fuzz` are joined by `truent-deps` (dependency supply-chain review
+**Six agent skills, installable as a plugin.** `truent-audit` (12 attacker
+lenses under a senior-auditor SOP, loop and memory modes, engine verification
+of every LLM finding), `truent-recon` (x-ray-grade pre-audit report: threat
+profiles, entry-point map, invariant map, git risk, architecture SVG) and
+`truent-fuzz` (native fuzzer plus full Echidna/Medusa suite generation) —
+adapted from [pashov/skills](https://github.com/pashov/skills) (MIT) on top of
+the engine and extended to all four chains — are joined by `truent-deps`
+(dependency supply-chain review
 that audits the drifted library code every "exclude `lib/`" scanner skips),
 `truent-keys` (key custody paired with the engine's on-chain authority
 findings), and `truent-ir` (incident response that reproduces the exploit

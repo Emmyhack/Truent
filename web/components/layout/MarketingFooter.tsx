@@ -41,17 +41,17 @@ export function MarketingFooter() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="border-t border-hair bg-white/[0.012] px-6 pb-8 pt-16">
+    <footer className="border-t border-hair bg-surface-2 px-6 pb-8 pt-16">
       <div className="mx-auto max-w-[1100px]">
         <div className="mb-14 grid grid-cols-2 gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="col-span-2 md:col-span-1">
             <div className="mb-4 flex items-center gap-[9px]">
-              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-lg bg-gradient-to-br from-acc to-acc-text text-[14px] font-bold text-on-acc">
+              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-lg bg-acc text-[14px] font-bold text-on-acc">
                 T
               </span>
               <span className="text-[15px] font-semibold text-text">truent</span>
             </div>
-            <p className="mb-5 max-w-[280px] text-[13px] leading-[1.7] text-[#748078]">
+            <p className="mb-5 max-w-[280px] text-[13px] leading-[1.7] text-sec">
               The invariant-driven smart contract security platform. Don&apos;t get hacked.
             </p>
             <div className="flex gap-2">
@@ -62,7 +62,7 @@ export function MarketingFooter() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={s.name}
-                  className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-white/10 text-[13px] text-sec transition-colors hover:border-acc-text/50 hover:text-text"
+                  className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-hair text-[13px] text-sec transition-colors hover:border-acc-text/50 hover:text-text"
                 >
                   {s.label}
                 </a>
@@ -107,16 +107,16 @@ export function MarketingFooter() {
           <AsciiLogo className="text-[clamp(4px,1.1vw,13px)] !leading-[1.08]" />
         </div>
 
-        <div className="mb-6 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="mb-6 h-px bg-hair" />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="m-0 text-[11.5px] text-[#5c665f]">
+          <p className="m-0 text-[11.5px] text-sec">
             © {currentYear} Truent Security, Inc. All rights reserved.
           </p>
           <div className="flex gap-[22px] text-[11.5px]">
-            <Link href="/privacy" className="text-[#5c665f] transition-colors hover:text-text">Privacy</Link>
-            <Link href="/terms" className="text-[#5c665f] transition-colors hover:text-text">Terms</Link>
-            <a href="mailto:contact@truent.dev" className="text-[#5c665f] transition-colors hover:text-text">
+            <Link href="/privacy" className="text-sec transition-colors hover:text-text">Privacy</Link>
+            <Link href="/terms" className="text-sec transition-colors hover:text-text">Terms</Link>
+            <a href="mailto:contact@truent.dev" className="text-sec transition-colors hover:text-text">
               contact@truent.dev
             </a>
           </div>

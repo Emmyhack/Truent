@@ -33,9 +33,9 @@ export function Terminal({ title = 'truent-cli --scan ./contracts/Vault.sol', sh
     
     switch (type) {
       case 'critical':
-        return `${baseStyles} bg-critical text-white`
+        return `${baseStyles} bg-critical text-on-acc`
       case 'high':
-        return `${baseStyles} bg-high text-surface`
+        return `${baseStyles} bg-high text-on-acc`
       case 'scan':
       case 'info':
       case 'done':

@@ -11,7 +11,7 @@
     {
       "name": "truent",
       "source": "./",
-      "description": "Audit, recon, fuzzing, dependency-supply-chain review, key hygiene, and on-chain incident response for EVM · Solana · Move · Soroban. Findings map to CWE, SWC, OWASP Smart Contract Top 10 and DASP.",
+      "description": "12-lens engine-verified audit (loop + memory modes), x-ray-grade pre-audit recon, native and Echidna/Medusa stateful fuzzing, dependency-supply-chain review, key hygiene, and on-chain incident response for EVM · Solana · Move · Soroban. Findings map to CWE, SWC, OWASP Smart Contract Top 10 and DASP.",
       "version": "0.6.0",
       "author": {
         "name": "Emmyhack"

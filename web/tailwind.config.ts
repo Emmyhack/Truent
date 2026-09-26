@@ -1,5 +1,24 @@
 import type { Config } from 'tailwindcss'
 
+/**
+ * Colour tokens are CSS variables so light and dark mode swap them at
+ * runtime. Tailwind cannot apply an opacity modifier (`bg-acc/15`,
+ * `text-sec/70`) to a bare `var()`, so each token is a function that emits
+ * `color-mix()` when a modifier is present and the plain variable otherwise.
+ */
+function token(map: Record<string, string>): Record<string, string> {
+  const out: Record<string, (opts: { opacityValue?: string }) => string> = {}
+  for (const [name, variable] of Object.entries(map)) {
+    out[name] = ({ opacityValue }) =>
+      opacityValue === undefined || opacityValue === '1'
+        ? `var(--${variable})`
+        : `color-mix(in srgb, var(--${variable}) calc(${opacityValue} * 100%), transparent)`
+  }
+  // Tailwind resolves function values at build time; its Config type only
+  // declares the string form.
+  return out as unknown as Record<string, string>
+}
+
 const config: Config = {
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
@@ -18,55 +37,57 @@ const config: Config = {
         site: '1200px',
         narrow: '860px',
       },
-      colors: {
-        bg: 'var(--bg)',
-        panel: 'var(--panel)',
-        'surface-2': 'var(--surface-2)',
-        hair: 'var(--hair)',
-        'hair-strong': 'var(--hair-strong)',
-        text: 'var(--text)',
-        sec: 'var(--sec)',
-        acc: 'var(--acc)',
-        'acc-text': 'var(--acc-text)',
-        'on-acc': 'var(--on-acc)',
-        surface: 'var(--surface)',
-        'surface-dim': 'var(--surface-dim)',
-        'surface-bright': 'var(--surface-bright)',
-        'surface-container-lowest': 'var(--surface-container-lowest)',
-        'surface-container-low': 'var(--surface-container-low)',
-        'surface-container': 'var(--surface-container)',
-        'surface-container-high': 'var(--surface-container-high)',
-        'surface-container-highest': 'var(--surface-container-highest)',
-        'on-surface': 'var(--on-surface)',
-        'on-surface-variant': 'var(--on-surface-variant)',
-        outline: 'var(--outline)',
-        'outline-variant': 'var(--outline-variant)',
-        primary: 'var(--primary)',
-        'primary-container': 'var(--primary-container)',
-        secondary: 'var(--secondary)',
-        'secondary-container': 'var(--secondary-container)',
-        'on-secondary': 'var(--on-secondary)',
-        'on-secondary-container': 'var(--on-secondary-container)',
-        error: 'var(--error)',
-        'error-container': 'var(--error-container)',
-        background: 'var(--background)',
-        'on-background': 'var(--on-background)',
-        'surface-variant': 'var(--surface-variant)',
-        critical: 'var(--critical)',
-        'critical-bg': 'var(--critical-bg)',
-        'critical-border': 'var(--critical-border)',
-        high: 'var(--high)',
-        'high-bg': 'var(--high-bg)',
-        'high-border': 'var(--high-border)',
-        medium: 'var(--medium)',
-        'medium-bg': 'var(--medium-bg)',
-        'medium-border': 'var(--medium-border)',
-        low: 'var(--low)',
-        'low-bg': 'var(--low-bg)',
-        'low-border': 'var(--low-border)',
-        brand: 'var(--brand)',
-        'brand-container': 'var(--brand-container)',
-      },
+      colors: token({
+        bg: 'bg',
+        panel: 'panel',
+        'surface-2': 'surface-2',
+        hair: 'hair',
+        'hair-strong': 'hair-strong',
+        text: 'text',
+        sec: 'sec',
+        acc: 'acc',
+        'acc-text': 'acc-text',
+        'on-acc': 'on-acc',
+        'acc-soft': 'acc-soft',
+        overlay: 'overlay',
+        surface: 'surface',
+        'surface-dim': 'surface-dim',
+        'surface-bright': 'surface-bright',
+        'surface-container-lowest': 'surface-container-lowest',
+        'surface-container-low': 'surface-container-low',
+        'surface-container': 'surface-container',
+        'surface-container-high': 'surface-container-high',
+        'surface-container-highest': 'surface-container-highest',
+        'on-surface': 'on-surface',
+        'on-surface-variant': 'on-surface-variant',
+        outline: 'outline',
+        'outline-variant': 'outline-variant',
+        primary: 'primary',
+        'primary-container': 'primary-container',
+        secondary: 'secondary',
+        'secondary-container': 'secondary-container',
+        'on-secondary': 'on-secondary',
+        'on-secondary-container': 'on-secondary-container',
+        error: 'error',
+        'error-container': 'error-container',
+        background: 'background',
+        'on-background': 'on-background',
+        'surface-variant': 'surface-variant',
+        critical: 'critical',
+        'critical-bg': 'critical-bg',
+        'critical-border': 'critical-border',
+        high: 'high',
+        'high-bg': 'high-bg',
+        'high-border': 'high-border',
+        medium: 'medium',
+        'medium-bg': 'medium-bg',
+        'medium-border': 'medium-border',
+        low: 'low',
+        'low-bg': 'low-bg',
+        'low-border': 'low-border',
+        brand: 'brand',
+        'brand-container': 'brand-container',
+      }),
       spacing: {
         xs: '4px',
         sm: '8px',

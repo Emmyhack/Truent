@@ -57,7 +57,7 @@ export function CodeBlock({ code, language, highlightLines = [] }: CodeBlockProp
               className={clsx(
                 'transition-colors',
                 highlightLines.includes(idx + 1) &&
-                  'bg-critical/8 border-l-2 border-critical pl-4 -ml-5',
+                  'bg-critical-bg border-l-2 border-critical pl-4 -ml-5',
               )}
             >
               {line}

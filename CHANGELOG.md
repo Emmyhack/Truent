@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Skills brought to pashov depth, on the engine, across four chains.**
+  `truent-audit`, `truent-recon` and `truent-fuzz` (0.2.0) adapt
+  [pashov/skills](https://github.com/pashov/skills) `solidity-auditor`,
+  `x-ray` and `fizz` (MIT; see `skills/THIRD_PARTY_NOTICES.md`) and extend
+  them to Solana, Move (Aptos and Sui) and Soroban. Audit: 12 specialised
+  attacker lenses with per-chain hunting grounds, senior-auditor SOP, four
+  validation gates, Simplified Technical English reports, a shell assembler
+  as the only report producer, `--loop N` and `--memory`. Recon: protocol-type
+  and chain-specific threat profiles, grep-verified entry-point map with flow
+  paths, seven-step invariant synthesis with a verification gate, git-history
+  security mining, architecture SVG, verdict. Fuzz: full Echidna/Medusa suite
+  generation (templates, handlers, coverage loop, five invariant-discovery
+  agents, synthesizer, implementers, violation repros, `convert`, `sync`),
+  Truent DSL emission for the native fuzzer, Solana plan generation, Move and
+  Soroban harness guides. Findings now carry three evidence tiers —
+  `VERIFIED-PROVEN`, `VERIFIED-STATIC`, `REASONED` — plus `EXTERNAL` for
+  results from tools outside the engine. The compiled engine still runs first
+  and every LLM finding is pushed back through it before it is reported.
 - **Engine JSON contract for consumers.** `truent scan --output json`
   violations now carry `file`, `line`, `chain`, `evidence`, `exploitability`,
   `exploit_reasons`, `fix`, `verify`, `attack` and `nist_csf` alongside the
@@ -405,6 +423,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and without it every Truent finding landed in the same bucket.
 
 ### Fixed
+- **`truent fuzz --dynamic` no longer panics on a contract whose constructor
+  takes arguments.** The revm backend deploys with no constructor arguments,
+  so such a contract's constructor reverted and the deployment factory's
+  `expect` turned it into a panic. The engine now trial-deploys once before
+  the search loop and reports an error naming the cause (`The constructor
+  takes N argument(s) and the fuzzer deploys with none …`) with the
+  wrapper-contract workaround; contracts with a no-argument constructor are
+  unaffected.
 - Foundry test and script contracts (`*.t.sol`, `*.s.sol`) are never
   deployed; the EVM analyzer no longer reports a `setUp()` harness as a
   constructor race.

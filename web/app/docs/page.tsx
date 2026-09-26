@@ -34,12 +34,14 @@ type PageId = (typeof PAGES)[number]['id']
 // Old deep links (#ai) map onto the section that replaced them.
 const ALIASES: Record<string, PageId> = { ai: 'honesty' }
 
+const TONE_TEXT = { critical: 'text-critical', high: 'text-high', medium: 'text-medium', low: 'text-low' } as const
+
 const severityRows = [
-  { level: 'Critical', color: '#ef4444', desc: 'Code execution, funds, or full control reachable by anyone. Deploy-blocking.' },
-  { level: 'High', color: '#fbbf24', desc: 'Serious weakness requiring urgent remediation before deployment.' },
-  { level: 'Medium', color: '#818cf8', desc: 'Notable issue that should be addressed before deployment.' },
-  { level: 'Low', color: '#4ade80', desc: 'Hardening gap or minor issue with limited impact.' },
-  { level: 'Info', color: '#96a19a', desc: 'Describes the repository (an install script to review); never fails a gate.' },
+  { level: 'Critical', className: 'text-critical', desc: 'Code execution, funds, or full control reachable by anyone. Deploy-blocking.' },
+  { level: 'High', className: 'text-high', desc: 'Serious weakness requiring urgent remediation before deployment.' },
+  { level: 'Medium', className: 'text-medium', desc: 'Notable issue that should be addressed before deployment.' },
+  { level: 'Low', className: 'text-low', desc: 'Hardening gap or minor issue with limited impact.' },
+  { level: 'Info', className: 'text-sec', desc: 'Describes the repository (an install script to review); never fails a gate.' },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,27 +49,27 @@ const severityRows = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 const H1 = ({ children }: { children: React.ReactNode }) => (
-  <h1 className="m-0 text-[clamp(32px,4vw,46px)] font-normal tracking-[-0.03em] text-[#f2f6f2]">{children}</h1>
+  <h1 className="m-0 text-[clamp(32px,4vw,46px)] font-normal tracking-[-0.03em] text-text">{children}</h1>
 )
 const Lede = ({ children }: { children: React.ReactNode }) => <p className="m-0 mt-4 max-w-[560px] text-[15px] leading-[1.75] text-sec">{children}</p>
 const H2 = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) => (
-  <h2 className={`mb-3.5 mt-[52px] text-[22px] font-normal tracking-[-0.02em] text-[#f2f6f2] ${mono ? 'font-mono' : ''}`}>{children}</h2>
+  <h2 className={`mb-3.5 mt-[52px] text-[22px] font-normal tracking-[-0.02em] text-text ${mono ? 'font-mono' : ''}`}>{children}</h2>
 )
-const H3 = ({ children }: { children: React.ReactNode }) => <h3 className="mb-3 mt-[26px] text-[15.5px] font-medium text-[#d7e2da]">{children}</h3>
+const H3 = ({ children }: { children: React.ReactNode }) => <h3 className="mb-3 mt-[26px] text-[15.5px] font-medium text-text">{children}</h3>
 const P = ({ children }: { children: React.ReactNode }) => <p className="m-0 mb-5 text-[13.5px] leading-[1.75] text-sec">{children}</p>
 const Code = ({ children }: { children: React.ReactNode }) => (
-  <code className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[11.5px] text-acc-text">{children}</code>
+  <code className="rounded border border-hair bg-panel px-1.5 py-0.5 font-mono text-[11.5px] text-acc-text">{children}</code>
 )
 const Cmd = ({ children }: { children: React.ReactNode }) => (
-  <div className="mb-3 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#080c0a] px-[18px] py-4 font-mono text-[12.5px] text-acc-text">
-    <span className="text-[#5c665f]">$ </span>
+  <div className="mb-3 overflow-x-auto rounded-xl border border-hair bg-bg px-[18px] py-4 font-mono text-[12.5px] text-acc-text">
+    <span className="text-sec">$ </span>
     {children}
   </div>
 )
 const Block = ({ children }: { children: React.ReactNode }) => (
-  <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-[#080c0a] p-[18px] font-mono text-[12.5px] leading-[1.9] text-sec">{children}</pre>
+  <pre className="overflow-x-auto rounded-xl border border-hair bg-bg p-[18px] font-mono text-[12.5px] leading-[1.9] text-sec">{children}</pre>
 )
-const K = ({ children }: { children: React.ReactNode }) => <span className="text-[#8fdcb2]">{children}</span>
+const K = ({ children }: { children: React.ReactNode }) => <span className="text-text">{children}</span>
 const V = ({ children }: { children: React.ReactNode }) => <span className="text-acc-text">{children}</span>
 
 function Table({ cols, head, rows }: { cols: string; head?: string[]; rows: React.ReactNode[][] }) {
@@ -75,14 +77,14 @@ function Table({ cols, head, rows }: { cols: string; head?: string[]; rows: Reac
     <div className="overflow-x-auto rounded-xl border border-hair">
       <div className="min-w-[420px]">
         {head && (
-          <div className="grid border-b border-white/[0.06] bg-white/[0.03] font-mono text-[10px] uppercase tracking-[0.14em] text-[#8fdcb2]" style={{ gridTemplateColumns: cols }}>
+          <div className="grid border-b border-hair bg-surface-2 font-mono text-[10px] uppercase tracking-[0.14em] text-acc-text" style={{ gridTemplateColumns: cols }}>
             {head.map((h) => (
               <div key={h} className="px-4 py-[11px]">{h}</div>
             ))}
           </div>
         )}
         {rows.map((r, i) => (
-          <div key={i} className="grid border-b border-white/[0.04] last:border-b-0" style={{ gridTemplateColumns: cols }}>
+          <div key={i} className="grid border-b border-hair last:border-b-0" style={{ gridTemplateColumns: cols }}>
             {r.map((c, j) => (
               <div key={j} className="px-4 py-3 text-[12.5px] text-sec">{c}</div>
             ))}
@@ -94,10 +96,10 @@ function Table({ cols, head, rows }: { cols: string; head?: string[]; rows: Reac
 }
 
 const SeverityTable = () => (
-  <Table cols="1fr 2.6fr" rows={severityRows.map((r) => [<span key="l" className="font-semibold" style={{ color: r.color }}>{r.level}</span>, r.desc])} />
+  <Table cols="1fr 2.6fr" rows={severityRows.map((r) => [<span key="l" className={`font-semibold ${r.className}`}>{r.level}</span>, r.desc])} />
 )
 
-const Mono = ({ children }: { children: React.ReactNode }) => <span className="font-mono text-[12px] text-[#d7e2da]">{children}</span>
+const Mono = ({ children }: { children: React.ReactNode }) => <span className="font-mono text-[12px] text-text">{children}</span>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sections
@@ -125,42 +127,42 @@ function Overview({ go }: { go: (p: PageId) => void }) {
       <span className="mt-auto text-[12px] font-semibold text-acc-text">{c.cta} →</span>
     </>
   )
-  const cardClass = 'flex flex-col gap-3 rounded-2xl border border-hair bg-white/[0.02] p-6 text-left transition-all duration-200 hover:-translate-y-[3px] hover:border-acc-text/[0.35]'
+  const cardClass = 'flex flex-col gap-3 rounded-2xl border border-hair bg-surface-2 p-6 text-left transition-all duration-200 hover:-translate-y-[3px] hover:border-acc-text/[0.35]'
 
   return (
     <article>
-      <h1 className="m-0 text-[clamp(34px,4.5vw,52px)] font-normal tracking-[-0.03em] text-[#f2f6f2]">
-        Truent <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(100deg,#d7ffe9,#34d399)' }}>documentation</span>
+      <h1 className="m-0 text-[clamp(34px,4.5vw,52px)] font-normal tracking-[-0.03em] text-text">
+        Truent <span className="text-acc-text">documentation</span>
       </h1>
       <Lede>
         One engine for smart contracts, application code, dependencies, infrastructure and live targets. Every finding is a lead or proven, rated for exploitability, with the
         fix and how to verify it.
       </Lede>
 
-      <div className="mt-10 grid gap-px overflow-hidden rounded-[14px] border border-hair bg-white/[0.07] sm:grid-cols-3">
+      <div className="mt-10 grid gap-px overflow-hidden rounded-[14px] border border-hair bg-hair sm:grid-cols-3">
         {[
           { label: 'Install', cmd: 'cargo install truent-cli' },
           { label: 'Scan', cmd: 'truent scan . --chain auto' },
           { label: 'Gate', cmd: 'truent release-check . --strict' },
         ].map((s) => (
-          <div key={s.label} className="bg-[#080c0a] px-[18px] py-4">
-            <div className="mb-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[#5c665f]">{s.label}</div>
+          <div key={s.label} className="bg-bg px-[18px] py-4">
+            <div className="mb-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-sec">{s.label}</div>
             <code className="break-all font-mono text-[12px] text-acc-text">{s.cmd}</code>
           </div>
         ))}
       </div>
 
       <H2>What the engine covers</H2>
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-hair bg-white/[0.07] sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-hair bg-hair sm:grid-cols-4">
         {CHAIN_ORDER.filter((c) => c !== 'chain-agnostic').map((c) => (
-          <div key={c} className="bg-[#080c0a] px-4 py-4">
+          <div key={c} className="bg-bg px-4 py-4">
             <div className="mb-2 flex h-4 items-center gap-1.5">
               {networksForChain(c as Chain).map((n) => (
-                <ChainLogo key={n} network={n} size={15} className="text-[#8fa398]" />
+                <ChainLogo key={n} network={n} size={15} className="text-sec" />
               ))}
             </div>
             <div className="text-[22px] font-medium tracking-[-0.02em] text-text">{ENGINE.byChain[c] ?? 0}</div>
-            <div className="mt-1 text-[11.5px] text-[#748078]">{CHAIN_LABEL[c as Chain]}</div>
+            <div className="mt-1 text-[11.5px] text-sec">{CHAIN_LABEL[c as Chain]}</div>
           </div>
         ))}
       </div>
@@ -170,15 +172,15 @@ function Overview({ go }: { go: (p: PageId) => void }) {
         A chain in the engine is an <em>analyzer</em>; a network is what you ship to. One analyzer can cover several networks — the Solidity engine reads
         contracts for any EVM chain, and the Move engine covers both Aptos and Sui, detecting the dialect per file and reporting it on every finding.
       </P>
-      <div className="mt-6 flex flex-col gap-px overflow-hidden rounded-[14px] border border-hair bg-white/[0.07]">
+      <div className="mt-6 flex flex-col gap-px overflow-hidden rounded-[14px] border border-hair bg-hair">
         {NETWORKS.map((n) => (
-          <div key={n.id} className="flex flex-col gap-3 bg-[#080c0a] px-[18px] py-4 sm:flex-row sm:items-start sm:gap-4">
-            <ChainLogo network={n.id} size={24} brand className="mt-0.5" />
+          <div key={n.id} className="flex flex-col gap-3 bg-bg px-[18px] py-4 sm:flex-row sm:items-start sm:gap-4">
+            <ChainLogo network={n.id} size={24} className="mt-0.5" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
                 <span className="text-[14.5px] font-medium text-text">{n.name}</span>
-                <span className="font-mono text-[11px] text-[#8fa398]">{n.language}</span>
-                <span className="font-mono text-[10.5px] tracking-[0.04em] text-[#5c665f]">
+                <span className="font-mono text-[11px] text-sec">{n.language}</span>
+                <span className="font-mono text-[10.5px] tracking-[0.04em] text-sec">
                   --chain {n.chain} · {ENGINE.byChain[n.chain] ?? 0} detectors
                 </span>
               </div>
@@ -187,16 +189,16 @@ function Overview({ go }: { go: (p: PageId) => void }) {
           </div>
         ))}
       </div>
-      <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[14px] border border-hair bg-white/[0.015] px-[18px] py-3.5">
-        <span className="text-[12.5px] text-[#8fa398]">Every EVM-compatible chain runs the same Solidity engine</span>
+      <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[14px] border border-hair bg-surface-2 px-[18px] py-3.5">
+        <span className="text-[12.5px] text-sec">Every EVM-compatible chain runs the same Solidity engine</span>
         <span className="flex flex-wrap items-center gap-3.5">
           {EVM_COMPATIBLE.map((id) => (
-            <ChainLogo key={id} network={id} size={18} className="text-[#6f7a73] transition-colors hover:text-text" />
+            <ChainLogo key={id} network={id} size={18} className="text-sec transition-colors hover:text-text" />
           ))}
         </span>
       </div>
 
-      <h2 className="mb-[22px] mt-14 text-[23px] font-normal tracking-[-0.02em] text-[#f2f6f2]">Explore the docs</h2>
+      <h2 className="mb-[22px] mt-14 text-[23px] font-normal tracking-[-0.02em] text-text">Explore the docs</h2>
       <div className="grid gap-3 sm:grid-cols-2">
         {cards.map((c) =>
           c.href ? (
@@ -235,13 +237,13 @@ function GettingStarted() {
       <H2>Installation</H2>
       <H3>Rust CLI (recommended)</H3>
       <Cmd>cargo install truent-cli --locked</Cmd>
-      <p className="m-0 mt-2.5 text-[12px] text-[#748078]">
+      <p className="m-0 mt-2.5 text-[12px] text-sec">
         Requires Rust 1.75 or later — install it at{' '}
         <a href="https://rustup.rs" target="_blank" rel="noopener noreferrer" className="text-acc-text">rustup.rs</a>.
       </p>
       <H3>npm wrapper</H3>
       <Cmd>npm install -g @dextonicx/cli</Cmd>
-      <p className="m-0 mt-2.5 text-[12px] text-[#748078]">Downloads the prebuilt binary for your platform and exposes it as <Code>truent</Code>. Same engine, same commands.</p>
+      <p className="m-0 mt-2.5 text-[12px] text-sec">Downloads the prebuilt binary for your platform and exposes it as <Code>truent</Code>. Same engine, same commands.</p>
       <H3>Check the installation</H3>
       <Cmd>truent doctor</Cmd>
       <P>Runs a real self-test of every component (detectors, taxonomy, SCA, probe evaluators, symbolic parsers, release checklist) and exits non-zero if any fails.</P>
@@ -294,7 +296,7 @@ function CliReference() {
       <Table
         cols="1.1fr 1.6fr 2.4fr"
         head={['Command', 'Arguments', 'What it does']}
-        rows={COMMANDS.map((c) => [<Mono key="c">truent {c.cmd}</Mono>, <span key="a" className="font-mono text-[11.5px] text-[#748078]">{c.args}</span>, c.what])}
+        rows={COMMANDS.map((c) => [<Mono key="c">truent {c.cmd}</Mono>, <span key="a" className="font-mono text-[11.5px] text-sec">{c.args}</span>, c.what])}
       />
 
       <H2 mono>truent scan</H2>
@@ -347,8 +349,8 @@ function CliReference() {
         cols="0.4fr 3fr"
         rows={[
           [<span key="c" className="font-mono text-[13px] font-semibold text-acc-text">0</span>, 'Completed; nothing at or above --fail-on'],
-          [<span key="c" className="font-mono text-[13px] font-semibold text-[#ef4444]">1</span>, 'Completed; a finding at or above --fail-on exists (or release-check --strict is NOT READY)'],
-          [<span key="c" className="font-mono text-[13px] font-semibold text-[#fbbf24]">2</span>, 'symbolic: no executor ran — the result is an error, not a pass'],
+          [<span key="c" className="font-mono text-[13px] font-semibold text-critical">1</span>, 'Completed; a finding at or above --fail-on exists (or release-check --strict is NOT READY)'],
+          [<span key="c" className="font-mono text-[13px] font-semibold text-high">2</span>, 'symbolic: no executor ran — the result is an error, not a pass'],
         ]}
       />
 
@@ -401,8 +403,8 @@ function Honesty() {
 
       <H2>The honesty contract</H2>
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-[14px] border border-hair bg-white/[0.02] p-6">
-          <div className="mb-2 font-mono text-[10px] tracking-[0.16em] text-[#8fa398]">LEAD</div>
+        <div className="rounded-[14px] border border-hair bg-surface-2 p-6">
+          <div className="mb-2 font-mono text-[10px] tracking-[0.16em] text-sec">LEAD</div>
           <p className="m-0 text-[13px] leading-[1.7] text-sec">
             A pattern or dataflow the engine traced in source — including taint flows across lines, contract invariants, dependency advisories and misconfiguration. Strong evidence,
             but a static inference: it has not been demonstrated by execution.
@@ -424,7 +426,7 @@ function Honesty() {
       </P>
       <Table
         cols="1fr 3fr"
-        rows={Object.values(EXPLOITABILITY).map((e) => [<span key="l" className="font-mono text-[12px] font-semibold" style={{ color: e.color }}>{e.label}</span>, e.title])}
+        rows={Object.values(EXPLOITABILITY).map((e) => [<span key="l" className={`font-mono text-[12px] font-semibold ${TONE_TEXT[e.tone]}`}>{e.label}</span>, e.title])}
       />
 
       <H2>Attack chains</H2>
@@ -434,9 +436,9 @@ function Honesty() {
       </P>
       <div className="grid gap-2.5 sm:grid-cols-2">
         {ENGINE.attackChains.map((c) => (
-          <div key={c.id} className="rounded-[10px] border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+          <div key={c.id} className="rounded-[10px] border border-hair bg-surface-2 px-4 py-3">
             <div className="text-[13px] font-medium text-text">{c.name}</div>
-            <div className="mt-1 font-mono text-[10px] text-[#748078]">{c.steps.map((s) => s.role).join(' → ')}</div>
+            <div className="mt-1 font-mono text-[10px] text-sec">{c.steps.map((s) => s.role).join(' → ')}</div>
           </div>
         ))}
       </div>
@@ -452,8 +454,8 @@ function Honesty() {
 
 function DashboardApi() {
   const Verb = ({ method, path }: { method: 'POST' | 'GET' | 'PATCH'; path: string }) => (
-    <h2 className="mb-3.5 mt-[52px] text-[22px] font-normal tracking-[-0.02em] text-[#f2f6f2]">
-      <span className={`align-middle rounded-[5px] border px-[9px] py-1 font-mono text-[12px] ${method === 'GET' ? 'border-[#8fdcb2]/25 bg-[#8fdcb2]/10 text-[#8fdcb2]' : 'border-acc-text/25 bg-acc-text/10 text-acc-text'}`}>{method}</span>
+    <h2 className="mb-3.5 mt-[52px] text-[22px] font-normal tracking-[-0.02em] text-text">
+      <span className={`align-middle rounded-[5px] border px-[9px] py-1 font-mono text-[12px] ${method === 'GET' ? 'border-hair-strong bg-panel text-text' : 'border-acc-text/25 bg-acc-text/10 text-acc-text'}`}>{method}</span>
       <span className="ml-3 font-mono text-[19px]">{path}</span>
     </h2>
   )
@@ -466,7 +468,7 @@ function DashboardApi() {
       <P>Queue a scan of one file. The worker writes the source under the name its language expects and runs the matching engine.</P>
       <Block>
         {'{\n  '}<K>&quot;projectName&quot;</K>: <V>&quot;vault-v2&quot;</V>,{'\n  '}
-        <K>&quot;language&quot;</K>: <V>&quot;solidity&quot;</V>,  <span className="text-[#5c665f]">{'// solidity rust soroban move python javascript typescript go shell dockerfile terraform yaml'}</span>{'\n  '}
+        <K>&quot;language&quot;</K>: <V>&quot;solidity&quot;</V>,  <span className="text-sec">{'// solidity rust soroban move python javascript typescript go shell dockerfile terraform yaml'}</span>{'\n  '}
         <K>&quot;code&quot;</K>: <V>&quot;pragma solidity ^0.8.20;…&quot;</V>
         {'\n}'}
       </Block>
@@ -482,8 +484,8 @@ function DashboardApi() {
         {'{ '}<K>&quot;scan&quot;</K>: {'{\n    '}
         <K>&quot;status&quot;</K>: <V>&quot;complete&quot;</V>, <K>&quot;durationMs&quot;</K>: <V>412</V>,{'\n    '}
         <K>&quot;findings&quot;</K>: [{'{\n      '}
-        <K>&quot;invariantId&quot;</K>: <V>&quot;gen_sql_injection&quot;</V>, <K>&quot;severity&quot;</K>: <span className="text-[#fbbf24]">&quot;high&quot;</span>,{'\n      '}
-        <K>&quot;evidence&quot;</K>: <V>&quot;lead&quot;</V>, <K>&quot;exploitability&quot;</K>: <span className="text-[#ef4444]">&quot;likely&quot;</span>,{'\n      '}
+        <K>&quot;invariantId&quot;</K>: <V>&quot;gen_sql_injection&quot;</V>, <K>&quot;severity&quot;</K>: <span className="text-high">&quot;high&quot;</span>,{'\n      '}
+        <K>&quot;evidence&quot;</K>: <V>&quot;lead&quot;</V>, <K>&quot;exploitability&quot;</K>: <span className="text-critical">&quot;likely&quot;</span>,{'\n      '}
         <K>&quot;location&quot;</K>: <V>&quot;app.py · Line 9&quot;</V>, <K>&quot;cwe&quot;</K>: <V>&quot;CWE-89 · …&quot;</V>,{'\n      '}
         <K>&quot;fix&quot;</K>: <V>&quot;Use parameterized queries…&quot;</V>, <K>&quot;verify&quot;</K>: <V>&quot;Taint test: …&quot;</V>,{'\n      '}
         <K>&quot;status&quot;</K>: <V>&quot;open&quot;</V>
@@ -493,7 +495,7 @@ function DashboardApi() {
       <Verb method="PATCH" path="/api/scans/:id" />
       <P>Update a finding&apos;s workflow status.</P>
       <Block>
-        {'{ '}<K>&quot;findingId&quot;</K>: <V>&quot;clx…&quot;</V>, <K>&quot;status&quot;</K>: <V>&quot;acknowledged&quot;</V>{' }'}  <span className="text-[#5c665f]">{'// open | acknowledged | resolved'}</span>
+        {'{ '}<K>&quot;findingId&quot;</K>: <V>&quot;clx…&quot;</V>, <K>&quot;status&quot;</K>: <V>&quot;acknowledged&quot;</V>{' }'}  <span className="text-sec">{'// open | acknowledged | resolved'}</span>
       </Block>
 
       <Verb method="GET" path="/api/scans" />
@@ -521,11 +523,11 @@ function CiCd() {
         <K>on</K>: [pull_request, push]{'\n'}
         <K>permissions</K>:{'\n  '}<K>contents</K>: read{'\n  '}<K>security-events</K>: write{'\n'}
         <K>jobs</K>:{'\n  '}<K>scan</K>:{'\n    '}<K>runs-on</K>: ubuntu-latest{'\n    '}<K>steps</K>:{'\n      - '}
-        <K>uses</K>: actions/checkout@<span className="text-[#748078]">{'<sha>'}</span> <span className="text-[#5c665f]">{'# pin to a commit'}</span>{'\n      - '}
+        <K>uses</K>: actions/checkout@<span className="text-sec">{'<sha>'}</span> <span className="text-sec">{'# pin to a commit'}</span>{'\n      - '}
         <K>run</K>: <V>cargo install truent-cli --locked</V>{'\n      - '}
         <K>run</K>: <V>truent scan . --chain auto --sarif truent.sarif --fail-on high</V>{'\n      - '}
         <K>run</K>: <V>truent deps . --fail-on high</V>{'\n      - '}
-        <K>uses</K>: github/codeql-action/upload-sarif@<span className="text-[#748078]">{'<sha>'}</span>{'\n        '}
+        <K>uses</K>: github/codeql-action/upload-sarif@<span className="text-sec">{'<sha>'}</span>{'\n        '}
         <K>with</K>:{'\n          '}<K>sarif_file</K>: <V>truent.sarif</V>
       </Block>
       <P>
@@ -548,7 +550,7 @@ function CiCd() {
         cols="0.4fr 3fr"
         rows={[
           [<span key="a" className="font-mono text-[13px] font-semibold text-acc-text">0</span>, 'Nothing at or above --fail-on — pipeline proceeds'],
-          [<span key="b" className="font-mono text-[13px] font-semibold text-[#ef4444]">1</span>, 'A finding at or above --fail-on, or release-check --strict is NOT READY — fail the job'],
+          [<span key="b" className="font-mono text-[13px] font-semibold text-critical">1</span>, 'A finding at or above --fail-on, or release-check --strict is NOT READY — fail the job'],
         ]}
       />
     </article>
@@ -574,7 +576,7 @@ function Reports() {
       <H2>Reading a finding</H2>
       <div className="grid gap-2.5 sm:grid-cols-2">
         {fields.map(([k, v]) => (
-          <div key={k} className="flex gap-3 rounded-[10px] border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[13px] leading-[1.65] text-sec">
+          <div key={k} className="flex gap-3 rounded-[10px] border border-hair bg-surface-2 px-4 py-3 text-[13px] leading-[1.65] text-sec">
             <strong className="min-w-[110px] font-medium text-text">{k}</strong>
             {v}
           </div>
@@ -592,7 +594,7 @@ function Reports() {
           { t: 'HTML', d: 'A self-contained, XSS-safe report for auditors and stakeholders.' },
           { t: 'Markdown', d: 'exposure, assess, threat-model and release-check write Markdown for pull-request summaries.' },
         ].map((f) => (
-          <div key={f.t} className="rounded-2xl border border-hair bg-white/[0.02] p-6">
+          <div key={f.t} className="rounded-2xl border border-hair bg-surface-2 p-6">
             <h3 className="m-0 mb-2 text-[15px] font-medium text-text">{f.t}</h3>
             <p className="m-0 text-[12.5px] leading-[1.65] text-sec">{f.d}</p>
           </div>
@@ -648,7 +650,7 @@ export default function DocsPage() {
   }
 
   return (
-    <PageShell glow="radial-gradient(1100px 500px at 50% -120px, rgba(52,211,153,0.12), rgba(6,9,8,0) 60%)">
+    <PageShell>
       <MarketingNav />
 
       <div className="mx-auto grid max-w-[1200px] items-start gap-12 px-6 pt-14 md:grid-cols-[210px_1fr]">
@@ -656,20 +658,20 @@ export default function DocsPage() {
           <div className="mb-[18px] hidden overflow-hidden opacity-30 md:block">
             <AsciiLogo className="text-[3.2px] !leading-[1.08]" />
           </div>
-          <div className="mb-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#5c665f]">Documentation</div>
+          <div className="mb-3.5 font-mono text-[10px] uppercase tracking-[0.18em] text-sec">Documentation</div>
           <nav className="flex flex-row flex-wrap gap-0.5 md:flex-col">
             {PAGES.map((p) => (
               <button
                 key={p.id}
                 onClick={() => go(p.id)}
                 aria-current={page === p.id ? 'page' : undefined}
-                className={`rounded-[9px] border-l-2 px-3 py-[9px] text-left text-[13px] transition-colors ${page === p.id ? 'border-acc-text bg-acc-text/[0.09] font-medium text-text' : 'border-transparent text-[#8a948d] hover:text-text'}`}
+                className={`rounded-[9px] border-l-2 px-3 py-[9px] text-left text-[13px] transition-colors ${page === p.id ? 'border-acc-text bg-acc-text/[0.09] font-medium text-text' : 'border-transparent text-sec hover:text-text'}`}
               >
                 {p.label}
               </button>
             ))}
           </nav>
-          <div className="mt-7 flex flex-col gap-2.5 border-t border-white/[0.06] pt-5">
+          <div className="mt-7 flex flex-col gap-2.5 border-t border-hair pt-5">
             <a href="https://github.com/Emmyhack/Truent" target="_blank" rel="noopener noreferrer" className="text-[12.5px] text-sec transition-colors hover:text-text">GitHub repo ↗</a>
           </div>
         </aside>
@@ -683,7 +685,7 @@ export default function DocsPage() {
           {page === 'ci-cd' && <CiCd />}
           {page === 'reports' && <Reports />}
 
-          <div className="mt-[70px] flex flex-wrap items-center justify-between gap-3.5 border-t border-white/[0.06] pt-7">
+          <div className="mt-[70px] flex flex-wrap items-center justify-between gap-3.5 border-t border-hair pt-7">
             <Link href="/pricing" className="text-[13px] text-sec transition-colors hover:text-text">← Plans</Link>
             <Link href="/contact" className="text-[13px] text-acc-text">Need help? Talk to us →</Link>
           </div>

@@ -16,7 +16,7 @@ export function SampleReportModal({ isOpen, onClose }: SampleReportModalProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"

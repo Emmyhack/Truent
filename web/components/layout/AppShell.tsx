@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { ThemeToggle } from '../theme/ThemeToggle'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -122,6 +123,7 @@ export function AppShell({ children, rightPanel, currentPage = 'dashboard', onNe
 
         {/* Bottom links */}
         <div className="border-t border-hair p-3 space-y-0.5">
+          <ThemeToggle withLabel className="w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-panel" />
           <Link href="/docs"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sec hover:bg-panel hover:text-text transition-colors text-body-md">
             <BookMarked size={16} />
@@ -181,7 +183,7 @@ export function AppShell({ children, rightPanel, currentPage = 'dashboard', onNe
 
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-overlay z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
     </div>
   )

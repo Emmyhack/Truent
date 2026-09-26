@@ -1,0 +1,44 @@
+{
+  "program_id": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+  "program_so": "target/deploy/vault.so",
+  "accounts": [
+    { "name": "mint", "pubkey": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "lamports": 1000000000, "space": 82, "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+    { "name": "alice_token", "pubkey": "So11111111111111111111111111111111111111112", "space": 165, "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+    { "name": "bob_token", "pubkey": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL", "space": 165, "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+    { "name": "vault_state", "pubkey": "SysvarRent111111111111111111111111111111111", "space": 128 },
+    { "name": "authority", "pubkey": "11111111111111111111111111111111", "lamports": 10000000000 }
+  ],
+  "signers": ["11111111111111111111111111111111"],
+  "writable": [
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "So11111111111111111111111111111111111111112",
+    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+    "SysvarRent111111111111111111111111111111111"
+  ],
+  "readonly": [],
+  "pin": {
+    "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "vault_state": "SysvarRent111111111111111111111111111111111"
+  },
+  "invariants": [
+    {
+      "type": "token_conservation",
+      "name": "GL-01 SHOULD-HOLD — sum of vault token-account amounts equals mint supply",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "token_accounts": [
+        "So11111111111111111111111111111111111111112",
+        "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+      ],
+      "amount_offset": 64,
+      "supply_offset": 36
+    },
+    {
+      "type": "account_owner",
+      "name": "GL-02 SHOULD-HOLD — vault_state owner program never changes",
+      "account": "SysvarRent111111111111111111111111111111111"
+    }
+  ],
+  "seed": 1,
+  "runs": 500,
+  "depth": 10
+}

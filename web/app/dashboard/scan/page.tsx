@@ -132,7 +132,7 @@ export default function ScanPage() {
       </select>
       <p className="text-xs text-sec mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
         {networksForTag(lang.chain).map((n) => (
-          <ChainLogo key={n} network={n} size={14} brand />
+          <ChainLogo key={n} network={n} size={14} />
         ))}
         <span>
           Runs the <span className="font-mono text-acc-text">{lang.chain}</span> engine — {ENGINE.byChain[lang.chain] ?? 0} detectors

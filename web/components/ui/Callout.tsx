@@ -13,26 +13,26 @@ interface CalloutProps {
 const calloutConfig: Record<CalloutType, { icon: React.ReactNode; borderColor: string; bgColor: string; titleColor: string }> = {
   info: {
     icon: <Info size={18} />,
-    borderColor: 'border-brand',
-    bgColor: 'bg-brand/5',
-    titleColor: 'text-brand',
+    borderColor: 'border-medium',
+    bgColor: 'bg-medium-bg',
+    titleColor: 'text-medium',
   },
   success: {
     icon: <CheckCircle size={18} />,
     borderColor: 'border-low',
-    bgColor: 'bg-low/5',
+    bgColor: 'bg-low-bg',
     titleColor: 'text-low',
   },
   warning: {
     icon: <AlertTriangle size={18} />,
     borderColor: 'border-high',
-    bgColor: 'bg-high/5',
+    bgColor: 'bg-high-bg',
     titleColor: 'text-high',
   },
   error: {
     icon: <AlertCircle size={18} />,
     borderColor: 'border-critical',
-    bgColor: 'bg-critical/5',
+    bgColor: 'bg-critical-bg',
     titleColor: 'text-critical',
   },
 }
