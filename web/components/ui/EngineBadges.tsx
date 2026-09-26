@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import { EVIDENCE, EXPLOITABILITY, networksForTag, type ExploitabilityId } from '@/lib/engine'
-import { ChainLogo } from '@/components/ui/ChainLogo'
+import { EVIDENCE, EXPLOITABILITY, isNetworkId, networksForFinding, type ExploitabilityId } from '@/lib/engine'
+import { ChainLogo, networkTitle } from '@/components/ui/ChainLogo'
 
 /** The honesty contract: a finding is a LEAD (static inference) or PROVEN (concrete witness). */
 export function EvidenceBadge({ evidence, className }: { evidence: 'lead' | 'proven' | string; className?: string }) {
@@ -50,10 +50,15 @@ export function ExploitabilityBadge({ level, className }: { level: Exploitabilit
   )
 }
 
-/** Engine / chain tag: `evm`, `general`, `runtime`… carrying the network marks it covers. */
-export function ChainTag({ chain, className }: { chain?: string | null; className?: string }) {
+/**
+ * Engine / chain tag: `evm`, `general`, `runtime`… carrying the network marks
+ * it covers. When the engine named the network (`network` = `aptos` | `sui`)
+ * the tag shows that mark alone and names it: "Sui · move".
+ */
+export function ChainTag({ chain, network, className }: { chain?: string | null; network?: string | null; className?: string }) {
   if (!chain) return null
-  const networks = networksForTag(chain)
+  const networks = networksForFinding(chain, network)
+  const label = isNetworkId(network) ? `${networkTitle(network)} · ${chain}` : chain
   return (
     <span
       className={clsx(
@@ -64,7 +69,7 @@ export function ChainTag({ chain, className }: { chain?: string | null; classNam
       {networks.map((n) => (
         <ChainLogo key={n} network={n} size={12} decorative />
       ))}
-      {chain}
+      {label}
     </span>
   )
 }

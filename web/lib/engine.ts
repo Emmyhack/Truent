@@ -169,6 +169,19 @@ export const networksForTag = (value: string): NetworkId[] => {
   return lang ? CHAIN_NETWORKS[lang.chain as Chain] ?? [] : []
 }
 
+const NETWORK_IDS = new Set<string>([...NETWORKS.map((n) => n.id), ...EVM_COMPATIBLE])
+export const isNetworkId = (value: unknown): value is NetworkId => typeof value === 'string' && NETWORK_IDS.has(value)
+
+/**
+ * Marks for one finding. When the engine named the network (the Move
+ * analyzer reports `aptos` or `sui`), show that one; otherwise every
+ * network the engine covers.
+ */
+export const networksForFinding = (chain: string | null | undefined, network?: string | null): NetworkId[] => {
+  if (isNetworkId(network)) return [network]
+  return chain ? networksForTag(chain) : []
+}
+
 export const detectorCount = (chain: Chain) => ENGINE.byChain[chain] ?? 0
 
 /** Detectors whose ids the web analyzer can run (static engines, not probe/symbolic). */

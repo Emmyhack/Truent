@@ -1308,6 +1308,7 @@ fn finding_to_violation(finding: &Finding, index: usize, total: usize) -> Violat
         file: finding.file.clone(),
         line: finding.line,
         chain: taxonomy.and_then(|t| t.chain()).map(str::to_string),
+        dialect: finding.metadata.get("dialect").cloned(),
         exploitability: rating
             .as_ref()
             .map(|r| r.exploitability.label().to_ascii_lowercase()),

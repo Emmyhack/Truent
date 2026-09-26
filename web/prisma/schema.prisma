@@ -111,6 +111,9 @@ model Finding {
   // contract: "lead" is a static inference, "proven" a concrete witness.
   invariantId    String?
   chain          String?
+  // Network within the engine when the analyzer tells them apart
+  // (`aptos` / `sui` for Move); null for engines with one network.
+  network        String?
   evidence       String   @default("lead")
   exploitability String?
   fix            String?

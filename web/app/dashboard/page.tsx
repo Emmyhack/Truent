@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
 import { ScanModal } from '@/components/ui/ScanModal'
+import { ChainTag } from '@/components/ui/EngineBadges'
 
 interface Scan {
   id: string
@@ -178,7 +179,7 @@ export default function DashboardPage() {
                       <div className="text-[13px] font-medium text-text">{scan.project}</div>
                       <div className="mt-[3px] font-mono text-[10px] text-sec">{scan.id}</div>
                     </div>
-                    <span className="font-mono text-[10px] text-sec">{scan.chain}</span>
+                    <span><ChainTag chain={scan.chain} /></span>
                     <span className="font-mono text-[11px]">
                       <Findings scan={scan} />
                     </span>

@@ -26,6 +26,7 @@ interface Finding {
   status: FindingStatus
   invariantId: string | null
   chain: string | null
+  network: string | null
   evidence: 'lead' | 'proven'
   exploitability: string | null
   fix: string | null
@@ -104,7 +105,7 @@ function FindingCard({ finding, onStatus }: { finding: Finding; onStatus: (id: s
             {finding.invariantId && (
               <code className="rounded-[5px] border border-hair bg-surface-2 px-2 py-[3px] font-mono text-[10.5px] text-sec">{finding.invariantId}</code>
             )}
-            <ChainTag chain={finding.chain} />
+            <ChainTag chain={finding.chain} network={finding.network} />
             {finding.cwe && <span className="font-mono text-[10.5px] text-sec">{finding.cwe}</span>}
             {detector?.attack.map((a) => (
               <span key={a} className="rounded-[5px] border border-hair px-2 py-[3px] font-mono text-[10px] text-sec" title="MITRE ATT&CK">

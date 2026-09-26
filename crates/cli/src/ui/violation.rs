@@ -50,6 +50,9 @@ pub struct Violation {
     /// Engine that produced it: `evm`, `solana`, `move`, `soroban`,
     /// `general`, `supply-chain`, `runtime`.
     pub chain: Option<String>,
+    /// Network dialect within the engine, when the analyzer distinguishes
+    /// one: `aptos` or `sui` for Move (`move` when the file is core Move).
+    pub dialect: Option<String>,
     /// Exploitability rating: `likely`, `possible`, `unlikely`, `theoretical`.
     pub exploitability: Option<String>,
     /// Why it was rated that way.
@@ -282,6 +285,7 @@ mod tests {
             file: String::new(),
             line: 1,
             chain: None,
+            dialect: None,
             exploitability: None,
             exploit_reasons: Vec::new(),
             fix: None,
@@ -331,6 +335,7 @@ mod tests {
                 file: String::new(),
                 line: 1,
                 chain: None,
+                dialect: None,
                 exploitability: None,
                 exploit_reasons: Vec::new(),
                 fix: None,
@@ -366,6 +371,7 @@ mod tests {
                 file: String::new(),
                 line: 1,
                 chain: None,
+                dialect: None,
                 exploitability: None,
                 exploit_reasons: Vec::new(),
                 fix: None,
@@ -392,6 +398,7 @@ mod tests {
                 file: String::new(),
                 line: 1,
                 chain: None,
+                dialect: None,
                 exploitability: None,
                 exploit_reasons: Vec::new(),
                 fix: None,

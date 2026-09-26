@@ -38,6 +38,16 @@ test('maps the engine JSON contract to a durable finding', () => {
   assert.equal(finding.fingerprint.length, 64)
 })
 
+test('a Move finding keeps the dialect the engine parsed as its network', () => {
+  const sui = mapFinding('s', { invariant_id: 'move_capability_with_store', severity: 'low', chain: 'move', dialect: 'sui', file: 'vault.move', line: 5, message: 'm' })
+  assert.equal(sui.chain, 'move')
+  assert.equal(sui.network, 'sui')
+  const core = mapFinding('s', { invariant_id: 'move_access_control_missing', severity: 'high', chain: 'move', dialect: 'move', file: 'm.move', line: 1, message: 'm' })
+  assert.equal(core.network, null)
+  const evm = mapFinding('s', { invariant_id: 'evm_reentrancy_classic', severity: 'critical', chain: 'evm', file: 'V.sol', line: 1, message: 'm' })
+  assert.equal(evm.network, null)
+})
+
 test('legacy output with only location still yields file and line', () => {
   const f = mapFinding('s', { invariant_id: 'evm_reentrancy_classic', severity: 'critical', location: 'Vault.sol:42', message: 'm' })
   assert.equal(f.location, 'Vault.sol · Line 42')

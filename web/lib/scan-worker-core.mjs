@@ -29,6 +29,9 @@ export const extensionFor = (language) => {
 }
 
 const SEVERITIES = new Set(['critical', 'high', 'medium', 'low', 'info'])
+// Engine `dialect` values that name a network the site can show a mark for
+// (lib/engine.ts NETWORKS). Core Move reports `move`, which is not a network.
+const NETWORKS = new Set(['aptos', 'sui'])
 const EXPLOITABILITY = new Set(['likely', 'possible', 'unlikely', 'theoretical'])
 
 /**
@@ -71,6 +74,7 @@ export function mapFinding(scanId, finding) {
     scanId, severity, title, description, location, line, impact, recommendation, fingerprint,
     invariantId,
     chain: typeof finding.chain === 'string' ? finding.chain : null,
+    network: NETWORKS.has(finding.dialect) ? finding.dialect : null,
     evidence, exploitability, fix, verify,
     cwe: typeof finding.cwe === 'string' && finding.cwe ? finding.cwe : null,
     snippet: typeof finding.code_snippet === 'string' && finding.code_snippet ? finding.code_snippet.slice(0, 2000) : null,
