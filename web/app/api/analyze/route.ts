@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
-import { monthlyScanLimit } from '@/lib/plans'
+import { consumeScan, QuotaExceeded, refundScan } from '@/lib/entitlements'
+import { quotaMessage } from '@/lib/plans'
 
 const submissionSchema = z.object({
   code: z.string().min(1, 'Code is required').max(500_000, 'Code exceeds maximum size'),
@@ -23,27 +24,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const monthStart = new Date()
-    monthStart.setUTCDate(1)
-    monthStart.setUTCHours(0, 0, 0, 0)
-    const activePlan = user.subscription?.status === 'active' ? user.subscription.plan : null
-    const used = await prisma.scan.count({ where: { userId: user.id, createdAt: { gte: monthStart } } })
-    if (used >= monthlyScanLimit(activePlan)) {
-      return NextResponse.json({ error: 'Monthly scan quota exceeded' }, { status: 403 })
+    // Validate before metering, so a malformed request never costs a scan.
+    const input = submissionSchema.parse(await request.json())
+
+    let consumed
+    try {
+      consumed = await consumeScan(user.id)
+    } catch (error) {
+      if (error instanceof QuotaExceeded) {
+        return NextResponse.json(
+          { error: quotaMessage(error.entitlement), code: 'quota_exceeded', entitlement: error.entitlement },
+          { status: 402 },
+        )
+      }
+      throw error
     }
 
-    const input = submissionSchema.parse(await request.json())
-    const scan = await prisma.scan.create({
-      data: {
-        userId: user.id,
-        projectName: input.projectName || 'Untitled scan',
-        sourceType: 'code',
-        sourceContent: input.code,
-        language: input.language,
-        status: 'queued',
-      },
-      select: { id: true, status: true, createdAt: true },
-    })
+    let scan
+    try {
+      scan = await prisma.scan.create({
+        data: {
+          userId: user.id,
+          projectName: input.projectName || 'Untitled scan',
+          sourceType: 'code',
+          sourceContent: input.code,
+          language: input.language,
+          status: 'queued',
+        },
+        select: { id: true, status: true, createdAt: true },
+      })
+    } catch (error) {
+      await refundScan(user.id, consumed).catch(() => {})
+      throw error
+    }
 
     return NextResponse.json(
       { success: true, scanId: scan.id, status: scan.status, createdAt: scan.createdAt },

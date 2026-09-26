@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcrypt'
 import { z } from 'zod'
+import { newUserDefaults } from '@/lib/new-user'
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
         email,
         name,
         password: hashedPassword,
+        ...newUserDefaults(),
       },
     })
 

@@ -1,5 +1,6 @@
 import type { User as CivicUser } from '@civic/auth'
 import prisma from '@/lib/prisma'
+import { newUserDefaults } from '@/lib/new-user'
 
 export type LinkedUser = { id: string; email: string | null; name: string | null; image: string | null }
 
@@ -41,6 +42,7 @@ export async function resolveCivicUser(civic: CivicUser): Promise<LinkedUser> {
       emailVerified: email ? new Date() : null,
       name,
       image: civic.picture ?? null,
+      ...newUserDefaults(),
     },
     select,
   })

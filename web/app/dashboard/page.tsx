@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
 import { ScanModal } from '@/components/ui/ScanModal'
 import { ChainTag } from '@/components/ui/EngineBadges'
+import { UsageMeter } from '@/components/ui/UsageMeter'
 
 interface Scan {
   id: string
@@ -129,6 +130,8 @@ export default function DashboardPage() {
             </span>
           </button>
         </div>
+
+        <UsageMeter className="mb-[34px]" refreshKey={scans.length} />
 
         {/* ─── Metrics: single hairline grid ─── */}
         <div className="relative mb-[34px]">

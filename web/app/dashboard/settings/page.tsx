@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
+import { UsageMeter } from '@/components/ui/UsageMeter'
 import { Button } from '@/components/ui/Button'
 import { Copy, Eye, EyeOff, Check, AlertCircle } from 'lucide-react'
 
@@ -18,6 +20,22 @@ export default function SettingsPage() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [copiedApiKey, setCopiedApiKey] = useState(false)
+  const [billingBusy, setBillingBusy] = useState(false)
+  const [billingError, setBillingError] = useState('')
+
+  const openBilling = async () => {
+    setBillingBusy(true)
+    setBillingError('')
+    try {
+      const r = await fetch('/api/payment/portal', { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok || !d.url) throw new Error(d.error || 'Unable to open billing')
+      window.location.assign(d.url)
+    } catch (e) {
+      setBillingError(e instanceof Error ? e.message : 'Unable to open billing')
+      setBillingBusy(false)
+    }
+  }
 
   const handleSaveProfile = () => {
     setSaveSuccess(true)
@@ -160,56 +178,23 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Subscription Section */}
+        {/* Subscription Section — read from /api/account/entitlement, never hard-coded */}
         <div className="bg-panel border border-hair rounded-lg p-8">
           <h2 className="font-display text-2xl font-[600] text-text mb-6">
             Subscription
           </h2>
-
           <div className="space-y-6">
-            {/* Current Plan */}
-            <div className="bg-brand-container border border-brand rounded-lg p-4">
-              <p className="text-sm text-sec mb-1">Current Plan</p>
-              <h3 className="font-display text-2xl font-[700] text-text mb-2">
-                Professional
-              </h3>
-              <p className="text-body-sm text-sec mb-4">
-                $499/month • 10,000 scans • Priority support
-              </p>
-              <p className="text-xs text-sec">
-                Billing date: Jun 15, 2026 • Next renewal: Aug 15, 2026
-              </p>
-            </div>
-
-            {/* Features */}
-            <div>
-              <h4 className="text-sm font-[600] text-text mb-3">Included Features</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  '10,000 scans / month',
-                  'Every engine: contracts, application code, infrastructure',
-                  'Exploitability rating and attack chains',
-                  'Fix + verify step on every finding',
-                  'SARIF export for code scanning',
-                  'Priority support',
-                ].map((feature) => (
-                  <div key={feature} className="flex items-center gap-2 p-2 rounded bg-panel">
-                    <Check className="w-4 h-4 text-medium flex-shrink-0" />
-                    <span className="text-sm text-sec">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-4 border-t border-hair">
-              <Button variant="secondary" disabled title="Coming soon">
-                View Invoice History
+            <UsageMeter detailed />
+            <div className="flex flex-wrap gap-3 pt-4 border-t border-hair">
+              <Button variant="secondary" onClick={openBilling} disabled={billingBusy}>
+                {billingBusy ? 'Opening…' : 'Manage billing'}
               </Button>
-              <Button variant="secondary" disabled title="Coming soon">
-                Manage Billing
-              </Button>
+              <Link href="/pricing" className="inline-flex items-center rounded-lg border border-hair px-4 py-2 text-sm font-medium text-text transition hover:border-brand">
+                Compare plans
+              </Link>
             </div>
+            {billingError && <p className="text-sm text-critical">{billingError}</p>}
+            <p className="text-xs text-sec">Invoices, card changes, plan changes and cancellation all happen in the billing portal.</p>
           </div>
         </div>
 

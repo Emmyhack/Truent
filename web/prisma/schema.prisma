@@ -49,6 +49,7 @@ model User {
   emailVerified DateTime?
   password      String? // For credentials provider
   civicId       String?   @unique // Civic Auth subject, set on first Civic sign-in
+  trialEndsAt   DateTime? // Builder-plan trial on every new account; null for legacy accounts
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -58,6 +59,40 @@ model User {
   scans        Scan[]
   subscription Subscription?
   payments     Payment[]
+  usage        Usage[]
+  credits      ScanCredit[]
+}
+
+/// Scans taken from the monthly quota, one row per account per UTC month.
+/// Metered with conditional updates so concurrent requests cannot overspend.
+model Usage {
+  id        String   @id @default(cuid())
+  userId    String
+  period    String // "2026-09"
+  scans     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+}
+
+/// One-off scan credits (packs, grants). Spent after the monthly quota.
+/// `source` is the Stripe checkout id, so a retried webhook cannot grant twice.
+model ScanCredit {
+  id        String    @id @default(cuid())
+  userId    String
+  source    String    @unique
+  product   String
+  granted   Int
+  remaining Int
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model AuthNonce {

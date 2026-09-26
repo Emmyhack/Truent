@@ -11,6 +11,7 @@ import { AuthModal } from '@/components/ui/AuthModal'
 import { SampleReportModal } from '@/components/ui/SampleReportModal'
 import { ChainLogo } from '@/components/ui/ChainLogo'
 import { CHAIN_LABEL, CHAIN_ORDER, ENGINE, EVM_COMPATIBLE, NETWORKS, networksForChain, type Chain } from '@/lib/engine'
+import { formatPrice, PLANS, type PlanId } from '@/lib/plans'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Copy. Every number is read from lib/catalog.json, which is regenerated from
@@ -49,11 +50,19 @@ const reportPerks = [
   'JSON here; SARIF, HTML and Markdown from the CLI',
 ]
 
-const plans = [
-  { name: 'Starter', price: '$0', per: ' / month', accent: 'text-sec', href: '/pricing', caption: 'The whole engine, five dashboard scans a month' },
-  { name: 'Professional', price: '$499', per: ' / month', accent: 'text-acc-text', href: '/pricing', caption: 'Ten thousand scans, custom invariants, priority support', featured: true },
-  { name: 'Enterprise', price: 'Custom', per: '', accent: 'text-sec', href: '/contact', caption: 'Managed probes, SSO, on-premises, an engineer on call' },
-]
+// The preview reads the same table the API enforces (lib/plans.ts).
+const plans = (['free', 'builder', 'team', 'professional'] as PlanId[]).map((id) => {
+  const p = PLANS[id]
+  return {
+    name: p.name,
+    price: formatPrice(p.monthlyAmount),
+    per: p.monthlyAmount ? ' / month' : '',
+    accent: p.featured ? 'text-acc-text' : 'text-sec',
+    href: '/pricing',
+    caption: p.scansPerMonth === null ? p.tagline : `${p.scansPerMonth.toLocaleString()} scans a month. ${p.tagline}`,
+    featured: Boolean(p.featured),
+  }
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Primitives
@@ -551,9 +560,9 @@ export default function HomePage() {
             <SectionHeading>The same engine on every plan.</SectionHeading>
             <Lede className="mx-auto max-w-[460px]">You pay for dashboard capacity and support — never for which detectors run. The free tier scans with all of them.</Lede>
           </div>
-          <div className="grid overflow-hidden rounded-[18px] border border-hair md:grid-cols-3">
+          <div className="grid overflow-hidden rounded-[18px] border border-hair md:grid-cols-2 lg:grid-cols-4">
             {plans.map((plan, i) => (
-              <Link key={plan.name} href={plan.href} className={`block px-[30px] py-7 transition-colors hover:bg-surface-2 ${i < 2 ? 'md:border-r md:border-hair' : ''} ${plan.featured ? 'bg-acc-text/[0.05]' : ''}`}>
+              <Link key={plan.name} href={plan.href} className={`block px-[30px] py-7 transition-colors hover:bg-surface-2 ${i < 3 ? 'lg:border-r lg:border-hair' : ''} ${i % 2 === 0 ? 'md:border-r md:border-hair lg:border-r' : ''} ${i < 2 ? 'md:border-b md:border-hair lg:border-b-0' : ''} ${plan.featured ? 'bg-acc-text/[0.05]' : ''}`}>
                 <div className={`font-mono text-[10.5px] uppercase tracking-[0.16em] ${plan.accent}`}>{plan.name}</div>
                 <div className="mt-3.5 text-[34px] font-normal tracking-[-0.025em] text-text">
                   {plan.price}

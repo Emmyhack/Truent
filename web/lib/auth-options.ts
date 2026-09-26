@@ -5,6 +5,7 @@ import { getUser as getCivicUser } from '@civic/auth/nextjs'
 import prisma from '@/lib/prisma'
 import { CIVIC_ENABLED } from '@/lib/civic'
 import { resolveCivicUser } from '@/lib/civic-user'
+import { newUserDefaults } from '@/lib/new-user'
 import bcrypt from 'bcrypt'
 import { ethers } from 'ethers'
 import { createHash } from 'crypto'
@@ -136,6 +137,7 @@ export const authOptions: NextAuthOptions = {
             data: {
               email: credentials.address.toLowerCase(),
               name: `Wallet ${credentials.address.slice(0, 6)}`,
+              ...newUserDefaults(),
             },
           })
         }

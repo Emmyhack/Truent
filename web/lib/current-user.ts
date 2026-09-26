@@ -8,6 +8,6 @@ export async function getCurrentUser() {
 
   return prisma.user.findUnique({
     where: { email: session.user.email.toLowerCase() },
-    select: { id: true, email: true, name: true, subscription: true },
+    select: { id: true, email: true, name: true, trialEndsAt: true, subscription: true },
   })
 }

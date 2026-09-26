@@ -21,6 +21,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
   const [progress, setProgress] = useState(0)
   const [findings, setFindings] = useState<{ severity: string; count: number }[] | null>(null)
   const [error, setError] = useState('')
+  const [quotaHit, setQuotaHit] = useState(false)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const clearAllTimers = () => {
@@ -66,7 +67,10 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
         body: JSON.stringify({ code: await uploadedFile.text(), language, projectName: uploadedFile.name }),
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to queue scan')
+      if (!response.ok) {
+        setQuotaHit(result.code === 'quota_exceeded')
+        throw new Error(result.error || 'Unable to queue scan')
+      }
       setProgress(40)
       for (let attempt = 0; attempt < 150; attempt++) {
         const statusResponse = await fetch(`/api/scans/${result.scanId}`, { cache: 'no-store' })
@@ -159,6 +163,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
               {error && (
                 <div className="mb-4 p-3 bg-critical/10 border border-critical rounded-lg">
                   <p className="text-sm text-critical">{error}</p>
+                {quotaHit && <a href="/pricing" className="mt-2 inline-block text-sm font-medium text-acc-text hover:underline">See plans and scan packs →</a>}
                 </div>
               )}
 
@@ -267,6 +272,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
               <div className="flex items-start gap-3 rounded-lg border border-critical/30 bg-critical/10 p-4">
                 <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-critical" />
                 <p className="text-sm text-critical">{error}</p>
+                {quotaHit && <a href="/pricing" className="mt-2 inline-block text-sm font-medium text-acc-text hover:underline">See plans and scan packs →</a>}
               </div>
               <Button variant="secondary" fullWidth onClick={handleReset}>Try again</Button>
             </div>
