@@ -1,0 +1,22 @@
+# Build context: the Rust workspace and the web app, nothing that is generated.
+target/
+**/node_modules/
+web/.next/
+web/out/
+web/coverage/
+.git/
+.github/
+.vscode/
+.idea/
+**/*.log
+.env
+.env.*
+!.env.example
+**/.env*.local
+docs/
+skills/
+llm.txt
+make.md
+tests/corpus/
+**/*.pem
+**/*.key

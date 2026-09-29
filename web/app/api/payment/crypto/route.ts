@@ -24,7 +24,8 @@ const verifyPaymentSchema = z.object({
 /**
  * Creates a crypto payment request for subscription
  * Supports ETH, USDC, and other ERC-20 tokens
- * Uses Thirdweb or similar service for payment processing
+ * Verified directly against an Ethereum JSON-RPC endpoint (ETHEREUM_RPC_URL);
+ * no payment-gateway account is involved.
  */
 export async function POST(request: NextRequest) {
   try {
