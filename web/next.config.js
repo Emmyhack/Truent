@@ -21,6 +21,9 @@ const withCivicAuth = createCivicAuthPlugin({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // The Docker image runs the standalone server; `next dev` and `next start`
+  // keep their normal output so nothing changes for local work.
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   poweredByHeader: false,
   async headers() {
     return [
