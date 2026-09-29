@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma'
 import { CIVIC_ENABLED } from '@/lib/civic'
 import { resolveCivicUser } from '@/lib/civic-user'
 import { newUserDefaults } from '@/lib/new-user'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { ethers } from 'ethers'
 import { createHash } from 'crypto'
 

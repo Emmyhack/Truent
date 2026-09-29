@@ -32,9 +32,12 @@ COPY web/package.json web/package-lock.json ./
 # The npm cache persists between builds, and a slow link gets patience and
 # retries rather than an idle-timeout failure halfway through.
 RUN --mount=type=cache,target=/root/.npm \
-    npm config set fetch-retries 6 fetch-retry-mintimeout 20000 fetch-retry-maxtimeout 180000 fetch-timeout 900000 \
- && npm ci --ignore-scripts --no-audit --no-fund
+    npm config set fetch-retries 6 fetch-retry-mintimeout 20000 fetch-retry-maxtimeout 180000 fetch-timeout 900000 maxsockets 4 \
+ && for i in 1 2 3 4 5; do npm ci --ignore-scripts --no-audit --no-fund --prefer-offline && break || { echo "npm ci failed (attempt $i), retrying"; sleep 20; }; done \
+ && test -d node_modules/next
 COPY web ./
+# Next.js expects a public/ directory; this project ships none.
+RUN mkdir -p public
 # Public values are compiled into the bundle; pass them at build time.
 ARG NEXT_PUBLIC_CIVIC_CLIENT_ID=""
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=""
