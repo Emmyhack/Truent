@@ -1,8 +1,8 @@
 {
  "generated_from": "truent 0.6.0",
- "total_detectors": 184,
+ "total_detectors": 202,
  "by_chain": {
-  "evm": 59,
+  "evm": 77,
   "general": 49,
   "move": 22,
   "runtime": 12,
@@ -380,6 +380,36 @@
    "attack_names": [],
    "chain": "evm",
    "cwe": [
+    "CWE-347",
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Improper Verification of Cryptographic Signature",
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require the recovered address to be non-zero (and equal to the expected signer) or use OpenZeppelin ECDSA, which reverts on invalid signatures.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_ecrecover_unvalidated",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-122"
+   ],
+   "vector": "network",
+   "verify": "Test: a random (v, r, s) is rejected instead of recovering to address(0)."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
     "CWE-807",
     "CWE-693"
    ],
@@ -404,6 +434,62 @@
    ],
    "vector": "network",
    "verify": "Bundler simulation passes; tests cover delegated-EOA callers."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-20",
+    "CWE-345"
+   ],
+   "cwe_names": [
+    "Improper Input Validation",
+    "Insufficient Verification of Data Authenticity"
+   ],
+   "dasp": [],
+   "fix": "Hash with `abi.encode` (length-prefixed) whenever two or more dynamic values are packed, or hash each dynamic value first.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_encodepacked_hash_collision",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: the pairs ab/c and a/bc produce different keys."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-252",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Unchecked Return Value",
+    "Improper Input Validation"
+   ],
+   "dasp": [
+    "DASP-4"
+   ],
+   "fix": "Use SafeERC20 (`safeTransfer`, `safeTransferFrom`, `forceApprove`) for every token the caller can choose, so tokens that return nothing or false behave the same as compliant ones.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_erc20_without_safe_wrapper",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC06"
+   ],
+   "prereq": "condition",
+   "swc": [
+    "SWC-104"
+   ],
+   "vector": "network",
+   "verify": "Test with a mock token that returns no value: the operation succeeds instead of reverting."
   },
   {
    "attack": [],
@@ -467,6 +553,30 @@
    "attack_names": [],
    "chain": "evm",
    "cwe": [
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Send NFTs with `safeTransferFrom`, which calls `onERC721Received` on contract recipients and reverts when they cannot handle the token.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_erc721_unsafe_transfer",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: transfer to a contract without `onERC721Received` reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
     "CWE-682",
     "CWE-20"
    ],
@@ -488,6 +598,62 @@
    "swc": [],
    "vector": "network",
    "verify": "Test with a mock fee-on-transfer token: credited amount equals received amount."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-20",
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Improper Input Validation",
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Require every fee, rate and basis-point setter to stay at or below a declared constant cap, and emit the change.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_fee_parameter_unbounded",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: setting the fee above the cap reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-404"
+   ],
+   "cwe_names": [
+    "Improper Resource Shutdown or Release"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Send Ether with a low-level call (`to.call{value: amount}`) and require its boolean result, or move to a pull-payment pattern so one failing recipient cannot block others.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_fixed_gas_eth_transfer",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "condition",
+   "swc": [
+    "SWC-113"
+   ],
+   "vector": "network",
+   "verify": "Test: a contract recipient whose `receive` uses more than 2300 gas is paid successfully."
   },
   {
    "attack": [],
@@ -544,6 +710,32 @@
    ],
    "vector": "adjacent",
    "verify": "Test: swap with minAmountOut above the achievable output reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Read `decimals()` from each token and scale by `10 ** decimals` instead of a fixed 1e18.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_hardcoded_token_decimals",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test with a 6-decimal token: values are scaled correctly."
   },
   {
    "attack": [],
@@ -628,6 +820,34 @@
    ],
    "vector": "network",
    "verify": "Fuzz test arithmetic paths with boundary values (0, max) and assert revert on overflow."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-682",
+    "CWE-841"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation",
+    "Improper Enforcement of Behavioral Workflow"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Call the accrual routine at the top of every function that reads or changes principal, debt or shares.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_interest_not_accrued",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Invariant test: index is current before every balance mutation."
   },
   {
    "attack": [],
@@ -824,6 +1044,84 @@
    "attack_names": [],
    "chain": "evm",
    "cwe": [
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Require address parameters that are stored to state to be non-zero, and prefer two-step transfers for ownership.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_missing_zero_address_check",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC04"
+   ],
+   "prereq": "privileged",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: passing address(0) reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Check `msg.value` once against the total price before the loop, or track the amount consumed per iteration; never delegatecall a payable multicall.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_msg_value_reused_in_loop",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-132"
+   ],
+   "vector": "network",
+   "verify": "Test: buying N items with one item's payment reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-807",
+    "CWE-20"
+   ],
+   "cwe_names": [
+    "Reliance on Untrusted Inputs in a Security Decision",
+    "Improper Input Validation"
+   ],
+   "dasp": [],
+   "fix": "Use `latestRoundData()` and require `answer > 0`, a fresh `updatedAt` and `answeredInRound >= roundId` before converting the price.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_oracle_answer_unvalidated",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC02"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: an answer of 0 or a negative value reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
     "CWE-807",
     "CWE-349"
    ],
@@ -870,6 +1168,34 @@
    "swc": [],
    "vector": "network",
    "verify": "Test: flash-loan-driven swap in the same block does not change the price the contract uses."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-703"
+   ],
+   "cwe_names": [
+    "Improper Check or Handling of Exceptional Conditions"
+   ],
+   "dasp": [
+    "DASP-5"
+   ],
+   "fix": "Wrap the permit call in `try/catch` or skip it when the allowance already suffices, so a front-run permit cannot make the transaction revert.",
+   "impact": "partial",
+   "interaction": "required",
+   "invariant_id": "evm_permit_frontrun_dos",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC10"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-113"
+   ],
+   "vector": "network",
+   "verify": "Test: submitting the permit first does not make the user's call fail."
   },
   {
    "attack": [],
@@ -1145,6 +1471,34 @@
    "attack_names": [],
    "chain": "evm",
    "cwe": [
+    "CWE-682",
+    "CWE-841"
+   ],
+   "cwe_names": [
+    "Incorrect Calculation",
+    "Improper Enforcement of Behavioral Workflow"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Apply the reward checkpoint (`updateReward` modifier or the checkpoint call) before every balance change, including transfers.",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_reward_checkpoint_missing",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: depositing just before a reward period ends earns nothing from that period."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
     "CWE-1284",
     "CWE-20"
    ],
@@ -1311,6 +1665,34 @@
    "attack_names": [],
    "chain": "evm",
    "cwe": [
+    "CWE-672"
+   ],
+   "cwe_names": [
+    "Operation on a Resource after Expiration or Release"
+   ],
+   "dasp": [
+    "DASP-7"
+   ],
+   "fix": "Take a `deadline` from the caller and pass it to the router unchanged; never use `block.timestamp` or `type(uint256).max`.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_swap_missing_deadline",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC03"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-114"
+   ],
+   "vector": "network",
+   "verify": "Test: a swap with a past deadline reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
     "CWE-670",
     "CWE-693"
    ],
@@ -1432,6 +1814,34 @@
    ],
    "vector": "network",
    "verify": "Test: flash-loan-driven swap in the same block does not change the price the contract uses."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-285"
+   ],
+   "cwe_names": [
+    "Improper Authorization"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Authorise with `msg.sender`, never `tx.origin`.",
+   "impact": "full",
+   "interaction": "required",
+   "invariant_id": "evm_tx_origin_authentication",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-115"
+   ],
+   "vector": "network",
+   "verify": "Test: a contract called by the owner cannot invoke the privileged function."
   },
   {
    "attack": [],
@@ -1606,6 +2016,62 @@
    "attack_names": [],
    "chain": "evm",
    "cwe": [
+    "CWE-190",
+    "CWE-682"
+   ],
+   "cwe_names": [
+    "Integer Overflow or Wraparound",
+    "Incorrect Calculation"
+   ],
+   "dasp": [
+    "DASP-3"
+   ],
+   "fix": "Use SafeCast (`toUint128` and friends) or require the value to be at most the target type's maximum before narrowing.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_unsafe_downcast",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC08"
+   ],
+   "prereq": "none",
+   "swc": [
+    "SWC-101"
+   ],
+   "vector": "network",
+   "verify": "Test: a value above the target maximum reverts instead of wrapping."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-732"
+   ],
+   "cwe_names": [
+    "Incorrect Permission Assignment for Critical Resource"
+   ],
+   "dasp": [
+    "DASP-2"
+   ],
+   "fix": "Approve only the amount needed to a spender the contract trusts, and use `forceApprove` (or reset to zero) instead of `safeApprove`.",
+   "impact": "partial",
+   "interaction": "none",
+   "invariant_id": "evm_unsafe_token_approval",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC01"
+   ],
+   "prereq": "condition",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a second approval after a non-zero allowance succeeds; an unknown spender cannot be granted an allowance."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
     "CWE-494",
     "CWE-913"
    ],
@@ -1626,6 +2092,34 @@
    "swc": [],
    "vector": "network",
    "verify": "Test: non-admin upgrade reverts; upgrade to a non-UUPS implementation reverts."
+  },
+  {
+   "attack": [],
+   "attack_names": [],
+   "chain": "evm",
+   "cwe": [
+    "CWE-20",
+    "CWE-693"
+   ],
+   "cwe_names": [
+    "Improper Input Validation",
+    "Protection Mechanism Failure"
+   ],
+   "dasp": [
+    "DASP-7"
+   ],
+   "fix": "Weigh votes at a snapshot block fixed when the proposal is created (`getPastVotes`, `balanceOfAt`).",
+   "impact": "full",
+   "interaction": "none",
+   "invariant_id": "evm_vote_weight_current_balance",
+   "nist_csf": [],
+   "owasp_sc": [
+    "SC07"
+   ],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: tokens acquired after the snapshot carry no voting weight."
   },
   {
    "attack": [],

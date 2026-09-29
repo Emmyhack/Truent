@@ -137,6 +137,7 @@ const REENTRANCY: &[&str] = &[
 ];
 const OVERFLOW: &[&str] = &[
     "evm_integer_overflow",
+    "evm_unsafe_downcast",
     "evm_integer_underflow",
     "evm_legacy_unsafe_math",
     "sol_integer_overflow",
@@ -152,6 +153,7 @@ const PRECISION: &[&str] = &[
 ];
 const ORACLE: &[&str] = &[
     "evm_oracle_spot_price",
+    "evm_oracle_answer_unvalidated",
     "evm_oracle_self_trade",
     "evm_stale_oracle_price",
     "evm_token_balance_manipulation",
@@ -182,6 +184,8 @@ const UPGRADE: &[&str] = &[
 ];
 const CONSERVATION: &[&str] = &[
     "evm_conservation_check_absent",
+    "evm_interest_not_accrued",
+    "evm_reward_checkpoint_missing",
     "evm_missing_post_state_health_check",
     "evm_state_mutation_ordering",
     "evm_unbacked_synthetic_mint",
@@ -298,7 +302,7 @@ pub static SECTIONS: &[Section] = &[
         d("Object-level authorization testing", Web, &["gen_object_level_auth_missing"]), d("Function-level authorization testing", Any, ALL_AUTHZ_CONTRACT),
         d("Horizontal privilege-escalation testing", Web, &["gen_object_level_auth_missing"]), d("Vertical privilege-escalation testing", Any, &["gen_mass_assignment", "unauthorized_privileged_mutation"]),
         d("Admin-access testing", Contracts, &["evm_single_eoa_admin", "evm_insufficient_multisig_threshold", "sol_admin_no_timelock", "move_admin_no_timelock"]),
-        d("Owner-access testing", Contracts, &["evm_access_control", "evm_shallow_auth"]), d("Guest-access testing", Web, &["gen_object_level_auth_missing", "gen_web_jwt_unverified"]),
+        d("Owner-access testing", Contracts, &["evm_access_control", "evm_shallow_auth", "evm_tx_origin_authentication"]), d("Guest-access testing", Web, &["gen_object_level_auth_missing", "gen_web_jwt_unverified"]),
         d("Cross-user data-access testing", Web, &["gen_object_level_auth_missing"]), d("Tenant-isolation testing", Web, &["gen_object_level_auth_missing"]),
         d("API authorization matrix testing", Web, &["gen_object_level_auth_missing", "gen_web_jwt_unverified", "gen_mass_assignment"]), d("Smart-contract access-control testing", Contracts, ALL_AUTHZ_CONTRACT),
     ]},
@@ -328,20 +332,20 @@ pub static SECTIONS: &[Section] = &[
     ]},
     Section { number: 14, name: "Financial / Value-Movement Testing", items: &[
         d("Deposit testing", Contracts, &["evm_erc4626_inflation_protection", "evm_fee_on_transfer_incompatibility", "sol_rent_exemption"]), d("Withdrawal testing", Contracts, REENTRANCY),
-        d("Transfer testing", Any, &["evm_unchecked_returns", "gen_non_atomic_multi_write"]), m("Refund testing", "Refunds cannot exceed the original charge or be issued twice; test it"),
-        d("Fee calculation testing", Contracts, &["evm_precision_loss", "evm_arithmetic_rounding", "evm_fee_on_transfer_incompatibility"]), d("Balance calculation testing", Any, CONSERVATION),
-        d("Rounding/precision testing", Contracts, PRECISION), d("Negative-value testing", Contracts, &["evm_integer_underflow"]), d("Zero-value testing", Contracts, &["evm_division_by_zero", "evm_merkle_root_zero"]),
+        d("Transfer testing", Any, &["evm_unchecked_returns", "gen_non_atomic_multi_write", "evm_erc20_without_safe_wrapper", "evm_erc721_unsafe_transfer", "evm_fixed_gas_eth_transfer", "evm_unsafe_token_approval"]), m("Refund testing", "Refunds cannot exceed the original charge or be issued twice; test it"),
+        d("Fee calculation testing", Contracts, &["evm_precision_loss", "evm_arithmetic_rounding", "evm_fee_on_transfer_incompatibility", "evm_fee_parameter_unbounded", "evm_hardcoded_token_decimals"]), d("Balance calculation testing", Any, CONSERVATION),
+        d("Rounding/precision testing", Contracts, PRECISION), d("Negative-value testing", Contracts, &["evm_integer_underflow"]), d("Zero-value testing", Contracts, &["evm_missing_zero_address_check", "evm_division_by_zero", "evm_merkle_root_zero"]),
         d("Maximum-value testing", Contracts, OVERFLOW), d("Double-spending testing", Any, REENTRANCY), d("Replay testing", Contracts, REPLAY),
         d("Unauthorized transfer testing", Any, ALL_AUTHZ_CONTRACT), d("Transaction ordering testing", Contracts, &["evm_frontrunning", "evm_state_mutation_ordering"]),
-        d("Partial-failure testing", Any, &["gen_non_atomic_multi_write", "evm_push_payment_in_loop"]), d("Atomicity testing", Any, &["gen_non_atomic_multi_write"]),
+        d("Partial-failure testing", Any, &["gen_non_atomic_multi_write", "evm_push_payment_in_loop", "evm_msg_value_reused_in_loop"]), d("Atomicity testing", Any, &["gen_non_atomic_multi_write"]),
         d("Accounting/reconciliation testing", Contracts, CONSERVATION),
     ]},
     Section { number: 15, name: "Smart-Contract Security Testing", items: &[
         d("Reentrancy testing", Contracts, REENTRANCY), d("Access-control testing", Contracts, ALL_AUTHZ_CONTRACT), d("Integer overflow/underflow testing", Contracts, OVERFLOW),
         d("Precision/rounding testing", Contracts, PRECISION), d("Oracle manipulation testing", Contracts, ORACLE), d("Price manipulation testing", Contracts, ORACLE),
-        d("Flash-loan attack testing", Contracts, &["evm_flash_loan_governance", "evm_oracle_spot_price", "evm_token_balance_manipulation"]), d("Front-running testing", Contracts, &["evm_frontrunning", "evm_router_slippage_validation"]),
-        d("MEV-related attack testing", Contracts, &["evm_frontrunning", "evm_router_slippage_validation", "evm_oracle_self_trade"]), d("Replay-attack testing", Contracts, REPLAY),
-        d("Signature-validation testing", Contracts, &["evm_signature_replay_protection", "evm_bridge_address_cryptographic_verify", "evm_aa_entropy_weakness"]),
+        d("Flash-loan attack testing", Contracts, &["evm_flash_loan_governance", "evm_vote_weight_current_balance", "evm_oracle_spot_price", "evm_token_balance_manipulation"]), d("Front-running testing", Contracts, &["evm_frontrunning", "evm_router_slippage_validation"]),
+        d("MEV-related attack testing", Contracts, &["evm_frontrunning", "evm_router_slippage_validation", "evm_oracle_self_trade", "evm_swap_missing_deadline", "evm_permit_frontrun_dos"]), d("Replay-attack testing", Contracts, REPLAY),
+        d("Signature-validation testing", Contracts, &["evm_signature_replay_protection", "evm_ecrecover_unvalidated", "evm_encodepacked_hash_collision", "evm_bridge_address_cryptographic_verify", "evm_aa_entropy_weakness"]),
         d("Initialization testing", Contracts, &["evm_unprotected_initializer", "evm_constructor_race_condition", "sor_init_guard"]), d("Uninitialized-contract testing", Contracts, &["evm_unprotected_initializer", "evm_uninitialized_pointers"]),
         d("Upgradeability testing", Contracts, UPGRADE), d("Proxy security testing", Contracts, &["evm_proxy_storage_collision", "evm_upgrade_path_verification", "evm_delegatecall_injection"]),
         d("Storage-collision testing", Contracts, &["evm_proxy_storage_collision"]), d("Emergency/pause mechanism testing", Contracts, &["evm_missing_pause_mechanism"]),

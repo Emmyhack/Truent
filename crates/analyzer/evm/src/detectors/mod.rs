@@ -37,11 +37,13 @@ pub mod arithmetic_rounding;
 pub mod bridge_address_cryptographic_verify;
 pub mod constructor_race_condition;
 pub mod cross_chain_replay_missing_chainid;
+pub mod crypto_and_oracle;
 pub mod division_by_zero;
 pub mod dvn_single_point;
 pub mod eip7702_eoa_assumption;
 pub mod erc4337_validation_side_effects;
 pub mod erc4626_inflation_protection;
+pub mod eth_and_calls;
 pub mod fee_on_transfer_incompatibility;
 pub mod gas_dos;
 // DEPRECATED: Old detector using legacy Violation struct, disabled for v0.3.0
@@ -51,9 +53,11 @@ pub mod implementations;
 pub mod insufficient_multisig_threshold;
 pub mod lst_depeg;
 pub mod merkle_root;
+pub mod numeric_and_params;
 pub mod oracle_self_trade;
 // DEPRECATED: Old detector using legacy Violation struct, disabled for v0.3.0
 // pub mod overflow;
+pub mod protocol_state;
 pub mod proxy_storage_collision;
 pub mod readonly_reentrancy;
 // DEPRECATED: Old detector using legacy Violation struct, disabled for v0.3.0
@@ -68,6 +72,7 @@ pub mod synthetic_mint;
 pub mod textutil;
 pub mod timestamp_dependence;
 pub mod token_balance_manipulation;
+pub mod token_handling;
 pub mod unbounded_pricing_input;
 pub mod unchecked_returns;
 pub mod upgrade_path_verification;
@@ -224,6 +229,31 @@ fn run_all_detectors_on_code(source: &str, file_path: &str) -> Vec<truent_core::
         source, file_path,
     ));
     findings.extend(division_by_zero::detect_division_by_zero(source, file_path));
+
+    // Patterns ranked from 23,625 public contest findings (see the module docs).
+    for detect in [
+        token_handling::detect_erc20_without_safe_wrapper,
+        token_handling::detect_hardcoded_token_decimals,
+        token_handling::detect_unsafe_token_approval,
+        token_handling::detect_erc721_unsafe_transfer,
+        eth_and_calls::detect_fixed_gas_eth_transfer,
+        eth_and_calls::detect_msg_value_reused_in_loop,
+        eth_and_calls::detect_tx_origin_authentication,
+        eth_and_calls::detect_permit_frontrun_dos,
+        numeric_and_params::detect_unsafe_downcast,
+        numeric_and_params::detect_fee_parameter_unbounded,
+        numeric_and_params::detect_missing_zero_address_check,
+        protocol_state::detect_interest_not_accrued,
+        protocol_state::detect_reward_checkpoint_missing,
+        protocol_state::detect_vote_weight_current_balance,
+        protocol_state::detect_swap_missing_deadline,
+        crypto_and_oracle::detect_ecrecover_unvalidated,
+        crypto_and_oracle::detect_encodepacked_hash_collision,
+        crypto_and_oracle::detect_oracle_answer_unvalidated,
+    ] as [fn(&str, &str) -> Vec<truent_core::Finding>; 18]
+    {
+        findings.extend(detect(source, file_path));
+    }
     findings.extend(synthetic_mint::detect_unbacked_synthetic_mint(
         source, file_path,
     ));

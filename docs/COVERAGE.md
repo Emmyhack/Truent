@@ -8,9 +8,9 @@ cell means no honest mapping exists — SWC, OWASP SC and DASP are contract
 registries, so repository rows leave them empty, and MITRE ATT&CK / NIST CSF
 are populated only for repository findings, where they are precise.
 
-**184 detectors.**
+**202 detectors.**
 
-## EVM (59 detectors)
+## EVM (77 detectors)
 
 | Detector | CWE | SWC | OWASP SC Top 10 | DASP | MITRE ATT&CK | NIST CSF |
 |---|---|---|---|---|---|---|
@@ -27,15 +27,23 @@ are populated only for repository findings, where they are precise.
 | `evm_division_by_zero` | [CWE-369](https://cwe.mitre.org/data/definitions/369.html)<br>[CWE-703](https://cwe.mitre.org/data/definitions/703.html) |  | SC03 | DASP-3 |  |  |
 | `evm_dvn_single_point_failure` | [CWE-654](https://cwe.mitre.org/data/definitions/654.html) |  | SC01 |  |  |  |
 | `evm_dvn_threshold` | [CWE-654](https://cwe.mitre.org/data/definitions/654.html)<br>[CWE-285](https://cwe.mitre.org/data/definitions/285.html) |  | SC01 |  |  |  |
+| `evm_ecrecover_unvalidated` | [CWE-347](https://cwe.mitre.org/data/definitions/347.html)<br>[CWE-345](https://cwe.mitre.org/data/definitions/345.html) | [SWC-122](https://swcregistry.io/docs/SWC-122) | SC01 | DASP-2 |  |  |
 | `evm_eip7702_eoa_assumption` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html)<br>[CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [SWC-115](https://swcregistry.io/docs/SWC-115) | SC01 | DASP-2 |  |  |
+| `evm_encodepacked_hash_collision` | [CWE-20](https://cwe.mitre.org/data/definitions/20.html)<br>[CWE-345](https://cwe.mitre.org/data/definitions/345.html) |  | SC03 |  |  |  |
+| `evm_erc20_without_safe_wrapper` | [CWE-252](https://cwe.mitre.org/data/definitions/252.html)<br>[CWE-20](https://cwe.mitre.org/data/definitions/20.html) | [SWC-104](https://swcregistry.io/docs/SWC-104) | SC06 | DASP-4 |  |  |
 | `evm_erc4337_validation_side_effects` | [CWE-670](https://cwe.mitre.org/data/definitions/670.html)<br>[CWE-693](https://cwe.mitre.org/data/definitions/693.html) |  | SC03 |  |  |  |
 | `evm_erc4626_inflation_protection` | [CWE-682](https://cwe.mitre.org/data/definitions/682.html)<br>[CWE-1339](https://cwe.mitre.org/data/definitions/1339.html) | [SWC-132](https://swcregistry.io/docs/SWC-132) | SC03<br>SC02 | DASP-3 |  |  |
+| `evm_erc721_unsafe_transfer` | [CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC03 |  |  |  |
 | `evm_fee_on_transfer_incompatibility` | [CWE-682](https://cwe.mitre.org/data/definitions/682.html)<br>[CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC03<br>SC04 |  |  |  |
+| `evm_fee_parameter_unbounded` | [CWE-20](https://cwe.mitre.org/data/definitions/20.html)<br>[CWE-732](https://cwe.mitre.org/data/definitions/732.html) |  | SC04 | DASP-2 |  |  |
+| `evm_fixed_gas_eth_transfer` | [CWE-404](https://cwe.mitre.org/data/definitions/404.html) | [SWC-113](https://swcregistry.io/docs/SWC-113) | SC10 | DASP-5 |  |  |
 | `evm_flash_loan_governance` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html)<br>[CWE-654](https://cwe.mitre.org/data/definitions/654.html) |  | SC07 |  |  |  |
 | `evm_frontrunning` | [CWE-362](https://cwe.mitre.org/data/definitions/362.html)<br>[CWE-367](https://cwe.mitre.org/data/definitions/367.html) | [SWC-114](https://swcregistry.io/docs/SWC-114) | SC03 | DASP-7 |  |  |
+| `evm_hardcoded_token_decimals` | [CWE-682](https://cwe.mitre.org/data/definitions/682.html) |  | SC03 | DASP-3 |  |  |
 | `evm_insufficient_multisig_threshold` | [CWE-654](https://cwe.mitre.org/data/definitions/654.html)<br>[CWE-285](https://cwe.mitre.org/data/definitions/285.html) |  | SC01 | DASP-2 |  |  |
 | `evm_integer_overflow` | [CWE-190](https://cwe.mitre.org/data/definitions/190.html) | [SWC-101](https://swcregistry.io/docs/SWC-101) | SC08 | DASP-3 |  |  |
 | `evm_integer_underflow` | [CWE-191](https://cwe.mitre.org/data/definitions/191.html) | [SWC-101](https://swcregistry.io/docs/SWC-101) | SC08 | DASP-3 |  |  |
+| `evm_interest_not_accrued` | [CWE-682](https://cwe.mitre.org/data/definitions/682.html)<br>[CWE-841](https://cwe.mitre.org/data/definitions/841.html) |  | SC03 | DASP-3 |  |  |
 | `evm_legacy_unsafe_math` | [CWE-190](https://cwe.mitre.org/data/definitions/190.html)<br>[CWE-191](https://cwe.mitre.org/data/definitions/191.html) | [SWC-101](https://swcregistry.io/docs/SWC-101) | SC08 | DASP-3 |  |  |
 | `evm_lst_depeg` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html)<br>[CWE-682](https://cwe.mitre.org/data/definitions/682.html) |  | SC02 |  |  |  |
 | `evm_merkle_root_zero` | [CWE-345](https://cwe.mitre.org/data/definitions/345.html)<br>[CWE-665](https://cwe.mitre.org/data/definitions/665.html) |  | SC04 |  |  |  |
@@ -43,8 +51,12 @@ are populated only for repository findings, where they are precise.
 | `evm_missing_pause_mechanism` | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) |  | SC01 | DASP-2 |  |  |
 | `evm_missing_post_state_health_check` | [CWE-754](https://cwe.mitre.org/data/definitions/754.html) | [SWC-123](https://swcregistry.io/docs/SWC-123) | SC03 |  |  |  |
 | `evm_missing_signer_check` | [CWE-862](https://cwe.mitre.org/data/definitions/862.html)<br>[CWE-284](https://cwe.mitre.org/data/definitions/284.html) | [SWC-105](https://swcregistry.io/docs/SWC-105) | SC01 | DASP-2 |  |  |
+| `evm_missing_zero_address_check` | [CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC04 |  |  |  |
+| `evm_msg_value_reused_in_loop` | [CWE-682](https://cwe.mitre.org/data/definitions/682.html) | [SWC-132](https://swcregistry.io/docs/SWC-132) | SC03 | DASP-3 |  |  |
+| `evm_oracle_answer_unvalidated` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html)<br>[CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC02 |  |  |  |
 | `evm_oracle_self_trade` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html)<br>[CWE-349](https://cwe.mitre.org/data/definitions/349.html) |  | SC02 |  |  |  |
 | `evm_oracle_spot_price` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html)<br>[CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC02 |  |  |  |
+| `evm_permit_frontrun_dos` | [CWE-703](https://cwe.mitre.org/data/definitions/703.html) | [SWC-113](https://swcregistry.io/docs/SWC-113) | SC10 | DASP-5 |  |  |
 | `evm_precision_loss` | [CWE-1339](https://cwe.mitre.org/data/definitions/1339.html)<br>[CWE-682](https://cwe.mitre.org/data/definitions/682.html) | [SWC-101](https://swcregistry.io/docs/SWC-101) | SC03 | DASP-3 |  |  |
 | `evm_proxy_storage_collision` | [CWE-665](https://cwe.mitre.org/data/definitions/665.html)<br>[CWE-843](https://cwe.mitre.org/data/definitions/843.html) | [SWC-124](https://swcregistry.io/docs/SWC-124) | SC03 |  |  |  |
 | `evm_public_relay` | [CWE-610](https://cwe.mitre.org/data/definitions/610.html)<br>[CWE-284](https://cwe.mitre.org/data/definitions/284.html) | [SWC-112](https://swcregistry.io/docs/SWC-112) | SC01<br>SC06 | DASP-4 |  |  |
@@ -54,24 +66,30 @@ are populated only for repository findings, where they are precise.
 | `evm_reentrancy_erc20` | [CWE-841](https://cwe.mitre.org/data/definitions/841.html)<br>[CWE-663](https://cwe.mitre.org/data/definitions/663.html) | [SWC-107](https://swcregistry.io/docs/SWC-107) | SC05 | DASP-1 |  |  |
 | `evm_reentrancy_protection` | [CWE-841](https://cwe.mitre.org/data/definitions/841.html)<br>[CWE-662](https://cwe.mitre.org/data/definitions/662.html) | [SWC-107](https://swcregistry.io/docs/SWC-107) | SC05 | DASP-1 |  |  |
 | `evm_reentrancy_via_whitelisted` | [CWE-841](https://cwe.mitre.org/data/definitions/841.html)<br>[CWE-663](https://cwe.mitre.org/data/definitions/663.html) | [SWC-107](https://swcregistry.io/docs/SWC-107) | SC05 | DASP-1 |  |  |
+| `evm_reward_checkpoint_missing` | [CWE-682](https://cwe.mitre.org/data/definitions/682.html)<br>[CWE-841](https://cwe.mitre.org/data/definitions/841.html) |  | SC03 | DASP-3 |  |  |
 | `evm_router_slippage_validation` | [CWE-1284](https://cwe.mitre.org/data/definitions/1284.html)<br>[CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC04 | DASP-7 |  |  |
 | `evm_shallow_auth` | [CWE-863](https://cwe.mitre.org/data/definitions/863.html)<br>[CWE-284](https://cwe.mitre.org/data/definitions/284.html) | [SWC-105](https://swcregistry.io/docs/SWC-105) | SC01 | DASP-2 |  |  |
 | `evm_signature_replay_protection` | [CWE-294](https://cwe.mitre.org/data/definitions/294.html) | [SWC-121](https://swcregistry.io/docs/SWC-121) | SC04 |  |  |  |
 | `evm_single_eoa_admin` | [CWE-654](https://cwe.mitre.org/data/definitions/654.html) |  | SC01 | DASP-2 |  |  |
 | `evm_stale_oracle_price` | [CWE-672](https://cwe.mitre.org/data/definitions/672.html)<br>[CWE-807](https://cwe.mitre.org/data/definitions/807.html) |  | SC02 |  |  |  |
 | `evm_state_mutation_ordering` | [CWE-841](https://cwe.mitre.org/data/definitions/841.html)<br>[CWE-663](https://cwe.mitre.org/data/definitions/663.html) | [SWC-107](https://swcregistry.io/docs/SWC-107) | SC05 | DASP-1 |  |  |
+| `evm_swap_missing_deadline` | [CWE-672](https://cwe.mitre.org/data/definitions/672.html) | [SWC-114](https://swcregistry.io/docs/SWC-114) | SC03 | DASP-7 |  |  |
 | `evm_symbolic_counterexample` | [CWE-670](https://cwe.mitre.org/data/definitions/670.html)<br>[CWE-693](https://cwe.mitre.org/data/definitions/693.html) |  |  |  |  |  |
 | `evm_symbolic_unresolved` | [CWE-345](https://cwe.mitre.org/data/definitions/345.html) |  |  |  |  |  |
 | `evm_synthetic_collateral_oracle` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html) |  | SC02 |  |  |  |
 | `evm_timestamp_dependence` | [CWE-829](https://cwe.mitre.org/data/definitions/829.html) | [SWC-116](https://swcregistry.io/docs/SWC-116) | SC03 | DASP-8 |  |  |
 | `evm_token_balance_manipulation` | [CWE-807](https://cwe.mitre.org/data/definitions/807.html)<br>[CWE-349](https://cwe.mitre.org/data/definitions/349.html) | [SWC-132](https://swcregistry.io/docs/SWC-132) | SC02<br>SC03 |  |  |  |
+| `evm_tx_origin_authentication` | [CWE-285](https://cwe.mitre.org/data/definitions/285.html) | [SWC-115](https://swcregistry.io/docs/SWC-115) | SC01 | DASP-2 |  |  |
 | `evm_unbacked_synthetic_mint` | [CWE-682](https://cwe.mitre.org/data/definitions/682.html)<br>[CWE-754](https://cwe.mitre.org/data/definitions/754.html) |  | SC03 |  |  |  |
 | `evm_unbounded_loop` | [CWE-400](https://cwe.mitre.org/data/definitions/400.html)<br>[CWE-834](https://cwe.mitre.org/data/definitions/834.html) | [SWC-128](https://swcregistry.io/docs/SWC-128) | SC10 | DASP-5 |  |  |
 | `evm_unbounded_pricing_input` | [CWE-1284](https://cwe.mitre.org/data/definitions/1284.html)<br>[CWE-20](https://cwe.mitre.org/data/definitions/20.html) |  | SC04 |  |  |  |
 | `evm_unchecked_returns` | [CWE-252](https://cwe.mitre.org/data/definitions/252.html) | [SWC-104](https://swcregistry.io/docs/SWC-104) | SC06 | DASP-4 |  |  |
 | `evm_uninitialized_pointers` | [CWE-824](https://cwe.mitre.org/data/definitions/824.html)<br>[CWE-665](https://cwe.mitre.org/data/definitions/665.html) | [SWC-109](https://swcregistry.io/docs/SWC-109) | SC03 |  |  |  |
 | `evm_unprotected_initializer` | [CWE-665](https://cwe.mitre.org/data/definitions/665.html)<br>[CWE-862](https://cwe.mitre.org/data/definitions/862.html) | [SWC-118](https://swcregistry.io/docs/SWC-118) | SC01 | DASP-2 |  |  |
+| `evm_unsafe_downcast` | [CWE-190](https://cwe.mitre.org/data/definitions/190.html)<br>[CWE-682](https://cwe.mitre.org/data/definitions/682.html) | [SWC-101](https://swcregistry.io/docs/SWC-101) | SC08 | DASP-3 |  |  |
+| `evm_unsafe_token_approval` | [CWE-732](https://cwe.mitre.org/data/definitions/732.html) |  | SC01 | DASP-2 |  |  |
 | `evm_upgrade_path_verification` | [CWE-494](https://cwe.mitre.org/data/definitions/494.html)<br>[CWE-913](https://cwe.mitre.org/data/definitions/913.html) |  | SC01 |  |  |  |
+| `evm_vote_weight_current_balance` | [CWE-20](https://cwe.mitre.org/data/definitions/20.html)<br>[CWE-693](https://cwe.mitre.org/data/definitions/693.html) |  | SC07 | DASP-7 |  |  |
 | `evm_zero_challenge_period` | [CWE-693](https://cwe.mitre.org/data/definitions/693.html)<br>[CWE-665](https://cwe.mitre.org/data/definitions/665.html) |  | SC01 |  |  |  |
 
 ## Solana (18 detectors)
@@ -233,4 +251,5 @@ are populated only for repository findings, where they are precise.
 | Detector | CWE | SWC | OWASP SC Top 10 | DASP | MITRE ATT&CK | NIST CSF |
 |---|---|---|---|---|---|---|
 | `unauthorized_privileged_mutation` | [CWE-862](https://cwe.mitre.org/data/definitions/862.html)<br>[CWE-284](https://cwe.mitre.org/data/definitions/284.html) |  | SC01 | DASP-2 |  |  |
+
 

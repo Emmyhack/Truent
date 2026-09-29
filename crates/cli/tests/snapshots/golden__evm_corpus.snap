@@ -11,6 +11,12 @@ expression: rows(all)
   ],
   [
     "bad/cross_chain_replay.sol",
+    "evm_fixed_gas_eth_transfer",
+    11,
+    "MEDIUM"
+  ],
+  [
+    "bad/cross_chain_replay.sol",
     "evm_signature_replay_protection",
     7,
     "MEDIUM"
@@ -20,6 +26,78 @@ expression: rows(all)
     "evm_division_by_zero",
     7,
     "LOW"
+  ],
+  [
+    "bad/ecrecover_unvalidated.sol",
+    "evm_cross_chain_replay_missing_chainid",
+    6,
+    "HIGH"
+  ],
+  [
+    "bad/ecrecover_unvalidated.sol",
+    "evm_ecrecover_unvalidated",
+    6,
+    "HIGH"
+  ],
+  [
+    "bad/encodepacked_hash_collision.sol",
+    "evm_encodepacked_hash_collision",
+    6,
+    "HIGH"
+  ],
+  [
+    "bad/erc20_without_safe_wrapper.sol",
+    "evm_erc20_without_safe_wrapper",
+    9,
+    "MEDIUM"
+  ],
+  [
+    "bad/erc20_without_safe_wrapper.sol",
+    "evm_single_eoa_admin",
+    6,
+    "HIGH"
+  ],
+  [
+    "bad/erc721_unsafe_transfer.sol",
+    "evm_erc721_unsafe_transfer",
+    10,
+    "MEDIUM"
+  ],
+  [
+    "bad/erc721_unsafe_transfer.sol",
+    "evm_unchecked_returns",
+    10,
+    "MEDIUM"
+  ],
+  [
+    "bad/fee_parameter_unbounded.sol",
+    "evm_fee_parameter_unbounded",
+    9,
+    "MEDIUM"
+  ],
+  [
+    "bad/fee_parameter_unbounded.sol",
+    "evm_single_eoa_admin",
+    6,
+    "HIGH"
+  ],
+  [
+    "bad/fixed_gas_eth_transfer.sol",
+    "evm_fixed_gas_eth_transfer",
+    8,
+    "MEDIUM"
+  ],
+  [
+    "bad/gas_dos.sol",
+    "evm_fixed_gas_eth_transfer",
+    20,
+    "MEDIUM"
+  ],
+  [
+    "bad/gas_dos.sol",
+    "evm_fixed_gas_eth_transfer",
+    29,
+    "MEDIUM"
   ],
   [
     "bad/gas_dos.sol",
@@ -46,6 +124,42 @@ expression: rows(all)
     "MEDIUM"
   ],
   [
+    "bad/hardcoded_token_decimals.sol",
+    "evm_hardcoded_token_decimals",
+    6,
+    "MEDIUM"
+  ],
+  [
+    "bad/interest_not_accrued.sol",
+    "evm_interest_not_accrued",
+    13,
+    "HIGH"
+  ],
+  [
+    "bad/interest_not_accrued.sol",
+    "evm_missing_post_state_health_check",
+    8,
+    "CRITICAL"
+  ],
+  [
+    "bad/interest_not_accrued.sol",
+    "evm_missing_post_state_health_check",
+    13,
+    "CRITICAL"
+  ],
+  [
+    "bad/interest_not_accrued.sol",
+    "evm_missing_post_state_health_check",
+    17,
+    "CRITICAL"
+  ],
+  [
+    "bad/interest_not_accrued.sol",
+    "evm_missing_signer_check",
+    8,
+    "HIGH"
+  ],
+  [
     "bad/legacy_unsafe_math.sol",
     "evm_legacy_unsafe_math",
     6,
@@ -58,6 +172,30 @@ expression: rows(all)
     "CRITICAL"
   ],
   [
+    "bad/missing_zero_address_check.sol",
+    "evm_missing_zero_address_check",
+    9,
+    "LOW"
+  ],
+  [
+    "bad/missing_zero_address_check.sol",
+    "evm_single_eoa_admin",
+    6,
+    "HIGH"
+  ],
+  [
+    "bad/msg_value_reused_in_loop.sol",
+    "evm_msg_value_reused_in_loop",
+    8,
+    "HIGH"
+  ],
+  [
+    "bad/oracle_answer_unvalidated.sol",
+    "evm_oracle_answer_unvalidated",
+    8,
+    "HIGH"
+  ],
+  [
     "bad/oracle_spot_price.sol",
     "evm_division_by_zero",
     7,
@@ -67,6 +205,18 @@ expression: rows(all)
     "bad/oracle_spot_price.sol",
     "evm_oracle_spot_price",
     7,
+    "CRITICAL"
+  ],
+  [
+    "bad/permit_frontrun_dos.sol",
+    "evm_permit_frontrun_dos",
+    12,
+    "MEDIUM"
+  ],
+  [
+    "bad/permit_frontrun_dos.sol",
+    "evm_reentrancy_erc20",
+    13,
     "CRITICAL"
   ],
   [
@@ -124,6 +274,30 @@ expression: rows(all)
     "MEDIUM"
   ],
   [
+    "bad/reward_checkpoint_missing.sol",
+    "evm_reward_checkpoint_missing",
+    17,
+    "HIGH"
+  ],
+  [
+    "bad/router_slippage_zero_min.sol",
+    "evm_arithmetic_rounding",
+    13,
+    "MEDIUM"
+  ],
+  [
+    "bad/router_slippage_zero_min.sol",
+    "evm_router_slippage_validation",
+    14,
+    "MEDIUM"
+  ],
+  [
+    "bad/router_slippage_zero_min.sol",
+    "evm_swap_missing_deadline",
+    14,
+    "MEDIUM"
+  ],
+  [
     "bad/selector_dispatch.sol",
     "evm_arbitrary_function_selector_dispatch",
     5,
@@ -143,14 +317,50 @@ expression: rows(all)
   ],
   [
     "bad/single_eoa_admin.sol",
+    "evm_fixed_gas_eth_transfer",
+    8,
+    "MEDIUM"
+  ],
+  [
+    "bad/single_eoa_admin.sol",
     "evm_single_eoa_admin",
     5,
     "HIGH"
   ],
   [
+    "bad/swap_missing_deadline.sol",
+    "evm_swap_missing_deadline",
+    8,
+    "MEDIUM"
+  ],
+  [
     "bad/timestamp_randomness.sol",
     "evm_timestamp_dependence",
     6,
+    "HIGH"
+  ],
+  [
+    "bad/tx_origin_authentication.sol",
+    "evm_eip7702_eoa_assumption",
+    7,
+    "MEDIUM"
+  ],
+  [
+    "bad/tx_origin_authentication.sol",
+    "evm_fixed_gas_eth_transfer",
+    8,
+    "MEDIUM"
+  ],
+  [
+    "bad/tx_origin_authentication.sol",
+    "evm_single_eoa_admin",
+    5,
+    "HIGH"
+  ],
+  [
+    "bad/tx_origin_authentication.sol",
+    "evm_tx_origin_authentication",
+    7,
     "HIGH"
   ],
   [
@@ -191,9 +401,33 @@ expression: rows(all)
   ],
   [
     "bad/unprotected_initializer.sol",
+    "evm_missing_zero_address_check",
+    6,
+    "LOW"
+  ],
+  [
+    "bad/unprotected_initializer.sol",
     "evm_unprotected_initializer",
     5,
     "CRITICAL"
+  ],
+  [
+    "bad/unsafe_downcast.sol",
+    "evm_unsafe_downcast",
+    7,
+    "MEDIUM"
+  ],
+  [
+    "bad/unsafe_token_approval.sol",
+    "evm_unchecked_returns",
+    8,
+    "MEDIUM"
+  ],
+  [
+    "bad/unsafe_token_approval.sol",
+    "evm_unsafe_token_approval",
+    8,
+    "MEDIUM"
   ],
   [
     "bad/unverified_upgrade.sol",
@@ -203,8 +437,20 @@ expression: rows(all)
   ],
   [
     "bad/unverified_upgrade.sol",
+    "evm_missing_zero_address_check",
+    6,
+    "LOW"
+  ],
+  [
+    "bad/unverified_upgrade.sol",
     "evm_upgrade_path_verification",
     5,
     "MEDIUM"
+  ],
+  [
+    "bad/vote_weight_current_balance.sol",
+    "evm_vote_weight_current_balance",
+    12,
+    "HIGH"
   ]
 ]

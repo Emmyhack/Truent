@@ -308,14 +308,16 @@ chain-agnostic detection layer on top of it.
 - ✅ **Production Ready** — All tests passing, security audit complete, reproducible builds
 
 **Detector Coverage:**
-- **EVM**: 44 detectors (reentrancy incl. read-only reentrancy, missing checks, oracle manipulation incl. stale-price feeds, proxy issues, insufficient multisig threshold, arbitrary function-selector dispatch, fee-on-transfer/rebasing incompatibility, cross-chain signature replay, unbounded pricing input, ERC-4337 validation side effects, EIP-7702 EOA assumptions, and 20+ named historical-exploit patterns)
+- **EVM**: 77 detectors (reentrancy incl. read-only reentrancy, missing checks, oracle manipulation incl. stale-price feeds and unvalidated answers, proxy issues, insufficient multisig threshold, arbitrary function-selector dispatch, and the patterns ranked highest across 23,625 public contest findings: raw ERC-20 calls on caller-chosen tokens, hard-coded decimals, unsafe approvals and NFT transfers, 2300-gas Ether sends, `msg.value` reused in loops, `tx.origin` auth, permit front-running, unsafe downcasts, unbounded fees, zero-address setters, interest not accrued, missing reward checkpoints, flash-loanable vote weight, swaps with no real deadline or slippage floor, unvalidated `ecrecover`, and `abi.encodePacked` hash collisions)
 - **Solana**: 11 detectors (PDA validation, authority checks, replay attacks, durable nonce, rent exemption, unchecked token/mint account substitution, fake sysvar instructions account)
 - **Move (Aptos / Sui)**: 17 detectors (shared-state access control, capability grants and `store`, hot potatoes, spot and stale oracle prices, weak and test-and-abort randomness, exposed signers, divide-before-multiply, fake-token deposits, unbounded vectors and parameters, hand-rolled overflow checks)
 - **Soroban**: 9 detectors (missing require_auth, unprotected upgrade, re-initialization, unchecked arithmetic, storage TTL/expiry, reentrancy, thin-liquidity oracle price)
 
 Truent also ships a web dashboard (`web/`) — sign-up, scan submission, and
 report viewing on top of the same CLI engine — alongside the `truent` CLI
-and its npm wrapper (`@dextonicx/cli`).
+and its npm wrapper (`@dextonicx/cli`). `docker compose up -d --build` runs
+the whole dashboard (database, migrations, app, scan worker) on one machine;
+see [docs/DEPLOY.md](docs/DEPLOY.md) for the free-to-paid path.
 
 ---
 

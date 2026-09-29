@@ -48,3 +48,6 @@ secrets.yaml
 
 # Cargo build output in nested crates (a stray `cargo bench` run left crates/cli/target)
 **/target/
+
+# Python tooling caches
+__pycache__/
