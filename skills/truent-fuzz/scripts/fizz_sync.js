@@ -266,7 +266,10 @@ function scanTaggedProperties() {
             if (entry.endsWith('.sol')) files.push(path.join(handlersDir, entry));
         }
     }
-    const re = /\/\/\/ @notice\s+(GL-\d+|SP-\d+):[^\n]*\n(?:\s*\/\/\/[^\n]*\n)*\s*function\s+(\w+)\s*\(/g;
+    // Each NatSpec line is consumed as `///…\n` followed by the next line's
+    // indentation, so no quantified group starts with a quantifier that
+    // could also match the newline: the match is linear in the input.
+    const re = /\/\/\/ @notice[ \t]+(GL-\d+|SP-\d+):[^\n]*\n[ \t]*(?:\/\/\/[^\n]*\n[ \t]*)*function[ \t]+(\w+)[ \t]*\(/g;
     for (const f of files) {
         const content = fs.readFileSync(f, 'utf8');
         let m;
@@ -554,7 +557,7 @@ function printReport(report) {
  * consistent scope (otherwise the newly-added functions would show up as drift forever).
  */
 function applyHandlerRegen(report) {
-    const { execSync } = require('child_process');
+    const { execSync, spawnSync } = require('child_process');
 
     const oldSelection = loadJson(selectionPath);
     if (!oldSelection) fail(2, 'missing entry-point-selection.json — cannot regenerate handlers.');
@@ -627,9 +630,12 @@ function applyHandlerRegen(report) {
     fs.writeFileSync(selectionPath, JSON.stringify(newSelection, null, 2));
 
     const genScript = path.join(__dirname, 'generate_handlers.js');
-    const cmd = `node "${genScript}" "${projectRoot}" --suite-dir "${opts.suiteRelDir}" --meta-dir "${opts.metaRelDir}" --selection "${scopedPath}" --force`;
-    console.log(`fizz-sync: running ${cmd}`);
-    execSync(cmd, { stdio: 'inherit' });
+    const args = [genScript, projectRoot, '--suite-dir', opts.suiteRelDir, '--meta-dir', opts.metaRelDir, '--selection', scopedPath, '--force'];
+    console.log(`fizz-sync: running node ${args.join(' ')}`);
+    // Arguments are passed as an array: a project path with spaces or shell
+    // characters is one argument, not a command.
+    const run = spawnSync(process.execPath, args, { stdio: 'inherit' });
+    if (run.status !== 0) throw new Error(`generate_handlers.js exited with ${run.status}`);
     // Clean up scoped selection artifact.
     try { fs.unlinkSync(scopedPath); } catch (_) {}
 

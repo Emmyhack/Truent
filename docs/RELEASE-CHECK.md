@@ -1,44 +1,45 @@
 # Release check — .
 
-**Verdict: READY** — ACCEPTED 4 · ASSESS 32 · PASS 371
+**Verdict: READY** — ACCEPTED 21 · ASSESS 32 · NEEDS-TOOL 13 · PASS 341
 
 PASS = an engine ran and found nothing · ACCEPTED = findings carried under a dated, owned risk acceptance · FAIL = findings · PARTIAL = the test exists but CI never runs it (or a check is undecided) · MISSING = nothing found (`truent harden` generates a start) · NEEDS-TOOL = pass a `truent probe` / `truent symbolic` report · ASSESS = a person must verify · N/A = nothing to apply to
 
 ## Risk acceptances
 
 - **evm_single_eoa_admin** ./examples/evm_token.sol:27 — accepted until 2027-12-31 by @Emmyhack: intentionally minimal example contract used by the documentation to show what a scan reports; not deployed anywhere.
-- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @Emmyhack: transitive, not in the normal build graph (dev/build only); no exposure in the shipped binary.
-- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @Emmyhack: transitive via alloy-primitives → revm; the maintained fork is not yet resolvable from revm 14. Re-evaluate at the next revm upgrade.
-- **sca_unmaintained_dependency** Cargo.lock:1 — accepted until 2027-03-31 by @Emmyhack: ring is the rustls crypto provider used by truent-runtime and ureq; the aws-lc-rs provider adds a C/cmake build across six release targets. Informational advisory, no vulnerability. Re-evaluate when rustls' aws-lc-rs provider ships prebuilt for musl and Windows.
-- **rt_no_https_redirect** http://127.0.0.1:3111:1 — accepted until 2027-03-31 by @Emmyhack: The CI DAST target is `next start` on localhost, which serves plain HTTP by design; TLS termination and the HTTP→HTTPS redirect are the production edge's job. Verified separately by `truent probe https://<production-host>` before each release.
-- **evm_symbolic_counterexample** examples/foundry/test/Vault.t.sol:1 — accepted until 2027-12-31 by @Emmyhack: examples/foundry is the documented symbolic-execution demo: a deliberately buggy vault whose counterexample CI asserts is found. Not deployed.
+- **move_admin_no_timelock** ./skills/truent-fuzz/templates/move/aptos_invariants.move:32 — accepted until 2027-06-30 by @Emmyhack: Invariant-fuzzing template: a minimal pool whose admin setter the fuzzer drives directly; a timelock would defeat the harness. Not deployed.
+- **move_unbounded_parameter** ./skills/truent-fuzz/templates/move/aptos_invariants.move:35 — accepted until 2027-06-30 by @Emmyhack: Same template: the fee bound is one of the invariants the generated suite asserts, so the template leaves it open on purpose. Not deployed.
+- **evm_division_by_zero** ./skills/truent-fuzz/templates/evm/utils/Math.sol:36 — accepted until 2027-06-30 by @Emmyhack: Fuzz-harness math helpers (Math.sol, DecimalPrinter.sol) divide by a caller-supplied value by design; they are copied into a project's test tree and never deployed.
+- **evm_division_by_zero** ./skills/truent-fuzz/templates/evm/utils/Math.sol:43 — accepted until 2027-06-30 by @Emmyhack: Fuzz-harness math helpers (Math.sol, DecimalPrinter.sol) divide by a caller-supplied value by design; they are copied into a project's test tree and never deployed.
+- **evm_division_by_zero** ./skills/truent-fuzz/templates/evm/utils/DecimalPrinter.sol:16 — accepted until 2027-06-30 by @Emmyhack: Fuzz-harness math helpers (Math.sol, DecimalPrinter.sol) divide by a caller-supplied value by design; they are copied into a project's test tree and never deployed.
+- **evm_missing_signer_check** ./skills/truent-fuzz/templates/evm/handlers/Handlers.sol:11 — accepted until 2027-06-30 by @Emmyhack: Fuzz handler template: `setCurrentActor` is meant to be called by the fuzzer from any address; it is copied into a project's test tree and never deployed.
 
 | # | Section | Worst | Pass | Fail | Partial | Missing | Assess |
 |---|---|---|---|---|---|---|---|
 | 1 | Functional Testing | PASS | 7 | 0 | 0 | 0 | 0 |
 | 2 | Regression Testing | ASSESS | 8 | 0 | 0 | 0 | 2 |
-| 3 | Static Application Security Testing (SAST) | PASS | 13 | 0 | 0 | 0 | 0 |
-| 4 | Dynamic Application Security Testing (DAST) | ASSESS | 12 | 0 | 0 | 0 | 1 |
-| 5 | Dependency & Supply-Chain Security Testing | ACCEPTED | 10 | 0 | 0 | 0 | 0 |
+| 3 | Static Application Security Testing (SAST) | ACCEPTED | 13 | 0 | 0 | 0 | 0 |
+| 4 | Dynamic Application Security Testing (DAST) | NEEDS-TOOL | 9 | 0 | 0 | 0 | 4 |
+| 5 | Dependency & Supply-Chain Security Testing | PASS | 10 | 0 | 0 | 0 | 0 |
 | 6 | Fuzz Testing | PASS | 14 | 0 | 0 | 0 | 0 |
-| 7 | Property-Based Testing | PASS | 8 | 0 | 0 | 0 | 0 |
+| 7 | Property-Based Testing | ACCEPTED | 8 | 0 | 0 | 0 | 0 |
 | 8 | Business-Logic Testing | ASSESS | 11 | 0 | 0 | 0 | 3 |
 | 9 | State-Transition Testing | ASSESS | 10 | 0 | 0 | 0 | 1 |
 | 10 | Authorization & Access-Control Testing | ACCEPTED | 13 | 0 | 0 | 0 | 0 |
-| 11 | Authentication & Session Security Testing | ASSESS | 11 | 0 | 0 | 0 | 2 |
+| 11 | Authentication & Session Security Testing | NEEDS-TOOL | 9 | 0 | 0 | 0 | 4 |
 | 12 | Race-Condition & Concurrency Testing | ASSESS | 10 | 0 | 0 | 0 | 1 |
 | 13 | Data-Integrity Testing | ASSESS | 9 | 0 | 0 | 0 | 4 |
 | 14 | Financial / Value-Movement Testing | ASSESS | 16 | 0 | 0 | 0 | 1 |
-| 15 | Smart-Contract Security Testing | PASS | 24 | 0 | 0 | 0 | 0 |
+| 15 | Smart-Contract Security Testing | NEEDS-TOOL | 23 | 0 | 0 | 0 | 1 |
 | 16 | API Security Testing | ASSESS | 12 | 0 | 0 | 0 | 3 |
-| 17 | CORS & Browser Security Testing | PASS | 11 | 0 | 0 | 0 | 0 |
+| 17 | CORS & Browser Security Testing | NEEDS-TOOL | 6 | 0 | 0 | 0 | 5 |
 | 18 | Load & Stress Testing | PASS | 13 | 0 | 0 | 0 | 0 |
 | 19 | Chaos & Failure Testing | PASS | 14 | 0 | 0 | 0 | 0 |
 | 20 | Migration & Upgrade Testing | ASSESS | 9 | 0 | 0 | 0 | 2 |
 | 21 | Performance Testing | ASSESS | 10 | 0 | 0 | 0 | 1 |
 | 22 | Differential Testing | ASSESS | 6 | 0 | 0 | 0 | 1 |
 | 23 | Mutation Testing | PASS | 8 | 0 | 0 | 0 | 0 |
-| 24 | Secrets & Configuration Testing | ASSESS | 9 | 0 | 0 | 0 | 1 |
+| 24 | Secrets & Configuration Testing | NEEDS-TOOL | 8 | 0 | 0 | 0 | 2 |
 | 25 | Logging & Monitoring Security Testing | ASSESS | 8 | 0 | 0 | 0 | 2 |
 | 26 | File & Resource Security Testing | PASS | 8 | 0 | 0 | 0 | 0 |
 | 27 | Availability & Denial-of-Service Testing | PASS | 10 | 0 | 0 | 0 | 0 |
@@ -47,7 +48,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 | 30 | Recovery & Disaster Testing | ASSESS | 10 | 0 | 0 | 0 | 1 |
 | 31 | Code Quality & Safety Testing | ASSESS | 8 | 0 | 0 | 0 | 3 |
 | 32 | Critical-Path Security Testing | ACCEPTED | 21 | 0 | 0 | 0 | 0 |
-| 33 | Final Security Validation | ASSESS | 25 | 0 | 0 | 0 | 1 |
+| 33 | Final Security Validation | NEEDS-TOOL | 24 | 0 | 0 | 0 | 2 |
 
 ## 1. Functional Testing — PASS
 
@@ -72,7 +73,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Smart-contract interaction regression tests** — PASS: 7 detector(s) ran, no findings
 - [x] **State-transition regression tests** — PASS: 8 detector(s) ran, no findings
 
-## 3. Static Application Security Testing (SAST) — PASS
+## 3. Static Application Security Testing (SAST) — ACCEPTED
 
 - [x] **SQL injection detection** — PASS: 1 detector(s) ran, no findings
 - [x] **Command injection detection** — PASS: 2 detector(s) ran, no findings
@@ -81,19 +82,19 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Path traversal detection** — PASS: 1 detector(s) ran, no findings
 - [x] **Insecure deserialization detection** — PASS: 2 detector(s) ran, no findings
 - [x] **Hardcoded secrets detection** — PASS: 2 detector(s) ran, no findings
-- [x] **Weak/unsafe cryptography detection** — PASS: 3 detector(s) ran, no findings
-- [x] **Authentication flaws** — PASS: 5 detector(s) ran, no findings
-- [x] **Authorization flaws** — PASS: 14 detector(s) ran, no findings
+- [x] **Weak/unsafe cryptography detection** — PASS: 5 detector(s) ran, no findings
+- [x] **Authentication flaws** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
+- [x] **Authorization flaws** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Dangerous function/API usage** — PASS: 4 detector(s) ran, no findings
 - [x] **Unsafe configuration detection** — PASS: 6 detector(s) ran, no findings
 - [x] **Security-sensitive code pattern analysis** — PASS: 4 detector(s) ran, no findings
 
-## 4. Dynamic Application Security Testing (DAST) — ASSESS
+## 4. Dynamic Application Security Testing (DAST) — NEEDS-TOOL
 
 - [ ] **Authentication bypass testing** — ASSESS: Active bypass attempts are exploitation; Truent's exposure rating and the authentication detectors cover the static half — run authorized manual testing for the rest
 - [x] **IDOR/BOLA testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Privilege-escalation testing** — PASS: 3 detector(s) ran, no findings
-- [x] **Session-management testing** — PASS: probe observed no issue
+- [ ] **Session-management testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
 - [x] **CORS testing** — PASS: 1 detector(s) ran, no findings
 - [x] **CSRF testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Rate-limit testing** — PASS: 1 detector(s) ran, no findings
@@ -101,15 +102,15 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **API abuse testing** — PASS: 5 detector(s) ran, no findings
 - [x] **Malformed-request testing** — PASS: 3 detector(s) ran, no findings
 - [x] **Injection testing** — PASS: 4 detector(s) ran, no findings
-- [x] **Security-header testing** — PASS: probe observed no issue
-- [x] **Error-handling and information-disclosure testing** — PASS: probe observed no issue
+- [ ] **Security-header testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
+- [ ] **Error-handling and information-disclosure testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
 
-## 5. Dependency & Supply-Chain Security Testing — ACCEPTED
+## 5. Dependency & Supply-Chain Security Testing — PASS
 
 - [x] **Direct dependency vulnerability scanning** — PASS: 1 detector(s) ran, no findings
 - [x] **Transitive dependency vulnerability scanning** — PASS: 1 detector(s) ran, no findings
 - [x] **Known CVE detection** — PASS: 1 detector(s) ran, no findings
-- [x] **Outdated dependency detection** — ACCEPTED: under risk acceptance: sca_unmaintained_dependency ×3
+- [x] **Outdated dependency detection** — PASS: 1 detector(s) ran, no findings
 - [x] **Malicious-package detection** — PASS: 2 detector(s) ran, no findings
 - [x] **Dependency-confusion checks** — PASS: 1 detector(s) ran, no findings
 - [x] **Lockfile integrity checks** — PASS: 2 detector(s) ran, no findings
@@ -126,20 +127,20 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Null/empty-value fuzzing** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
 - [x] **Extremely large input testing** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
 - [x] **Extremely small input testing** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
-- [x] **Integer boundary testing** — PASS: 8 detector(s) ran, no findings
-- [x] **Maximum-value testing** — PASS: 8 detector(s) ran, no findings
+- [x] **Integer boundary testing** — PASS: 9 detector(s) ran, no findings
+- [x] **Maximum-value testing** — PASS: 9 detector(s) ran, no findings
 - [x] **Negative-value testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Unicode/encoding fuzzing** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
 - [x] **JSON/XML/parser fuzzing** — PASS: 2 detector(s) ran, no findings
 - [x] **API parameter fuzzing** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
 - [x] **Transaction-input fuzzing** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
 
-## 7. Property-Based Testing — PASS
+## 7. Property-Based Testing — ACCEPTED
 
 - [x] **Define security invariants** — PASS: invariant tests present and run in CI (crates/dynamic/core/src/invariant.rs, crates/dynamic/solana/src/invariant.rs, crates/dynamic/evm/src/dsl_invariant.rs)
-- [x] **Define financial invariants** — PASS: 6 detector(s) ran, no findings
+- [x] **Define financial invariants** — PASS: 8 detector(s) ran, no findings
 - [x] **Define data-integrity invariants** — PASS: 2 detector(s) ran, no findings
-- [x] **Define authorization invariants** — PASS: 14 detector(s) ran, no findings
+- [x] **Define authorization invariants** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Generate randomized test cases** — PASS: property-based tests present and run in CI (crates/cli/tests/property/mod.rs, crates/cli/tests/property.rs, tests/property.rs)
 - [x] **Verify invariants across thousands of scenarios** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
 - [x] **Test edge cases automatically** — PASS: property-based tests present and run in CI (crates/cli/tests/property/mod.rs, crates/cli/tests/property.rs, tests/property.rs)
@@ -148,10 +149,10 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 ## 8. Business-Logic Testing — ASSESS
 
 - [ ] **Business-rule validation** — ASSESS: Rules are specific to the product; encode them as invariants (`.sinv`) so `truent scan`/`fuzz` enforce them
-- [x] **Unauthorized workflow testing** — PASS: 14 detector(s) ran, no findings
+- [x] **Unauthorized workflow testing** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Workflow-bypass testing** — PASS: 8 detector(s) ran, no findings
-- [x] **Price manipulation testing** — PASS: 11 detector(s) ran, no findings
-- [x] **Quantity manipulation testing** — PASS: 2 detector(s) ran, no findings
+- [x] **Price manipulation testing** — PASS: 14 detector(s) ran, no findings
+- [x] **Quantity manipulation testing** — ACCEPTED: under risk acceptance: move_unbounded_parameter ×1
 - [ ] **Discount/coupon abuse testing** — ASSESS: Product-specific; test coupon reuse, stacking and negative totals in the E2E suite
 - [x] **Fee manipulation testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Balance manipulation testing** — PASS: 3 detector(s) ran, no findings
@@ -166,7 +167,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 - [ ] **Test every valid state transition** — ASSESS: Enumerate the state machine and cover each edge in the unit suite
 - [x] **Test every invalid state transition** — PASS: 3 detector(s) ran, no findings
-- [x] **Test unauthorized state transitions** — PASS: 14 detector(s) ran, no findings
+- [x] **Test unauthorized state transitions** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Test state-transition bypasses** — PASS: 8 detector(s) ran, no findings
 - [x] **Test state rollback** — PASS: migration rollback present and run in CI (migration tool with rollback support)
 - [x] **Test repeated transitions** — PASS: 3 detector(s) ran, no findings
@@ -178,29 +179,29 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 ## 10. Authorization & Access-Control Testing — ACCEPTED
 
-- [x] **Role-based access-control testing** — PASS: 14 detector(s) ran, no findings
+- [x] **Role-based access-control testing** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Permission testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Object-level authorization testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Function-level authorization testing** — PASS: 14 detector(s) ran, no findings
+- [x] **Function-level authorization testing** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Horizontal privilege-escalation testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Vertical privilege-escalation testing** — PASS: 2 detector(s) ran, no findings
-- [x] **Admin-access testing** — ACCEPTED: under risk acceptance: evm_single_eoa_admin ×1
-- [x] **Owner-access testing** — PASS: 2 detector(s) ran, no findings
+- [x] **Admin-access testing** — ACCEPTED: under risk acceptance: evm_single_eoa_admin ×1, move_admin_no_timelock ×1
+- [x] **Owner-access testing** — PASS: 3 detector(s) ran, no findings
 - [x] **Guest-access testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Cross-user data-access testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Tenant-isolation testing** — PASS: 1 detector(s) ran, no findings
 - [x] **API authorization matrix testing** — PASS: 3 detector(s) ran, no findings
-- [x] **Smart-contract access-control testing** — PASS: 14 detector(s) ran, no findings
+- [x] **Smart-contract access-control testing** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 
-## 11. Authentication & Session Security Testing — ASSESS
+## 11. Authentication & Session Security Testing — NEEDS-TOOL
 
 - [x] **Login testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Logout testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Password-reset testing** — PASS: 2 detector(s) ran, no findings
 - [ ] **MFA testing** — ASSESS: Verify enrolment, recovery codes and step-up on sensitive actions in the E2E suite
-- [x] **Session-expiration testing** — PASS: probe observed no issue
+- [ ] **Session-expiration testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
 - [ ] **Session-revocation testing** — ASSESS: Logout and password change must invalidate every other session; test it
-- [x] **Session-fixation testing** — PASS: probe observed no issue
+- [ ] **Session-fixation testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
 - [x] **Token-reuse testing** — PASS: 2 detector(s) ran, no findings
 - [x] **JWT validation testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Refresh-token testing** — PASS: 2 detector(s) ran, no findings
@@ -226,7 +227,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 - [x] **Database integrity testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Transaction atomicity testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Consistency testing** — PASS: 6 detector(s) ran, no findings
+- [x] **Consistency testing** — PASS: 8 detector(s) ran, no findings
 - [ ] **Duplicate-record testing** — ASSESS: Unique constraints and idempotent writes, tested
 - [ ] **Missing-record testing** — ASSESS: Referential integrity under deletes, tested
 - [x] **Corrupted-state testing** — PASS: 2 detector(s) ran, no findings
@@ -235,42 +236,42 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [ ] **Referential-integrity testing** — ASSESS: Foreign keys with the intended on-delete behaviour
 - [x] **Backup restoration testing** — PASS: disaster-recovery runbook present and run in CI (docs/runbooks/incident-response.md, docs/runbooks/disaster-recovery.md)
 - [x] **Disaster-recovery testing** — PASS: disaster-recovery runbook present and run in CI (docs/runbooks/incident-response.md, docs/runbooks/disaster-recovery.md)
-- [x] **Data migration integrity testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
-- [x] **Financial-balance reconciliation testing** — PASS: 6 detector(s) ran, no findings
+- [x] **Data migration integrity testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260914120000_civic_id/migration.sql, web/prisma/migrations/20260927090000_entitlements/migration.sql)
+- [x] **Financial-balance reconciliation testing** — PASS: 8 detector(s) ran, no findings
 
 ## 14. Financial / Value-Movement Testing — ASSESS
 
 - [x] **Deposit testing** — PASS: 3 detector(s) ran, no findings
 - [x] **Withdrawal testing** — PASS: 7 detector(s) ran, no findings
-- [x] **Transfer testing** — PASS: 2 detector(s) ran, no findings
+- [x] **Transfer testing** — PASS: 6 detector(s) ran, no findings
 - [ ] **Refund testing** — ASSESS: Refunds cannot exceed the original charge or be issued twice; test it
-- [x] **Fee calculation testing** — PASS: 3 detector(s) ran, no findings
-- [x] **Balance calculation testing** — PASS: 6 detector(s) ran, no findings
-- [x] **Rounding/precision testing** — PASS: 3 detector(s) ran, no findings
+- [x] **Fee calculation testing** — PASS: 5 detector(s) ran, no findings
+- [x] **Balance calculation testing** — PASS: 8 detector(s) ran, no findings
+- [x] **Rounding/precision testing** — ACCEPTED: under risk acceptance: evm_division_by_zero ×3
 - [x] **Negative-value testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Zero-value testing** — PASS: 2 detector(s) ran, no findings
-- [x] **Maximum-value testing** — PASS: 8 detector(s) ran, no findings
+- [x] **Zero-value testing** — ACCEPTED: under risk acceptance: evm_division_by_zero ×3
+- [x] **Maximum-value testing** — PASS: 9 detector(s) ran, no findings
 - [x] **Double-spending testing** — PASS: 7 detector(s) ran, no findings
 - [x] **Replay testing** — PASS: 3 detector(s) ran, no findings
-- [x] **Unauthorized transfer testing** — PASS: 14 detector(s) ran, no findings
+- [x] **Unauthorized transfer testing** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Transaction ordering testing** — PASS: 2 detector(s) ran, no findings
-- [x] **Partial-failure testing** — PASS: 2 detector(s) ran, no findings
+- [x] **Partial-failure testing** — PASS: 3 detector(s) ran, no findings
 - [x] **Atomicity testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Accounting/reconciliation testing** — PASS: 6 detector(s) ran, no findings
+- [x] **Accounting/reconciliation testing** — PASS: 8 detector(s) ran, no findings
 
-## 15. Smart-Contract Security Testing — PASS
+## 15. Smart-Contract Security Testing — NEEDS-TOOL
 
 - [x] **Reentrancy testing** — PASS: 7 detector(s) ran, no findings
-- [x] **Access-control testing** — PASS: 14 detector(s) ran, no findings
-- [x] **Integer overflow/underflow testing** — PASS: 8 detector(s) ran, no findings
-- [x] **Precision/rounding testing** — PASS: 3 detector(s) ran, no findings
-- [x] **Oracle manipulation testing** — PASS: 11 detector(s) ran, no findings
-- [x] **Price manipulation testing** — PASS: 11 detector(s) ran, no findings
-- [x] **Flash-loan attack testing** — PASS: 3 detector(s) ran, no findings
+- [x] **Access-control testing** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
+- [x] **Integer overflow/underflow testing** — PASS: 9 detector(s) ran, no findings
+- [x] **Precision/rounding testing** — ACCEPTED: under risk acceptance: evm_division_by_zero ×3
+- [x] **Oracle manipulation testing** — PASS: 14 detector(s) ran, no findings
+- [x] **Price manipulation testing** — PASS: 14 detector(s) ran, no findings
+- [x] **Flash-loan attack testing** — PASS: 4 detector(s) ran, no findings
 - [x] **Front-running testing** — PASS: 2 detector(s) ran, no findings
-- [x] **MEV-related attack testing** — PASS: 3 detector(s) ran, no findings
+- [x] **MEV-related attack testing** — PASS: 5 detector(s) ran, no findings
 - [x] **Replay-attack testing** — PASS: 3 detector(s) ran, no findings
-- [x] **Signature-validation testing** — PASS: 3 detector(s) ran, no findings
+- [x] **Signature-validation testing** — PASS: 5 detector(s) ran, no findings
 - [x] **Initialization testing** — PASS: 3 detector(s) ran, no findings
 - [x] **Uninitialized-contract testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Upgradeability testing** — PASS: 8 detector(s) ran, no findings
@@ -278,10 +279,10 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Storage-collision testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Emergency/pause mechanism testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Token-standard compatibility testing** — PASS: 3 detector(s) ran, no findings
-- [x] **Denial-of-service/gas-griefing testing** — PASS: 2 detector(s) ran, no findings
-- [x] **Gas-consumption testing** — PASS: 2 detector(s) ran, no findings
+- [x] **Denial-of-service/gas-griefing testing** — PASS: 3 detector(s) ran, no findings
+- [x] **Gas-consumption testing** — PASS: 3 detector(s) ran, no findings
 - [x] **Invariant testing** — PASS: invariant tests present and run in CI (crates/dynamic/core/src/invariant.rs, crates/dynamic/solana/src/invariant.rs, crates/dynamic/evm/src/dsl_invariant.rs)
-- [x] **Symbolic-execution testing** — PASS: every symbolic check passed
+- [ ] **Symbolic-execution testing** — NEEDS-TOOL: run `truent symbolic <foundry-project> --format json --out symbolic.json` and pass --symbolic-report
 - [x] **Smart-contract fuzzing** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
 - [x] **Static-analysis testing** — PASS: 7 detector(s) ran, no findings
 
@@ -303,19 +304,19 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **GraphQL security testing (if applicable)** — PASS: 1 detector(s) ran, no findings
 - [x] **WebSocket security testing (if applicable)** — PASS: 1 detector(s) ran, no findings
 
-## 17. CORS & Browser Security Testing — PASS
+## 17. CORS & Browser Security Testing — NEEDS-TOOL
 
 - [x] **CORS policy testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Origin-validation testing** — PASS: 2 detector(s) ran, no findings
 - [x] **Credentialed-CORS testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Wildcard-origin testing** — PASS: 1 detector(s) ran, no findings
 - [x] **CSRF testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Clickjacking testing** — PASS: probe observed no issue
-- [x] **Content-Security-Policy testing** — PASS: probe observed no issue
-- [x] **Security-header testing** — PASS: probe observed no issue
-- [x] **Cookie security testing** — PASS: probe observed no issue
+- [ ] **Clickjacking testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
+- [ ] **Content-Security-Policy testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
+- [ ] **Security-header testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
+- [ ] **Cookie security testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
 - [x] **SameSite testing** — PASS: 1 detector(s) ran, no findings
-- [x] **Secure/HttpOnly cookie testing** — PASS: probe observed no issue
+- [ ] **Secure/HttpOnly cookie testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
 
 ## 18. Load & Stress Testing — PASS
 
@@ -352,11 +353,11 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 ## 20. Migration & Upgrade Testing — ASSESS
 
-- [x] **Database migration testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
-- [x] **Schema migration testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
+- [x] **Database migration testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260914120000_civic_id/migration.sql, web/prisma/migrations/20260927090000_entitlements/migration.sql)
+- [x] **Schema migration testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260914120000_civic_id/migration.sql, web/prisma/migrations/20260927090000_entitlements/migration.sql)
 - [x] **Migration rollback testing** — PASS: migration rollback present and run in CI (migration tool with rollback support)
 - [x] **Partial-migration failure testing** — PASS: migration rollback present and run in CI (migration tool with rollback support)
-- [x] **Existing-data compatibility testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
+- [x] **Existing-data compatibility testing** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260914120000_civic_id/migration.sql, web/prisma/migrations/20260927090000_entitlements/migration.sql)
 - [x] **Version-upgrade testing** — PASS: end-to-end tests present and run in CI (crates/cli/tests/cli/mod.rs, crates/cli/tests/cli.rs, tests/cli.rs)
 - [ ] **API backward-compatibility testing** — ASSESS: Contract tests against the previous client version
 - [x] **Smart-contract upgrade testing** — PASS: 8 detector(s) ran, no findings
@@ -375,7 +376,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **RPC-call performance testing** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
 - [x] **Network-performance testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **Cache-performance testing** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
-- [x] **Smart-contract gas-usage testing** — PASS: 2 detector(s) ran, no findings
+- [x] **Smart-contract gas-usage testing** — PASS: 3 detector(s) ran, no findings
 - [x] **Performance-regression testing** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
 
 ## 22. Differential Testing — ASSESS
@@ -399,7 +400,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Verify tests detect injected mutations** — PASS: mutation testing present and run in CI (mutation job in CI)
 - [x] **Measure test-suite mutation score** — PASS: mutation testing present and run in CI (mutation job in CI)
 
-## 24. Secrets & Configuration Testing — ASSESS
+## 24. Secrets & Configuration Testing — NEEDS-TOOL
 
 - [x] **Hardcoded-secret scanning** — PASS: 2 detector(s) ran, no findings
 - [x] **API-key scanning** — PASS: 1 detector(s) ran, no findings
@@ -408,7 +409,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Environment-variable security** — PASS: 2 detector(s) ran, no findings
 - [x] **Production/debug configuration checks** — PASS: 2 detector(s) ran, no findings
 - [x] **Insecure default configuration checks** — PASS: 4 detector(s) ran, no findings
-- [x] **Exposed configuration testing** — PASS: probe observed no issue
+- [ ] **Exposed configuration testing** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
 - [ ] **Secret rotation testing** — ASSESS: Rotation is automated (or at least runbooked) and exercised on a schedule
 - [x] **Secret-access authorization testing** — PASS: 2 detector(s) ran, no findings
 
@@ -444,7 +445,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Memory-exhaustion testing** — PASS: 2 detector(s) ran, no findings
 - [x] **CPU-exhaustion testing** — PASS: 1 detector(s) ran, no findings
 - [x] **Expensive-operation abuse testing** — PASS: 2 detector(s) ran, no findings
-- [x] **Gas-griefing testing** — PASS: 2 detector(s) ran, no findings
+- [x] **Gas-griefing testing** — PASS: 3 detector(s) ran, no findings
 - [x] **Queue exhaustion testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **Connection exhaustion testing** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **Rate-limit bypass testing** — PASS: 1 detector(s) ran, no findings
@@ -490,7 +491,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 
 ## 31. Code Quality & Safety Testing — ASSESS
 
-- [x] **Linting** — PASS: linting present and run in CI (web/.next/cache/eslint/.cache_16wwkx5, web/.eslintrc.json)
+- [x] **Linting** — PASS: linting present and run in CI (web/.eslintrc.json)
 - [x] **Type checking** — PASS: type checking present and run in CI (crates/dynamic/core/src/sequence.rs, crates/dynamic/core/src/shrink.rs, crates/dynamic/core/src/backend.rs)
 - [x] **Compiler/static type checks** — PASS: type checking present and run in CI (crates/dynamic/core/src/sequence.rs, crates/dynamic/core/src/shrink.rs, crates/dynamic/core/src/backend.rs)
 - [ ] **Dead-code detection** — ASSESS: Compiler warnings / `knip` / `vulture` run in CI with warnings denied
@@ -498,7 +499,7 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Error-handling analysis** — PASS: 3 detector(s) ran, no findings
 - [x] **Exception-path testing** — PASS: 2 detector(s) ran, no findings
 - [ ] **Null/undefined handling** — ASSESS: Strict null checks / Option types enforced by the type checker
-- [x] **Boundary-condition testing** — PASS: 8 detector(s) ran, no findings
+- [x] **Boundary-condition testing** — PASS: 9 detector(s) ran, no findings
 - [ ] **Complexity analysis** — ASSESS: Cyclomatic complexity is measured and capped in CI
 - [x] **Code-coverage analysis** — PASS: code coverage present and run in CI (truent-npm/jest.config.js, codecov.yml, crates/invariant_library/src/coverage.rs)
 
@@ -507,17 +508,17 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **No completed attack chain** — PASS: no known attack chain is completed by the findings
 - [x] **No LIKELY-exploitable finding** — PASS: no finding rated LIKELY
 - [x] **Move money or tokens** — PASS: 7 detector(s) ran, no findings
-- [x] **Change balances** — PASS: 6 detector(s) ran, no findings
+- [x] **Change balances** — PASS: 8 detector(s) ran, no findings
 - [x] **Transfer ownership** — ACCEPTED: under risk acceptance: evm_single_eoa_admin ×1
 - [x] **Change permissions** — PASS: 3 detector(s) ran, no findings
-- [x] **Execute privileged operations** — PASS: 14 detector(s) ran, no findings
-- [x] **Modify critical configuration** — PASS: 3 detector(s) ran, no findings
+- [x] **Execute privileged operations** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
+- [x] **Modify critical configuration** — ACCEPTED: under risk acceptance: move_admin_no_timelock ×1
 - [x] **Access sensitive user data** — PASS: 3 detector(s) ran, no findings
 - [x] **Delete or corrupt data** — PASS: 3 detector(s) ran, no findings
 - [x] **Execute smart contracts** — PASS: 3 detector(s) ran, no findings
 - [x] **Sign transactions** — PASS: 2 detector(s) ran, no findings
-- [x] **Modify prices or exchange rates** — PASS: 11 detector(s) ran, no findings
-- [x] **Control oracles** — PASS: 11 detector(s) ran, no findings
+- [x] **Modify prices or exchange rates** — PASS: 14 detector(s) ran, no findings
+- [x] **Control oracles** — PASS: 14 detector(s) ran, no findings
 - [x] **Upgrade contracts** — PASS: 8 detector(s) ran, no findings
 - [x] **Pause/unpause systems** — PASS: 1 detector(s) ran, no findings
 - [x] **Shut down or exhaust the application** — PASS: 5 detector(s) ran, no findings
@@ -526,26 +527,26 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Cause permanent loss of funds** — PASS: 3 detector(s) ran, no findings
 - [x] **Cause irreversible state changes** — PASS: 3 detector(s) ran, no findings
 
-## 33. Final Security Validation — ASSESS
+## 33. Final Security Validation — NEEDS-TOOL
 
 - [x] **All unit tests pass** — PASS: unit tests present and run in CI (truent-npm/__tests__/detect-platform.test.js, truent-npm/__tests__/index.test.js, truent-npm/__tests__/download.test.js)
 - [x] **All integration tests pass** — PASS: integration tests present and run in CI (crates/core/src/integration_testing.rs, crates/cli/tests/integration/mod.rs, crates/cli/tests/integration.rs)
 - [x] **All E2E tests pass** — PASS: end-to-end tests present and run in CI (crates/cli/tests/cli/mod.rs, crates/cli/tests/cli.rs, tests/cli.rs)
 - [x] **Regression suite passes** — PASS: unit tests present and run in CI (truent-npm/__tests__/detect-platform.test.js, truent-npm/__tests__/index.test.js, truent-npm/__tests__/download.test.js)
 - [x] **SAST passes** — PASS: 4 detector(s) ran, no findings
-- [x] **DAST passes** — PASS: probe observed no issue
+- [ ] **DAST passes** — NEEDS-TOOL: run `truent probe <target> --authorized --format json` and pass --probe-report
 - [x] **Dependency scan passes** — PASS: 1 detector(s) ran, no findings
 - [x] **Fuzz tests pass** — PASS: fuzzing present and run in CI (crates/dynamic/solana/src/fuzz.rs, crates/core/src/merkle_root_fuzzer.rs, crates/core/src/fuzzer.rs)
 - [x] **Property/invariant tests pass** — PASS: invariant tests present and run in CI (crates/dynamic/core/src/invariant.rs, crates/dynamic/solana/src/invariant.rs, crates/dynamic/evm/src/dsl_invariant.rs)
-- [x] **Business-logic tests pass** — PASS: 11 detector(s) ran, no findings
-- [x] **Authorization matrix passes** — PASS: 14 detector(s) ran, no findings
+- [x] **Business-logic tests pass** — PASS: 14 detector(s) ran, no findings
+- [x] **Authorization matrix passes** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Race-condition tests pass** — PASS: 1 detector(s) ran, no findings
-- [x] **Data-integrity tests pass** — PASS: 6 detector(s) ran, no findings
+- [x] **Data-integrity tests pass** — PASS: 8 detector(s) ran, no findings
 - [x] **Financial/value-movement tests pass** — PASS: 7 detector(s) ran, no findings
-- [x] **Smart-contract security tests pass** — PASS: 14 detector(s) ran, no findings
+- [x] **Smart-contract security tests pass** — ACCEPTED: under risk acceptance: evm_missing_signer_check ×1
 - [x] **Load/stress tests pass** — PASS: load/stress tests present and run in CI (tests/load/stress-scan.sh)
 - [x] **Failure/chaos tests pass** — PASS: chaos/failure experiments present and run in CI (tests/chaos/run.sh)
-- [x] **Migration tests pass** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260912160000_engine_fields/migration.sql, web/prisma/migrations/20260621132501_init/migration.sql)
+- [x] **Migration tests pass** — PASS: database migrations present and run in CI (web/prisma/migrations/migration_lock.toml, web/prisma/migrations/20260914120000_civic_id/migration.sql, web/prisma/migrations/20260927090000_entitlements/migration.sql)
 - [x] **Performance regression checks pass** — PASS: performance benchmarks present and run in CI (crates/cli/benches/scan.rs, benches/benchmarks.rs)
 - [x] **Mutation tests meet the required threshold** — PASS: mutation testing present and run in CI (mutation job in CI)
 - [x] **Secrets/configuration scans pass** — PASS: 2 detector(s) ran, no findings
@@ -554,4 +555,5 @@ PASS = an engine ran and found nothing · ACCEPTED = findings carried under a da
 - [x] **Critical-path security review completed** — PASS: no known attack chain is completed by the findings
 - [x] **No unresolved critical vulnerabilities** — PASS: no finding rated LIKELY
 - [ ] **No unresolved high-severity vulnerabilities without explicit risk acceptance** — ASSESS: Every remaining HIGH has a written, dated risk acceptance
+
 

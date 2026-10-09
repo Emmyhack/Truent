@@ -15,7 +15,7 @@ use truent_core::Finding;
 lazy_static! {
     static ref CONSTRUCTOR: Regex = Regex::new(r"(?i)constructor\s*\(").unwrap();
     static ref INITIALIZATION_FUNCTION: Regex =
-        Regex::new(r"(?i)function\s+(initialize|init|setup|configure|setOwner)\s*\(").unwrap();
+        Regex::new(r"function\s+(initialize|init|configure|setOwner|setup)\s*\(").unwrap();
     static ref INIT_FLAG: Regex =
         Regex::new(r"(?i)initialized|_initialized|hasInitialized|init_flag").unwrap();
     static ref REQUIRE_NOT_INIT: Regex =
@@ -30,6 +30,13 @@ pub fn detect_constructor_race_condition(source: &str, file_path: &str) -> Vec<F
 
     for (line_num, line) in lines.iter().enumerate() {
         if line.trim().starts_with("//") || !INITIALIZATION_FUNCTION.is_match(line) {
+            continue;
+        }
+        // `setUp()` is Foundry's test hook; `setup()` only counts as an
+        // initializer when it is externally callable.
+        if line.contains("setUp")
+            || (line.contains("setup") && !line.contains("external") && !line.contains("public"))
+        {
             continue;
         }
 
