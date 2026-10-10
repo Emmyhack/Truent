@@ -82,7 +82,7 @@ quote = "1"
 proc-macro2 = "1"
 
 # Solidity/EVM specific
-solc = "0.0.9"
+solc = "0.3.6"
 revm = { version = "14", features = [
     "std",
     "serde",
