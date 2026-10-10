@@ -67,6 +67,10 @@ lazy_static! {
     static ref FS_CHECK: Regex = Regex::new(
         r"\b(os\.path\.(exists|isfile|isdir)|os\.access|fs\.existsSync|fs\.exists|fs\.accessSync|os\.Stat|os\.Lstat)\s*\(\s*([A-Za-z_][\w.]*)"
     ).unwrap();
+    /// `VAR = path.join(__dirname, …)`, a literal, cwd — the path never left the program.
+    static ref LOCAL_PATH_ASSIGN: &'static str = r#"(?m)\b(?:const|let|var)?\s*VAR\s*=\s*(?:path\.(?:join|resolve)\s*\(|__dirname|process\.cwd\(\)|process\.argv|os\.path\.(?:join|abspath|dirname)\(|os\.getcwd\(\)|sys\.argv|filepath\.Join\(|["'`])"#;
+    /// The file handles requests from outside the process.
+    static ref SERVER_CONTEXT: Regex = Regex::new(r"\breq\.|\brequest\.|\bcreateServer\s*\(|\bexpress\s*\(|\bfastify\s*\(|\bkoa\b|from\s+flask\s+import|from\s+django|\bFastAPI\b|\bhttp\.Handle|\bhttp\.ListenAndServe|gin\.Default|\bServeHTTP\b|\bwsgi\b|\basgi\b").unwrap();
     static ref FS_USE: Regex = Regex::new(
         r"\b(open|fs\.(writeFile|writeFileSync|readFile|readFileSync|unlink|unlinkSync|rename|renameSync|mkdir|mkdirSync|createWriteStream)|os\.(Remove|Create|Open|OpenFile|Rename|Mkdir)|shutil\.\w+|os\.(remove|rename|unlink|makedirs|mkdir))\s*\("
     ).unwrap();
@@ -254,9 +258,21 @@ pub fn detect(source: &str, file_path: &str, kind: FileKind) -> Vec<Finding> {
             let var = c.get(3).map(|m| m.as_str()).unwrap_or("");
             if !var.is_empty() {
                 let window_end = lines.len().min(idx + 9);
-                let hit = lines[idx + 1..window_end]
-                    .iter()
-                    .any(|l| FS_USE.is_match(l) && l.contains(var));
+                let window = &lines[idx + 1..window_end];
+                // Where the path came from. A path the program derived itself
+                // (a literal, __dirname, cwd, argv, a join of those) anywhere
+                // in the file has no attacker in the window; and the race only
+                // matters where another principal can act between check and
+                // use, which is code that serves requests. A developer tool
+                // walking its own project tree is not reported.
+                let local_path = LOCAL_PATH_ASSIGN.replace("VAR", &regex::escape(var));
+                let locally_derived = regex::Regex::new(&local_path)
+                    .map(|re| re.is_match(&joined))
+                    .unwrap_or(false);
+                let serves_requests = SERVER_CONTEXT.is_match(&joined);
+                let hit = window.iter().any(|l| FS_USE.is_match(l) && l.contains(var))
+                    && !locally_derived
+                    && serves_requests;
                 if hit {
                     out.push(finding("gen_toctou_file", Severity::Low, file_path, idx,
                         "A check on a path is followed by a use of the same path: between the two, the file can be swapped for a symlink or replaced. Open first and handle the error, or open with O_EXCL/O_NOFOLLOW", line));
@@ -442,8 +458,12 @@ mod tests {
 
     #[test]
     fn toctou_temp_and_permissions() {
-        let py = "def f(p):\n    if os.path.exists(p):\n        with open(p) as fh:\n            return fh.read()\n";
+        // Reported where another principal can act in the window: a request
+        // handler. The same shape in a standalone tool is not.
+        let py = "from flask import request\n\ndef f(p):\n    if os.path.exists(p):\n        with open(p) as fh:\n            return fh.read()\n";
         assert!(ids(py, FileKind::Python).contains(&"gen_toctou_file".into()));
+        let tool = "def f(p):\n    if os.path.exists(p):\n        with open(p) as fh:\n            return fh.read()\n";
+        assert!(!ids(tool, FileKind::Python).contains(&"gen_toctou_file".into()));
         assert!(ids("name = tempfile.mktemp()", FileKind::Python)
             .contains(&"gen_insecure_temp_file".into()));
         assert!(!ids("fd, name = tempfile.mkstemp()", FileKind::Python)
@@ -552,5 +572,50 @@ mod tests {
         assert!(ids(bad, FileKind::JavaScript).contains(&"gen_unbounded_query_limit".into()));
         let ok = "app.get('/items', async (req, res) => {\n  const limit = Math.min(parseInt(req.query.limit) || 20, 100);\n  res.json(await Item.find().limit(limit));\n});\n";
         assert!(!ids(ok, FileKind::JavaScript).contains(&"gen_unbounded_query_limit".into()));
+    }
+}
+
+#[cfg(test)]
+mod toctou_precision_tests {
+    use super::*;
+
+    #[test]
+    fn local_config_read_is_not_toctou() {
+        let js = "const cfg = path.join(__dirname, 'foundry.toml');\nif (!fs.existsSync(cfg)) return defaults;\nconst text = fs.readFileSync(cfg, 'utf8');\n";
+        assert!(!detect(js, "tool.js", crate::FileKind::JavaScript)
+            .iter()
+            .any(|f| f.invariant_id == "gen_toctou_file"));
+    }
+
+    #[test]
+    fn check_then_write_of_a_foreign_path_is_still_toctou() {
+        let js = "app.post('/save', (req, res) => {\n  const dst = req.body.path;\n  if (fs.existsSync(dst)) {\n    fs.writeFileSync(dst, data);\n  }\n});\n";
+        assert!(detect(js, "server.js", crate::FileKind::JavaScript)
+            .iter()
+            .any(|f| f.invariant_id == "gen_toctou_file"));
+    }
+
+    #[test]
+    fn cli_tool_with_parameter_path_is_not_reported() {
+        let js = "function copyTemplate(src, dst) {\n  if (fs.existsSync(dst)) {\n    fs.unlinkSync(dst);\n  }\n  fs.copyFileSync(src, dst);\n}\n";
+        assert!(!detect(js, "generate.js", crate::FileKind::JavaScript)
+            .iter()
+            .any(|f| f.invariant_id == "gen_toctou_file"));
+    }
+
+    #[test]
+    fn check_then_write_of_a_local_path_is_tooling() {
+        let js = "const dst = path.join(__dirname, 'out.json');\nif (fs.existsSync(dst)) {\n  fs.writeFileSync(dst, data);\n}\n";
+        assert!(!detect(js, "tool.js", crate::FileKind::JavaScript)
+            .iter()
+            .any(|f| f.invariant_id == "gen_toctou_file"));
+    }
+
+    #[test]
+    fn foreign_path_read_is_still_toctou() {
+        let py = "from flask import request\n\ndef read_if_present(path):\n    if os.path.exists(path):\n        with open(path) as fh:\n            return fh.read()\n";
+        assert!(detect(py, "files.py", crate::FileKind::Python)
+            .iter()
+            .any(|f| f.invariant_id == "gen_toctou_file"));
     }
 }

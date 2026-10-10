@@ -445,8 +445,10 @@ pub fn detect_legacy_unsafe_math(source: &str, file_path: &str) -> Vec<Finding> 
     let version_line = source.lines().find(|l| l.contains("pragma solidity"));
 
     if let Some(v_line) = version_line {
-        // If version < 0.8.0, check for unsafe math without SafeMath
-        if v_line.contains("0.7") || v_line.contains("0.6") || v_line.contains("0.5") {
+        // Only a range that can *never* resolve to a checked-arithmetic
+        // compiler (>= 0.8.0) is unsafe. `>=0.6.2 <0.9.0` admits 0.8 and the
+        // project's build decides; `^0.7.6` or `>=0.6.0 <0.8.0` does not.
+        if pragma_excludes_checked_math(v_line) {
             let has_safemath = source.contains("SafeMath") || source.contains("using SafeMath");
 
             if !has_safemath {
@@ -478,6 +480,72 @@ pub fn detect_legacy_unsafe_math(source: &str, file_path: &str) -> Vec<Finding> 
     }
 
     findings
+}
+
+/// True when the pragma's version range contains no version >= 0.8.0.
+///
+/// Handles `^0.7.6`, `~0.7.0`, `0.7.6`, `=0.7.6`, `>=0.6.0 <0.8.0`,
+/// `>0.6.0 <=0.7.9` and `||`-joined alternatives; anything unparsable is
+/// treated as admitting 0.8 (no finding), because a false CRITICAL on a
+/// modern contract costs more than a missed one on an ancient pragma.
+pub(crate) fn pragma_excludes_checked_math(pragma_line: &str) -> bool {
+    let spec = pragma_line
+        .trim()
+        .trim_start_matches("pragma")
+        .trim()
+        .trim_start_matches("solidity")
+        .trim()
+        .trim_end_matches(';')
+        .trim();
+    // Each `||` alternative must exclude 0.8 for the whole pragma to.
+    spec.split("||")
+        .all(|alt| alternative_excludes_checked_math(alt.trim()))
+}
+
+fn alternative_excludes_checked_math(alt: &str) -> bool {
+    let parse = |v: &str| -> Option<(u32, u32)> {
+        let mut it = v.trim().split('.');
+        let major = it.next()?.trim().parse::<u32>().ok()?;
+        let minor = it.next().unwrap_or("0").trim().parse::<u32>().ok()?;
+        Some((major, minor))
+    };
+    let re = regex::Regex::new(r"(\^|~|>=|<=|>|<|=)?\s*(\d+(?:\.\d+){0,2})").unwrap();
+    let mut upper_excludes_08 = false; // an upper bound at or below 0.8.0
+    let mut lower_at_least_08 = false; // a lower bound at or above 0.8
+    let mut saw_any = false;
+    for c in re.captures_iter(alt) {
+        saw_any = true;
+        let op = c.get(1).map(|m| m.as_str()).unwrap_or("=");
+        let Some((major, minor)) = parse(&c[2]) else {
+            return false;
+        };
+        match op {
+            "^" => {
+                // ^0.7.x -> [0.7, 0.8); ^0.8.x -> [0.8, 0.9)
+                if major == 0 && minor < 8 {
+                    upper_excludes_08 = true
+                } else {
+                    lower_at_least_08 = true
+                }
+            }
+            "~" | "=" => {
+                if major == 0 && minor < 8 {
+                    upper_excludes_08 = true
+                } else {
+                    lower_at_least_08 = true
+                }
+            }
+            ">=" | ">" => {
+                if major > 0 || minor >= 8 {
+                    lower_at_least_08 = true
+                }
+            }
+            "<" if major == 0 && minor <= 8 => upper_excludes_08 = true,
+            "<=" if major == 0 && minor < 8 => upper_excludes_08 = true,
+            _ => {}
+        }
+    }
+    saw_any && upper_excludes_08 && !lower_at_least_08
 }
 
 /// Detects flash loan governance attacks: snapshot on same block as loan
@@ -590,31 +658,54 @@ pub fn detect_precision_loss(source: &str, file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
 
     for (line_num, line) in source.lines().enumerate() {
-        // Pattern: (a / b) * c (should be a * c / b)
-        if line.contains(" / ") && line.contains(" * ") {
-            let div_pos = line.find(" / ");
-            let mul_pos = line.find(" * ");
-
-            if let (Some(d), Some(m)) = (div_pos, mul_pos) {
-                if d < m {
-                    findings.push(
-                        Finding::new(
-                            "evm_precision_loss".to_string(),
-                            Severity::Medium,
-                            file_path.to_string(),
-                            line_num + 1,
-                            d,
-                            "Division before multiplication may cause precision loss".to_string(),
-                            line.trim().to_string(),
-                        )
-                        .with_metadata("detector".to_string(), "arithmetic_pattern".to_string()),
-                    );
-                }
-            }
+        if let Some(col) = division_then_multiplication(line) {
+            findings.push(
+                Finding::new(
+                    "evm_precision_loss".to_string(),
+                    Severity::Medium,
+                    file_path.to_string(),
+                    line_num + 1,
+                    col,
+                    "Division before multiplication may cause precision loss".to_string(),
+                    line.trim().to_string(),
+                )
+                .with_metadata("detector".to_string(), "arithmetic_pattern".to_string()),
+            );
         }
     }
 
     findings
+}
+
+/// Column of a `/` whose *result* is later multiplied: a `*` after it at
+/// the same or an enclosing paren depth. A multiplication inside the
+/// divisor (`x / (2 ** (8 * i))`) scales the divisor, not the quotient,
+/// and `**` is exponentiation, not multiplication.
+fn division_then_multiplication(line: &str) -> Option<usize> {
+    let chars: Vec<char> = line.chars().collect();
+    let mut depth: i32 = 0;
+    let mut division: Option<(usize, i32)> = None;
+    let mut i = 0;
+    while i < chars.len() {
+        match chars[i] {
+            '(' => depth += 1,
+            ')' => depth -= 1,
+            '/' if i + 1 < chars.len() && (chars[i + 1] == '/' || chars[i + 1] == '*') => break, // comment
+            '/' if division.is_none() => division = Some((i, depth)),
+            '*' if i + 1 < chars.len() && chars[i + 1] == '*' => i += 1, // `**`
+            '*' if i > 0 && chars[i - 1] == '*' => {}
+            '*' => {
+                if let Some((col, d)) = division {
+                    if depth <= d {
+                        return Some(col);
+                    }
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    None
 }
 
 /// Detects merkle root zero check: accepts bytes32(0) as valid
@@ -1209,5 +1300,44 @@ mod credibility_tests {
             }
         "#;
         assert!(!detect_missing_signer_check(src, "c.sol").is_empty());
+    }
+}
+
+#[cfg(test)]
+mod pragma_tests {
+    use super::pragma_excludes_checked_math as excl;
+
+    #[test]
+    fn ranges_that_admit_0_8_are_not_legacy() {
+        assert!(!excl("pragma solidity >=0.6.2 <0.9.0;"));
+        assert!(!excl("pragma solidity ^0.8.20;"));
+        assert!(!excl("pragma solidity >=0.7.0;"));
+        assert!(!excl("pragma solidity ^0.7.6 || ^0.8.0;"));
+    }
+
+    #[test]
+    fn ranges_stuck_below_0_8_are_legacy() {
+        assert!(excl("pragma solidity ^0.7.6;"));
+        assert!(excl("pragma solidity 0.6.12;"));
+        assert!(excl("pragma solidity >=0.6.0 <0.8.0;"));
+        assert!(excl("pragma solidity ~0.5.16;"));
+    }
+}
+
+#[cfg(test)]
+mod precision_tests {
+    use super::division_then_multiplication as dtm;
+
+    #[test]
+    fn quotient_multiplied_is_flagged() {
+        assert!(dtm("uint256 share = (amount / total) * price;").is_some());
+        assert!(dtm("x = a / b * c;").is_some());
+    }
+
+    #[test]
+    fn multiplication_inside_the_divisor_or_exponent_is_not() {
+        assert!(dtm("uint8(uint(uint160(value)) / (2 ** (8 * (19 - i))))").is_none());
+        assert!(dtm("return amount * price / 1e18;").is_none());
+        assert!(dtm("y = a / (b * c);").is_none());
     }
 }

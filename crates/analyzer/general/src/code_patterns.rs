@@ -32,7 +32,9 @@ lazy_static! {
 
     // ---- JavaScript / TypeScript ----------------------------------------
     static ref JS_EVAL: Regex = Regex::new(r"\beval\s*\(|new\s+Function\s*\(|setTimeout\s*\(\s*[^,)]*\+|setInterval\s*\(\s*[^,)]*\+").unwrap();
-    static ref JS_EXEC: Regex = Regex::new(r"\b(exec|execSync|spawn|spawnSync)\s*\(").unwrap();
+    /// A process call: bare (`exec(`) or on the child_process module. `re.exec(`
+    /// is a RegExp method and is excluded by the look-behind on `.`.
+    static ref JS_EXEC: Regex = Regex::new(r"(?:^|[^.\w])(?:child_process\.|cp\.|childProcess\.)?(exec|execSync|spawn|spawnSync)\s*\(").unwrap();
     static ref JS_INNER_HTML: Regex = Regex::new(r"\.(innerHTML|outerHTML)\s*=|dangerouslySetInnerHTML\s*=\s*\{|document\.write(ln)?\s*\(").unwrap();
     static ref JS_TLS_OFF: Regex = Regex::new(r"rejectUnauthorized\s*:\s*false|NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*['\x22]?0").unwrap();
     static ref JS_SQL: Regex = Regex::new(r"\.(query|execute|raw)\s*\(").unwrap();
@@ -48,6 +50,8 @@ lazy_static! {
     // ---- Shell ----------------------------------------------------------
     static ref SH_EVAL: Regex = Regex::new(r#"\beval\s+["']?\$"#).unwrap();
     static ref SH_PIPE: Regex = Regex::new(r"(?i)\b(curl|wget)\b[^|\n]*\|\s*(sudo\s+)?(ba|z|da)?sh\b").unwrap();
+    /// The pipe appears inside a printed string (installation instructions), not as a command.
+    static ref SH_PRINTED: Regex = Regex::new(r#"^\s*(echo|printf|cat\s*<<)\b.*["'].*\b(curl|wget)\b"#).unwrap();
 
     // ---- dynamic-ness -----------------------------------------------------
     /// Formatting/concatenation or interpolation inside the argument list.
@@ -210,7 +214,13 @@ fn javascript(line: &str, idx: usize, file: &str, secret_ctx: bool, out: &mut Ve
     if let Some(m) = JS_EXEC.find(line) {
         let args = args_after(line, &m);
         // `spawn(cmd, [args])` without a shell is safe; `exec` always uses one.
-        let shelled = m.as_str().starts_with("exec")
+        let shelled = m
+            .as_str()
+            .trim_start_matches(|c: char| !c.is_alphabetic())
+            .trim_start_matches("child_process.")
+            .trim_start_matches("childProcess.")
+            .trim_start_matches("cp.")
+            .starts_with("exec")
             || line.contains("shell: true")
             || line.contains("shell:true");
         if shelled && is_dynamic(args) {
@@ -327,7 +337,7 @@ fn shell(line: &str, idx: usize, file: &str, out: &mut Vec<Finding>) {
             line,
         ));
     }
-    if SH_PIPE.is_match(line) {
+    if SH_PIPE.is_match(line) && !SH_PRINTED.is_match(line) {
         out.push(finding(
             "gen_pipe_to_shell",
             Severity::High,
@@ -457,5 +467,39 @@ mod tests {
             "install.sh"
         )
         .is_empty());
+    }
+}
+
+#[cfg(test)]
+mod exec_precision_tests {
+    use super::*;
+
+    #[test]
+    fn regexp_exec_is_not_a_shell() {
+        let js = "let m;\nwhile ((m = re.exec(content)) !== null) { out.push(m[1] + x); }\n";
+        assert!(!detect(js, "tool.js", crate::FileKind::JavaScript)
+            .iter()
+            .any(|f| f.invariant_id == "gen_command_injection"));
+    }
+
+    #[test]
+    fn child_process_exec_still_is() {
+        let js = "const { exec } = require('child_process');\nexec(`ping -c 1 ${host}`);\nchild_process.execSync('ls ' + dir);\n";
+        let n = detect(js, "h.js", crate::FileKind::JavaScript)
+            .iter()
+            .filter(|f| f.invariant_id == "gen_command_injection")
+            .count();
+        assert_eq!(n, 2);
+    }
+
+    #[test]
+    fn printed_install_instruction_is_not_a_pipe_to_shell() {
+        let sh = "echo \"Install Foundry:\"\necho \"  curl -L https://foundry.paradigm.xyz | bash\"\ncurl -fsSL https://x.sh | sudo bash\n";
+        let f: Vec<_> = detect(sh, "s.sh", crate::FileKind::Shell)
+            .into_iter()
+            .filter(|f| f.invariant_id == "gen_pipe_to_shell")
+            .collect();
+        assert_eq!(f.len(), 1);
+        assert_eq!(f[0].line, 3);
     }
 }

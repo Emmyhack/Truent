@@ -122,7 +122,7 @@ pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Find
     // deployed: a `setUp()` that instantiates the contract under test, or a
     // harness with no access control, is not a finding.
     let lower = file_path.to_ascii_lowercase();
-    if lower.ends_with(".t.sol") || lower.ends_with(".s.sol") {
+    if lower.ends_with(".t.sol") || lower.ends_with(".s.sol") || is_test_harness(source) {
         return Vec::new();
     }
     // Every detector below matches source text. Matching raw text means
@@ -139,6 +139,19 @@ pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<truent_core::Find
     let mut seen = std::collections::HashSet::new();
     findings.retain(|f| seen.insert(f.dedup_key()));
     findings
+}
+
+/// A Foundry/Echidna/Medusa harness: imports forge-std, inherits `Test` or
+/// `StdInvariant`, declares `setUp()`, Echidna properties, or hevm
+/// cheatcodes. Such code is compiled only by a test runner and never
+/// deployed, so an unguarded `setUp` or an EOA-owned mock is not a finding.
+pub fn is_test_harness(source: &str) -> bool {
+    lazy_static::lazy_static! {
+        static ref HARNESS: regex::Regex = regex::Regex::new(
+            r#"(?m)^\s*import\s+[^;]*forge-std|\bis\s+(?:[\w, ]*\b)?(Test|StdInvariant|StdAssertions)\b|\bfunction\s+setUp\s*\(|\bfunction\s+(echidna_|invariant_|property_)\w*\s*\(|\bIHevm\b|\bHevm\s*\(|\bvm\.(prank|startPrank|deal|warp|roll|expectRevert)\s*\("#
+        ).unwrap();
+    }
+    HARNESS.is_match(source)
 }
 
 /// Run every detector over already-normalised source.
@@ -288,4 +301,28 @@ fn run_all_detectors_on_code(source: &str, file_path: &str) -> Vec<truent_core::
     });
 
     findings
+}
+
+#[cfg(test)]
+mod harness_tests {
+    use super::*;
+
+    #[test]
+    fn foundry_harness_is_skipped_entirely() {
+        let src = "pragma solidity ^0.8.20;\nimport \"forge-std/Test.sol\";\ncontract VaultTest is Test {\n    address owner;\n    function setUp() public { owner = msg.sender; }\n    function testDrain() public { require(tx.origin == owner); }\n}\n";
+        assert!(is_test_harness(src));
+        assert!(run_all_detectors(src, "contracts/Harness.sol").is_empty());
+    }
+
+    #[test]
+    fn echidna_property_contract_is_a_harness() {
+        let src = "contract E {\n    function echidna_balance_never_negative() public view returns (bool) { return true; }\n}\n";
+        assert!(is_test_harness(src));
+    }
+
+    #[test]
+    fn a_plain_contract_is_not() {
+        let src = "contract Vault {\n    function setup(address o) external { owner = o; }\n}\n";
+        assert!(!is_test_harness(src));
+    }
 }

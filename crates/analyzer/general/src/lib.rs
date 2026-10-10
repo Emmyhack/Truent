@@ -194,6 +194,15 @@ pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<Finding> {
     findings.retain(|f| !is_allowed(&lines, f.line, &f.invariant_id));
 
     truent_core::text::restore_snippets(source, &mut findings);
+    // A finding about a credential must not carry the credential: the report
+    // is copied into tickets, CI logs and dashboards far more widely than the
+    // file it came from. Keep enough to locate it, mask the rest.
+    for f in findings.iter_mut() {
+        if f.invariant_id == "gen_hardcoded_secret" || f.invariant_id == "gen_private_key_committed"
+        {
+            f.snippet = secrets::redact(&f.snippet);
+        }
+    }
     let mut seen = std::collections::HashSet::new();
     findings.retain(|f| seen.insert(f.dedup_key()));
     findings.sort_by(|a, b| match b.severity.cmp(&a.severity) {

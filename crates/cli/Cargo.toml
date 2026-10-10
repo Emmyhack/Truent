@@ -51,6 +51,7 @@ truent-dynamic-core.workspace = true
 truent-dynamic-evm = { workspace = true, features = ["revm-backend"] }
 truent-dynamic-solana.workspace = true
 hex.workspace = true
+ignore = "0.4"
 
 [dev-dependencies]
 insta.workspace = true

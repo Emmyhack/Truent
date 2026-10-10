@@ -12,6 +12,12 @@ lazy_static! {
     static ref NARROW_CAST: Regex =
         Regex::new(r"\b(u?int(?:8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248))\s*\(\s*([^()]+)\s*\)").unwrap();
     static ref SAFECAST: Regex = Regex::new(r"(?i)SafeCast|\.toUint\d+\s*\(|\.toInt\d+\s*\(").unwrap();
+    /// `x % 10`, `x & 0xff`, `x >> 248`: the result cannot exceed the target width.
+    static ref BOUNDED_EXPR: Regex = Regex::new(r"%\s*\d+|&\s*0x[0-9a-fA-F]+|>>\s*\d+").unwrap();
+    /// The function handles byte content, so `uint8(b)` reinterprets a byte.
+    static ref BYTES1_CONTEXT: Regex = Regex::new(r"\bbytes1\b|\bbytes\s+memory\b|\bbytes\s+calldata\b").unwrap();
+    /// A value named like an address.
+    static ref ADDRESS_NAME: Regex = Regex::new(r"addr|account|owner|sender|recipient|token|value|who|target|spender|user").unwrap();
     static ref BOUND_CHECK: Regex = Regex::new(r"(?i)type\s*\(\s*u?int\d+\s*\)\s*\.max").unwrap();
     static ref FUNCTION_DECL: Regex = Regex::new(r"(?i)\bfunction\s+(\w+)\s*\(([^)]*)\)").unwrap();
     static ref FEE_NAME: Regex = Regex::new(r"(?i)fee|bps|basispoints|rate|percent|commission|slippage|penalty").unwrap();
@@ -51,8 +57,10 @@ pub fn detect_unsafe_downcast(source: &str, file_path: &str) -> Vec<Finding> {
         if body.iter().any(|l| BOUND_CHECK.is_match(l)) {
             continue;
         }
+        let body_text = body.join("\n");
         for (idx, line) in &span.lines {
             for c in NARROW_CAST.captures_iter(line) {
+                let target = c[1].to_string();
                 let arg = c[2].trim();
                 let literal = arg
                     .chars()
@@ -63,6 +71,21 @@ pub fn detect_unsafe_downcast(source: &str, file_path: &str) -> Vec<Finding> {
                     || lower.contains("msg.sender")
                     || lower.contains("this")
                 {
+                    continue;
+                }
+                // uint160 is the address width: an address-named value is
+                // being converted, not truncated.
+                if target == "uint160" && ADDRESS_NAME.is_match(&lower) {
+                    continue;
+                }
+                // Arithmetic that already bounds the value (`% 10`, `& 0xff`,
+                // `>> 248`) cannot overflow the target.
+                if BOUNDED_EXPR.is_match(arg) {
+                    continue;
+                }
+                // In a function that walks bytes, `uint8(b)` on a one-byte
+                // value is a reinterpretation; nothing is lost.
+                if target == "uint8" && arg.len() <= 2 && BYTES1_CONTEXT.is_match(&body_text) {
                     continue;
                 }
                 out.push(finding(

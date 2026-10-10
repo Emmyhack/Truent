@@ -24,7 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 // ――――――――――――――――――――――――― Argument parsing ―――――――――――――――――――――――――
 
@@ -546,18 +546,18 @@ if (autoMode) {
 const outputPath = selectionPath;
 
 const server = http.createServer((req, res) => {
-    // CORS headers — needed when browser opens page on a different loopback variant
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+    // The page is served by this same server, so every request is
+    // same-origin and no CORS header is needed. A wildcard here would let
+    // any site the developer has open post a selection into their project.
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
         return;
     }
 
-    console.log(`  ${req.method} ${req.url}`);
+    // Log the request line, with control characters stripped so a crafted
+    // URL cannot forge extra log lines.
+    console.log(`  ${req.method} ${String(req.url).replace(/[^\x20-\x7e]/g, '')}`);
 
     if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -618,9 +618,11 @@ server.listen(0, () => {
     // Open browser
     const platform = process.platform;
     try {
-        if (platform === 'darwin') execSync(`open "${serverURL}"`);
-        else if (platform === 'win32') execSync(`start "" "${serverURL}"`);
-        else execSync(`xdg-open "${serverURL}"`);
+        // An argument array, never a shell string: the URL is passed as one
+        // argument whatever it contains.
+        if (platform === 'darwin') execFileSync('open', [serverURL], { stdio: 'ignore' });
+        else if (platform === 'win32') execFileSync('cmd', ['/c', 'start', '', serverURL], { stdio: 'ignore' });
+        else execFileSync('xdg-open', [serverURL], { stdio: 'ignore' });
     } catch {
         console.log(`Could not open browser automatically. Open this URL: ${serverURL}`);
     }

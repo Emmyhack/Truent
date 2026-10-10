@@ -1195,33 +1195,51 @@ fn engines_for_file(chain: &ChainArg, path: &Path, source: &str) -> Vec<ChainArg
     out
 }
 
+/// Directories that are never source: dependency trees, build output,
+/// virtual environments. Skipped even outside a git repository.
+const SKIPPED_DIRS: &[&str] = &[
+    "node_modules",
+    "target",
+    ".git",
+    "build",
+    "dist",
+    "out",
+    "vendor",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".next",
+];
+
+/// Walk `dir` the way git sees it: `.gitignore` (at every level), `.ignore`
+/// and the global excludes are honoured, so a developer's untracked `.env`
+/// or a local build artefact is never reported as part of the repository.
+/// Hidden files that git would track (`.github/`, `.truent.toml`) are
+/// included. Explicitly named paths are never filtered — only walks are.
+fn walk_repository(dir: &Path) -> ignore::Walk {
+    ignore::WalkBuilder::new(dir)
+        .hidden(false)
+        .git_ignore(true)
+        .git_global(true)
+        .git_exclude(true)
+        .ignore(true)
+        .parents(true)
+        .filter_entry(|entry| {
+            let is_dir = entry.file_type().map(|t| t.is_dir()).unwrap_or(false);
+            let name = entry.file_name().to_str().unwrap_or("");
+            !(is_dir && SKIPPED_DIRS.contains(&name))
+        })
+        .build()
+}
+
 /// Recursively collect every regular file under `dir`, skipping dependency
-/// and build trees. Binary-looking files are dropped when read.
+/// and build trees and anything the repository's ignore files exclude.
+/// Binary-looking files are dropped when read.
 fn collect_all_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
-    for entry in std::fs::read_dir(dir)
-        .with_context(|| format!("Failed to read directory {}", dir.display()))?
-    {
-        let path = entry?.path();
-        if path.is_dir() {
-            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-            if matches!(
-                name,
-                "node_modules"
-                    | "target"
-                    | ".git"
-                    | "build"
-                    | "dist"
-                    | "out"
-                    | "vendor"
-                    | ".venv"
-                    | "venv"
-                    | "__pycache__"
-            ) {
-                continue;
-            }
-            collect_all_files(&path, out)?;
-        } else {
-            out.push(path);
+    for entry in walk_repository(dir) {
+        let entry = entry.with_context(|| format!("Failed to read directory {}", dir.display()))?;
+        if entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
+            out.push(entry.into_path());
         }
     }
     Ok(())
@@ -1229,23 +1247,13 @@ fn collect_all_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
 
 /// Recursively collect source files matching the chain's extension under `dir`.
 fn collect_source_files(dir: &Path, extension: &str, out: &mut Vec<PathBuf>) -> Result<()> {
-    for entry in std::fs::read_dir(dir)
-        .with_context(|| format!("Failed to read directory {}", dir.display()))?
-    {
-        let entry = entry?;
+    for entry in walk_repository(dir) {
+        let entry = entry.with_context(|| format!("Failed to read directory {}", dir.display()))?;
         let path = entry.path();
-        if path.is_dir() {
-            // Skip common non-source directories to avoid scanning dependency trees.
-            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-            if matches!(
-                name,
-                "node_modules" | "target" | ".git" | "build" | "dist" | "out"
-            ) {
-                continue;
-            }
-            collect_source_files(&path, extension, out)?;
-        } else if path.extension().and_then(|e| e.to_str()) == Some(extension) {
-            out.push(path);
+        if entry.file_type().map(|t| t.is_file()).unwrap_or(false)
+            && path.extension().and_then(|e| e.to_str()) == Some(extension)
+        {
+            out.push(path.to_path_buf());
         }
     }
     Ok(())
@@ -4646,4 +4654,47 @@ fn parse_invariant_file(text: &str) -> anyhow::Result<Vec<truent_core::model::In
         anyhow::bail!("no `invariant NAME {{ ... }}` blocks found");
     }
     Ok(specs)
+}
+
+#[cfg(test)]
+mod walker_tests {
+    use super::*;
+
+    #[test]
+    fn gitignored_files_are_not_walked_but_tracked_hidden_ones_are() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join(".git")).unwrap();
+        std::fs::create_dir_all(root.join(".github")).unwrap();
+        std::fs::write(
+            root.join(".gitignore"),
+            ".env\nweb/.env.local\nnode_modules/\n",
+        )
+        .unwrap();
+        std::fs::write(
+            root.join(".env"),
+            "SECRET=abcdefghijklmnopqrstuvwxyz123456\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(root.join("web")).unwrap();
+        std::fs::write(root.join("web/.env.local"), "X=1\n").unwrap();
+        std::fs::write(root.join("web/app.ts"), "export const a = 1\n").unwrap();
+        std::fs::write(root.join(".github/ci.yml"), "on: push\n").unwrap();
+        let mut files = Vec::new();
+        collect_all_files(root, &mut files).unwrap();
+        let names: Vec<String> = files
+            .iter()
+            .map(|p| {
+                p.strip_prefix(root)
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/")
+            })
+            .collect();
+        assert!(names.contains(&"web/app.ts".to_string()), "{names:?}");
+        assert!(names.contains(&".github/ci.yml".to_string()), "{names:?}");
+        assert!(names.contains(&".gitignore".to_string()), "{names:?}");
+        assert!(!names.contains(&".env".to_string()), "{names:?}");
+        assert!(!names.contains(&"web/.env.local".to_string()), "{names:?}");
+    }
 }
