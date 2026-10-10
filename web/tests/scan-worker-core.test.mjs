@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chainFor, extensionFor, fileNameFor, mapFinding, SUPPORTED_LANGUAGES } from '../lib/scan-worker-core.mjs'
+import { chainFor, extensionFor, fileNameFor, mapFinding, resolveBinary, SUPPORTED_LANGUAGES } from '../lib/scan-worker-core.mjs'
 
 test('maps every supported language to an engine and a file name', () => {
   assert.deepEqual(
@@ -64,4 +64,11 @@ test('proven findings and unknown values fail safe', () => {
   const input = { invariant_id: 'x', severity: 'unknown', file: 'x.sol', line: 1, message: 'x' }
   assert.equal(mapFinding('a', input).severity, 'low')
   assert.equal(mapFinding('a', input).fingerprint, mapFinding('a', input).fingerprint)
+})
+
+test('a relative engine path is anchored to the worker cwd, a bare name is left to PATH', () => {
+  assert.equal(resolveBinary('../target/release/truent', '/srv/app/web'), '/srv/app/target/release/truent')
+  assert.equal(resolveBinary('/usr/local/bin/truent', '/srv/app/web'), '/usr/local/bin/truent')
+  assert.equal(resolveBinary('truent', '/srv/app/web'), 'truent')
+  assert.equal(resolveBinary(undefined, '/srv/app/web'), 'truent')
 })

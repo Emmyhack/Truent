@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import path from 'node:path'
 
 // Keep in sync with lib/engine.ts LANGUAGES (the worker cannot import TS).
 const LANGUAGES = {
@@ -18,6 +19,16 @@ const LANGUAGES = {
 
 export const SUPPORTED_LANGUAGES = Object.keys(LANGUAGES)
 export const chainFor = (language) => LANGUAGES[language]?.chain
+
+/**
+ * The engine is spawned from a scratch directory, so a relative binary path
+ * (`../target/release/truent`) must be anchored to the worker's own working
+ * directory first. A bare name (`truent`) is left for PATH lookup.
+ */
+export const resolveBinary = (value, cwd = process.cwd()) => {
+  const v = value || 'truent'
+  return v.includes('/') || v.includes('\\') ? path.resolve(cwd, v) : v
+}
 /** The file name the source is written to; detectors classify by name. */
 export const fileNameFor = (language) => LANGUAGES[language]?.file
 /** Kept for callers that only want the extension. */

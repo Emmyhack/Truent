@@ -292,6 +292,17 @@ function FeatureCard({ icon, title, children, span = false, featured = false, wa
 export default function HomePage() {
   const [authOpen, setAuthOpen] = useState(false)
   const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin')
+  // A visitor sent here by the auth middleware (`/?callbackUrl=…`) wanted a
+  // signed-in page: open the sign-in dialog for them instead of showing the
+  // landing page and hoping they find the button.
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).has('callbackUrl')) {
+        setAuthTab('signin')
+        setAuthOpen(true)
+      }
+    } catch {}
+  }, [])
   const [sampleReportOpen, setSampleReportOpen] = useState(false)
   const startFree = () => {
     setAuthTab('signup')
