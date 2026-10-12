@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Website on Next.js 15.5.27 and React 19.** `next@14.2.35` carried 24
+  advisories, two of them critical remote-code-execution issues
+  (GHSA-p293-qw3h-jr36, GHSA-2xp9-vwfh-vxw4) fixed only in 15.5.24+. Route
+  parameters are now awaited (`app/api/scans/[id]`, `app/reports/[id]`).
+  Production dependencies have no critical advisories; the remaining
+  high/moderate entries are build-time (PostCSS bundled by Next, Tailwind 3's
+  file watcher, the Prisma CLI) or in `@civic/auth`'s own `uuid`/`ts-deepmerge`
+  with no upstream fix yet.
 - **The scanner no longer reads what git ignores.** `truent scan` and
   `release-check` walk the tree with `.gitignore`, `.ignore` and the global
   excludes applied, so a developer's untracked `.env` can never be reported
