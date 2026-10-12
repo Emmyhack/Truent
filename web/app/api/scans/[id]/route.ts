@@ -8,12 +8,13 @@ const updateSchema = z.object({
   status: z.enum(['open', 'acknowledged', 'resolved']),
 })
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const scan = await prisma.scan.findFirst({
-    where: { id: params.id, userId: user.id },
+    where: { id: id, userId: user.id },
     select: {
       id: true, projectName: true, language: true, status: true, error: true,
       durationMs: true, createdAt: true, completedAt: true,
@@ -24,14 +25,15 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   return NextResponse.json({ scan })
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const { findingId, status } = updateSchema.parse(await request.json())
     const result = await prisma.finding.updateMany({
-      where: { id: findingId, scanId: params.id, scan: { userId: user.id } },
+      where: { id: findingId, scanId: id, scan: { userId: user.id } },
       data: { status },
     })
     if (!result.count) return NextResponse.json({ error: 'Finding not found' }, { status: 404 })
