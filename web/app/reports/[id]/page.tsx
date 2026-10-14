@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ChevronUp, ArrowLeft, CheckCircle2, Circle, AlertTriangle, Download } from 'lucide-react'
 import clsx from 'clsx'
@@ -160,8 +160,8 @@ function FindingCard({ finding, onStatus }: { finding: Finding; onStatus: (id: s
   )
 }
 
-export default function ReportDetailPage({ params }: { params: { id: string } }) {
-  const reportId = params.id
+export default function ReportDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: reportId } = use(params)
   const [filter, setFilter] = useState<'all' | Severity | 'proven'>('all')
   const [findings, setFindings] = useState<Finding[]>([])
   const [scan, setScan] = useState<Scan | null>(null)
