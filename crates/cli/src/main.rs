@@ -146,6 +146,11 @@ struct ProbeArgs {
     /// Skip the exposed-path checks (/.git/config, /.env, …).
     #[arg(long)]
     no_paths: bool,
+    /// Allow-list file: the probe refuses any target not listed (IP, CIDR or
+    /// domain, one per line). Defaults to `.truent-scope` if present. Loopback
+    /// is always allowed.
+    #[arg(long, value_name = "FILE")]
+    scope: Option<PathBuf>,
     /// Output format.
     #[arg(long, value_enum, default_value = "text")]
     format: FormatArg,
@@ -2736,11 +2741,42 @@ fn cmd_probe(args: ProbeArgs, quiet: bool) -> Result<()> {
             })
             .collect::<Result<Vec<_>>>()?,
     };
+    // Load the scope allow-list: the explicit `--scope`, else `.truent-scope`
+    // if it exists. A present-but-empty file is reported and imposes no
+    // constraint; a non-empty one is a hard gate inside the probe.
+    let scope_path = args.scope.clone().or_else(|| {
+        let default = PathBuf::from(".truent-scope");
+        default.exists().then_some(default)
+    });
+    let scope = match &scope_path {
+        Some(p) => {
+            let text = std::fs::read_to_string(p)
+                .with_context(|| format!("Failed to read scope file {}", p.display()))?;
+            Some(truent_runtime::scope::Scope::parse(&text))
+        }
+        None => None,
+    };
+    if !quiet && !matches!(args.format, FormatArg::Json) {
+        match &scope {
+            Some(s) if s.is_empty() => println!(
+                "  !      scope file {} has no entries; no scope constraint applied",
+                scope_path.as_ref().expect("path present").display()
+            ),
+            Some(s) => println!(
+                "  scope  {} entr{} loaded from {}",
+                s.len(),
+                if s.len() == 1 { "y" } else { "ies" },
+                scope_path.as_ref().expect("path present").display()
+            ),
+            None => {}
+        }
+    }
     let opts = ProbeOptions {
         authorized: args.authorized,
         timeout: std::time::Duration::from_secs(args.timeout),
         ports,
         check_paths: !args.no_paths,
+        scope,
     };
     let report = probe(&target, &opts)?;
 
