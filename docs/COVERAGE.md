@@ -8,7 +8,7 @@ cell means no honest mapping exists — SWC, OWASP SC and DASP are contract
 registries, so repository rows leave them empty, and MITRE ATT&CK / NIST CSF
 are populated only for repository findings, where they are precise.
 
-**202 detectors.**
+**203 detectors.**
 
 ## EVM (77 detectors)
 
@@ -162,10 +162,11 @@ are populated only for repository findings, where they are precise.
 | `sor_unhandled_panic` | [CWE-703](https://cwe.mitre.org/data/definitions/703.html)<br>[CWE-754](https://cwe.mitre.org/data/definitions/754.html) |  | SC10 | DASP-5 |  |  |
 | `sor_unprotected_upgrade` | [CWE-862](https://cwe.mitre.org/data/definitions/862.html)<br>[CWE-494](https://cwe.mitre.org/data/definitions/494.html) |  | SC01 | DASP-2 |  |  |
 
-## General (any repository) (49 detectors)
+## General (any repository) (50 detectors)
 
 | Detector | CWE | SWC | OWASP SC Top 10 | DASP | MITRE ATT&CK | NIST CSF |
 |---|---|---|---|---|---|---|
+| `gen_agent_command_execution` | [CWE-94](https://cwe.mitre.org/data/definitions/94.html)<br>[CWE-913](https://cwe.mitre.org/data/definitions/913.html)<br>[CWE-78](https://cwe.mitre.org/data/definitions/78.html) |  |  |  | [T1059](https://attack.mitre.org/techniques/T1059/)<br>[T1190](https://attack.mitre.org/techniques/T1190/) | PR.PS-06 |
 | `gen_ci_pwn_request` | [CWE-829](https://cwe.mitre.org/data/definitions/829.html)<br>[CWE-94](https://cwe.mitre.org/data/definitions/94.html) |  |  |  | [T1195.002](https://attack.mitre.org/techniques/T1195/002/)<br>[T1059](https://attack.mitre.org/techniques/T1059/) | GV.SC-07<br>PR.PS-06 |
 | `gen_ci_script_injection` | [CWE-94](https://cwe.mitre.org/data/definitions/94.html)<br>[CWE-78](https://cwe.mitre.org/data/definitions/78.html) |  |  |  | [T1059](https://attack.mitre.org/techniques/T1059/)<br>[T1195.002](https://attack.mitre.org/techniques/T1195/002/) | PR.PS-06 |
 | `gen_ci_secret_exposed` | [CWE-532](https://cwe.mitre.org/data/definitions/532.html) |  |  |  | [T1552](https://attack.mitre.org/techniques/T1552/) | PR.DS-01 |

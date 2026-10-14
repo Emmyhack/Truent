@@ -46,6 +46,18 @@ expression: rows(all)
     "HIGH"
   ],
   [
+    "bad/agent_exec.py",
+    "gen_agent_command_execution",
+    16,
+    "CRITICAL"
+  ],
+  [
+    "bad/agent_exec.py",
+    "gen_command_injection",
+    16,
+    "HIGH"
+  ],
+  [
     "bad/api.js",
     "gen_web_jwt_unverified",
     6,
