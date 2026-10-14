@@ -92,7 +92,9 @@ What each stage gets natively:
   options, cookie flags, banners, HTTP→HTTPS redirect), files that must never
   be served (confirmed by content signature, never by a `200` alone), and a
   TCP sweep of 20 common ports. Sends only `GET`s and connects; refuses to
-  run without `--authorized`; never records cookie values or file bodies.
+  run without `--authorized`, and with a `.truent-scope` allow-list present
+  refuses any target not in it (by IP, CIDR or domain) before a packet is
+  sent; never records cookie values or file bodies.
 - **Exploitability without exploitation** — `exposure` rates every finding
   LIKELY / POSSIBLE / UNLIKELY / THEORETICAL from its attack profile (vector,
   prerequisites, victim interaction, impact) and its evidence, names the

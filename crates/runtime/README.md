@@ -31,6 +31,27 @@ To run without `--authorized`. Port scanning and path probing of systems you
 do not own or have written permission to test is illegal in most
 jurisdictions; the flag is your assertion, and the refusal is the default.
 
+### Scope allow-list
+
+`--authorized` is an assertion. A scope file turns it into a deterministic
+gate: list the hosts you may test, and the probe refuses any target not in
+the list — in code, before a single packet is sent. Pass `--scope <file>`,
+or drop a `.truent-scope` file beside the project and it is picked up
+automatically. One entry per line, `#` begins a comment:
+
+```
+example.com        # the domain and every subdomain
+10.0.0.0/24        # a CIDR block
+203.0.113.7        # a single host
+2001:db8::/32      # IPv6
+```
+
+A domain matches itself and its subdomains; an IP or CIDR matches by network.
+Loopback (`127.0.0.1`, `::1`, `localhost`) is always allowed, so local
+testing needs no entry. A target outside the list fails with
+`refusing to probe <host>: target is not in the scope allow-list`. With no
+scope file present, behaviour is unchanged — only `--authorized` is required.
+
 ## Structure
 
 Every check is an *observation* struct produced by the network layer and a

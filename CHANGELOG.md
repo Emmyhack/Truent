@@ -42,6 +42,13 @@ The repository's own `truent release-check --strict` is READY again
 (PASS 341 · ACCEPTED 21 · ASSESS 32 · NEEDS-TOOL 13 · FAIL 0).
 
 ### Added
+- **Probe scope allow-list.** `truent probe` reads a `.truent-scope` file (or
+  `--scope <file>`): a list of hosts, CIDRs and domains the probe is permitted
+  to reach. A target not in the list is refused deterministically in code
+  before any packet is sent, hardening `--authorized` from an assertion into
+  an enforced gate. Loopback is always allowed; with no file present the
+  behaviour is unchanged. `.truent-scope.example` documents the format.
+  (Adapted from the scope-enforcement idea in ThreatSwarm, MIT.)
 - **Skills brought to pashov depth, on the engine, across four chains.**
   `truent-audit`, `truent-recon` and `truent-fuzz` (0.2.0) adapt
   [pashov/skills](https://github.com/pashov/skills) `solidity-auditor`,
