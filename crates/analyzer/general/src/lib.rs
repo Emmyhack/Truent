@@ -16,6 +16,7 @@
 //! a finding. `tests/corpus/good` holds correct code that must produce zero
 //! findings; `tests/corpus/bad` holds real bugs that must still be caught.
 
+pub mod agent_exec;
 pub mod ci_workflows;
 pub mod code_patterns;
 pub mod containers;
@@ -171,6 +172,7 @@ pub fn run_all_detectors(source: &str, file_path: &str) -> Vec<Finding> {
             // the same sink, the dedup below keeps the first — the one that
             // names the source the value came from.
             findings.extend(taint::detect(source, file_path, kind));
+            findings.extend(agent_exec::detect(source, file_path, kind));
             findings.extend(code_patterns::detect(source, file_path, kind));
             findings.extend(webconfig::detect(source, file_path, kind));
             findings.extend(web_security::detect(source, file_path, kind));

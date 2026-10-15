@@ -106,6 +106,7 @@ const INJECTION_SINKS: &[&str] = &[
     "gen_command_injection",
     "gen_code_injection",
     "gen_xss_sink",
+    "gen_agent_command_execution",
 ];
 const ALL_AUTHZ_CONTRACT: &[&str] = &[
     "evm_access_control",
@@ -245,7 +246,7 @@ pub static SECTIONS: &[Section] = &[
         d("Path traversal detection", Web, &["gen_web_path_traversal"]), d("Insecure deserialization detection", Web, &["gen_unsafe_deserialization", "gen_xxe"]),
         d("Hardcoded secrets detection", Any, SECRETS), d("Weak/unsafe cryptography detection", Any, &["gen_weak_hash", "gen_insecure_randomness", "move_weak_randomness", "move_randomness_public_function", "gen_tls_verification_disabled"]),
         d("Authentication flaws", Any, &["gen_web_jwt_unverified", "gen_missing_rate_limit", "evm_missing_signer_check", "sol_missing_signer", "sor_missing_require_auth"]),
-        d("Authorization flaws", Any, ALL_AUTHZ_CONTRACT), d("Dangerous function/API usage", Web, &["gen_code_injection", "gen_unsafe_deserialization", "gen_insecure_temp_file", "gen_insecure_file_permissions"]),
+        d("Authorization flaws", Any, ALL_AUTHZ_CONTRACT), d("Dangerous function/API usage", Web, &["gen_code_injection", "gen_unsafe_deserialization", "gen_insecure_temp_file", "gen_insecure_file_permissions", "gen_agent_command_execution"]),
         d("Unsafe configuration detection", Any, &["gen_web_debug_enabled", "gen_web_cors_wildcard", "gen_web_csrf_disabled", "gen_web_insecure_cookie", "gen_container_privileged", "gen_docker_root_user"]),
         d("Security-sensitive code pattern analysis", Any, &["gen_toctou_file", "gen_regex_dos", "gen_log_sensitive_data", "gen_mass_assignment"]),
     ]},

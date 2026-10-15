@@ -884,6 +884,15 @@ static EXPOSURE: &[Exposure] = &[
         verify: "Test: finalize before the delay elapses reverts.",
     },
     Exposure {
+        invariant_id: "gen_agent_command_execution",
+        vector: Vector::Network,
+        prereq: Prereq::None,
+        interaction: Interaction::Required,
+        impact: Impact::Full,
+        fix: "Never pass a model's output to a shell, process spawn or interpreter. Give the agent a fixed, allow-listed set of tools and validate every argument against a schema; keep a human approval step for anything that changes state.",
+        verify: "Test: a prompt-injected input cannot cause any command outside the allow-list to run.",
+    },
+    Exposure {
         invariant_id: "gen_ci_pwn_request",
         vector: Vector::Network,
         prereq: Prereq::None,

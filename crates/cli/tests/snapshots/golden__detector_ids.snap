@@ -80,6 +80,7 @@ expression: ids
   "evm_upgrade_path_verification",
   "evm_vote_weight_current_balance",
   "evm_zero_challenge_period",
+  "gen_agent_command_execution",
   "gen_ci_pwn_request",
   "gen_ci_script_injection",
   "gen_ci_secret_exposed",
