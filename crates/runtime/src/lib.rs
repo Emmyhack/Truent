@@ -36,6 +36,7 @@
 
 pub mod http;
 pub mod ports;
+pub mod scope;
 pub mod tls;
 
 use serde::Serialize;
@@ -103,6 +104,10 @@ pub struct ProbeOptions {
     pub ports: Vec<u16>,
     /// Probe the exposed-path list.
     pub check_paths: bool,
+    /// An allow-list the target must be in. `None` imposes no constraint
+    /// (only `authorized` is required); `Some` is enforced deterministically,
+    /// refusing any target not listed. Loopback is always allowed.
+    pub scope: Option<scope::Scope>,
 }
 
 impl Default for ProbeOptions {
@@ -112,6 +117,7 @@ impl Default for ProbeOptions {
             timeout: Duration::from_secs(8),
             ports: ports::DEFAULT_PORTS.to_vec(),
             check_paths: true,
+            scope: None,
         }
     }
 }
@@ -137,6 +143,10 @@ pub enum ProbeError {
         "refusing to probe {0}: pass --authorized to assert you are permitted to test this target"
     )]
     NotAuthorized(String),
+    #[error(
+        "refusing to probe {0}: target is not in the scope allow-list. Add it to the scope file (`--scope` or `.truent-scope`) before probing"
+    )]
+    OutOfScope(String),
 }
 
 /// Construct a runtime finding. `file` carries the URL or `host:port` the
@@ -169,6 +179,13 @@ pub(crate) fn finding(
 pub fn probe(target: &Target, opts: &ProbeOptions) -> Result<ProbeReport, ProbeError> {
     if !opts.authorized {
         return Err(ProbeError::NotAuthorized(target.origin()));
+    }
+    // A scope file, when present and non-empty, is a hard gate: the probe
+    // sends nothing to a target that is not explicitly in scope.
+    if let Some(scope) = &opts.scope {
+        if !scope.is_empty() && !scope.allows(&target.host) {
+            return Err(ProbeError::OutOfScope(target.host.clone()));
+        }
     }
     let mut report = ProbeReport {
         target: Some(target.clone()),
@@ -277,6 +294,37 @@ mod tests {
         let e = probe(&t, &ProbeOptions::default()).unwrap_err();
         assert!(matches!(e, ProbeError::NotAuthorized(_)));
         assert!(e.to_string().contains("--authorized"));
+    }
+
+    #[test]
+    fn refuses_a_target_outside_the_scope_allow_list() {
+        let t = Target::parse("https://evil.test").unwrap();
+        let opts = ProbeOptions {
+            authorized: true,
+            scope: Some(scope::Scope::parse("example.com\n")),
+            ..Default::default()
+        };
+        let e = probe(&t, &opts).unwrap_err();
+        assert!(matches!(e, ProbeError::OutOfScope(_)));
+        assert!(e.to_string().contains("scope"));
+    }
+
+    #[test]
+    fn an_empty_scope_does_not_block() {
+        // `Some(empty)` means a file was given but has no entries: treat as
+        // no constraint rather than blocking everything. Authorized still
+        // required; the probe proceeds to the network (and fails there, not
+        // on the scope check) for an unroutable host.
+        let t = Target::parse("https://127.0.0.1:1/").unwrap();
+        let opts = ProbeOptions {
+            authorized: true,
+            scope: Some(scope::Scope::parse("# empty\n")),
+            ports: Vec::new(),
+            check_paths: false,
+            ..Default::default()
+        };
+        // Loopback is always in scope, so this gets past the gate.
+        assert!(probe(&t, &opts).is_ok());
     }
 
     #[test]

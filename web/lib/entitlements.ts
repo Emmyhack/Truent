@@ -83,11 +83,16 @@ export async function consumeScan(userId: string, now = new Date()): Promise<Con
   throw new QuotaExceeded(await getEntitlement(userId, now))
 }
 
-/** Give back a scan that was taken but never queued. */
+/** Give back a scan that was taken but never queued. One write, on whichever side it came from. */
 export async function refundScan(userId: string, consumed: Consumed, now = new Date()) {
-  if (consumed.from === 'credit' && consumed.creditId) {
-    await prisma.scanCredit.update({ where: { id: consumed.creditId }, data: { remaining: { increment: 1 } } })
-    return
-  }
+  if (consumed.from === 'credit' && consumed.creditId) return refundCredit(consumed.creditId)
+  return refundQuota(userId, now)
+}
+
+async function refundCredit(creditId: string) {
+  await prisma.scanCredit.update({ where: { id: creditId }, data: { remaining: { increment: 1 } } })
+}
+
+async function refundQuota(userId: string, now: Date) {
   await prisma.usage.updateMany({ where: { userId, period: periodKey(now), scans: { gt: 0 } }, data: { scans: { decrement: 1 } } })
 }

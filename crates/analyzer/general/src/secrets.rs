@@ -40,6 +40,25 @@ lazy_static! {
     ).unwrap();
 }
 
+/// Mask every credential-looking token in a line, keeping four leading
+/// characters so the owner can recognise which key it is.
+pub fn redact(line: &str) -> String {
+    lazy_static! {
+        static ref VALUE: Regex = Regex::new(r#"([:=]\s*["']?)([^\s"']{8,})(["']?)"#).unwrap();
+        static ref TOKEN: Regex = Regex::new(r"[A-Za-z0-9+/_=.-]{20,}").unwrap();
+    }
+    let masked = VALUE.replace_all(line, |c: &regex::Captures| {
+        let v = &c[2];
+        format!("{}{}…[redacted]{}", &c[1], &v[..v.len().min(4)], &c[3])
+    });
+    TOKEN
+        .replace_all(&masked, |c: &regex::Captures| {
+            let v = &c[0];
+            format!("{}…[redacted]", &v[..v.len().min(4)])
+        })
+        .into_owned()
+}
+
 pub fn detect(source: &str, file_path: &str, kind: FileKind) -> Vec<Finding> {
     let mut findings = Vec::new();
 
@@ -182,5 +201,32 @@ mod tests {
             crate::run_all_detectors("password = \"k8Dv2nQp9sLx4Zt7Wm1Ry\"", ".env.example") // truent:allow
                 .is_empty()
         );
+    }
+}
+
+#[cfg(test)]
+mod redaction_tests {
+    use super::*;
+
+    #[test]
+    fn redact_keeps_the_key_and_hides_the_value() {
+        let r = redact("STRIPE_SECRET_KEY=\"rkcs_test_51UK1AeCekXdoL3UoH50WfMslbhNz\"");
+        assert!(r.starts_with("STRIPE_SECRET_KEY=\"rkcs"));
+        assert!(r.contains("[redacted]"));
+        assert!(!r.contains("51UK1AeCek"));
+        let r2 = redact("AKIAIOSFODNN7EXAMPLE1234 in a comment");
+        assert!(r2.contains("AKIA…[redacted]"));
+    }
+
+    #[test]
+    fn findings_carry_redacted_snippets() {
+        let src = "password = \"S3cr3t-Va1ue-Th4t-Is-L0ng\"\n";
+        let f = crate::run_all_detectors(src, "settings.py");
+        let s = f
+            .iter()
+            .find(|f| f.invariant_id == "gen_hardcoded_secret")
+            .expect("finding");
+        assert!(!s.snippet.contains("Va1ue"));
+        assert!(s.snippet.contains("[redacted]"));
     }
 }

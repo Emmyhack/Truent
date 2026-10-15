@@ -50,3 +50,31 @@ path   = "http://127.0.0.1"
 reason = "The CI DAST target is `next start` on localhost, which serves plain HTTP by design; TLS termination and the HTTP→HTTPS redirect are the production edge's job. Verified separately by `truent probe https://<production-host>` before each release."
 owner  = "@Emmyhack"
 until  = "2027-03-31"
+
+[[accept]]
+id     = "evm_division_by_zero"
+path   = "skills/truent-fuzz/templates/evm/utils"
+reason = "Fuzz-harness math helpers (Math.sol, DecimalPrinter.sol) divide by a caller-supplied value by design; they are copied into a project's test tree and never deployed."
+owner  = "@Emmyhack"
+until  = "2027-06-30"
+
+[[accept]]
+id     = "move_admin_no_timelock"
+path   = "skills/truent-fuzz/templates/move/aptos_invariants.move"
+reason = "Invariant-fuzzing template: a minimal pool whose admin setter the fuzzer drives directly; a timelock would defeat the harness. Not deployed."
+owner  = "@Emmyhack"
+until  = "2027-06-30"
+
+[[accept]]
+id     = "move_unbounded_parameter"
+path   = "skills/truent-fuzz/templates/move/aptos_invariants.move"
+reason = "Same template: the fee bound is one of the invariants the generated suite asserts, so the template leaves it open on purpose. Not deployed."
+owner  = "@Emmyhack"
+until  = "2027-06-30"
+
+[[accept]]
+id     = "evm_missing_signer_check"
+path   = "skills/truent-fuzz/templates/evm/handlers/Handlers.sol"
+reason = "Fuzz handler template: `setCurrentActor` is meant to be called by the fuzzer from any address; it is copied into a project's test tree and never deployed."
+owner  = "@Emmyhack"
+until  = "2027-06-30"

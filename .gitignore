@@ -51,3 +51,7 @@ secrets.yaml
 
 # Python tooling caches
 __pycache__/
+
+# Probe scope allow-list (per-user; the committed example documents the format)
+.truent-scope
+!.truent-scope.example

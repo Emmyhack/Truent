@@ -1,0 +1,14 @@
+# Truent probe scope allow-list.
+#
+# `truent probe <target> --authorized` refuses any target not listed here
+# when this file (copied to `.truent-scope`, or passed with `--scope`) is
+# present and non-empty. Loopback (127.0.0.1, ::1, localhost) is always
+# allowed. One entry per line; `#` begins a comment.
+#
+# A domain matches itself and every subdomain:
+# example.com
+#
+# A single host or a CIDR block:
+# 203.0.113.7
+# 10.0.0.0/24
+# 2001:db8::/32

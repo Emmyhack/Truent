@@ -106,7 +106,7 @@ lazy_static! {
         r"\breq(uest)?\.(query|body|params|headers|cookies|url|originalUrl)\b|\bprocess\.argv\b|\blocation\.(search|hash|href|pathname)\b|\bwindow\.name\b|\bdocument\.(URL|documentURI|cookie|referrer)\b|\.on\s*\(\s*['\x22]data['\x22]"
     ).unwrap();
     static ref JS_SAN: Regex = Regex::new(
-        r"\bparseInt\s*\(|\bparseFloat\s*\(|\bNumber\s*\(|encodeURIComponent\s*\(|\bescape\s*\(|validator\.|\.escape\s*\(|mysql\.escape|pool\.escape|DOMPurify\.sanitize|isSafeUrl|safeRedirect|startsWith\s*\(\s*['\x22]/['\x22]|ALLOWED_REDIRECTS|allowedRedirects"
+        r"\bparseInt\s*\(|\bparseFloat\s*\(|\bNumber\s*\(|encodeURIComponent\s*\(|\bescape\s*\(|validator\.|\.escape\s*\(|mysql\.escape|pool\.escape|DOMPurify\.sanitize|isSafeUrl|safeRedirect|startsWith\s*\(\s*['\x22]/['\x22]|ALLOWED_REDIRECTS|allowedRedirects|\.replace\s*\(\s*/"
     ).unwrap();
     static ref JS_SQL: Regex = Regex::new(r"\.(query|execute|raw)\s*\(").unwrap();
     static ref JS_CMD: Regex = Regex::new(r"\b(exec|execSync|spawn|spawnSync)\s*\(").unwrap();

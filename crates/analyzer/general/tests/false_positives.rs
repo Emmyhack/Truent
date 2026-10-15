@@ -128,9 +128,18 @@ fn findings_point_at_real_source_lines() {
                 f.line,
                 lines.len()
             );
+            // A credential finding carries a redacted copy of its line; every
+            // other finding carries the line verbatim.
+            let expected = if f.invariant_id == "gen_hardcoded_secret"
+                || f.invariant_id == "gen_private_key_committed"
+            {
+                truent_analyzer_general::secrets::redact(lines[f.line - 1])
+            } else {
+                lines[f.line - 1].to_string()
+            };
             assert_eq!(
                 f.snippet.trim(),
-                lines[f.line - 1].trim(),
+                expected.trim(),
                 "{name}: {} at line {}",
                 f.invariant_id,
                 f.line

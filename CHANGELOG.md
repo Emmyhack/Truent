@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The scanner no longer reads what git ignores.** `truent scan` and
+  `release-check` walk the tree with `.gitignore`, `.ignore` and the global
+  excludes applied, so a developer's untracked `.env` can never be reported
+  as a repository finding (hidden files git would track, such as `.github/`,
+  are still scanned). Explicitly named paths are never filtered.
+- **Credential findings carry a redacted snippet.** `gen_hardcoded_secret`
+  and `gen_private_key_committed` keep four leading characters of the value
+  and mask the rest, in JSON, SARIF, HTML and the dashboard alike.
+- **Precision across six rules, each with a correct-code fixture:**
+  `gen_command_injection` no longer mistakes `RegExp.exec()` for
+  `child_process.exec()`; `gen_pipe_to_shell` ignores a `curl … | bash`
+  printed inside an `echo`; `gen_toctou_file` reports only paths that reach
+  the program from outside in code that serves requests; `gen_log_injection`
+  treats a regex `.replace()` as a sanitiser; `evm_legacy_unsafe_math`
+  parses the pragma range and stays silent when it admits 0.8;
+  `evm_precision_loss` no longer reads a multiplication inside a divisor as
+  "divide then multiply"; `evm_unsafe_downcast` recognises the address
+  conversion, byte reinterpretation and bounded arithmetic; and
+  `evm_constructor_race_condition` no longer flags Foundry's `setUp()`.
+- **Foundry, Echidna and Medusa harnesses are skipped by content**, not
+  only by the `.t.sol` suffix: a source importing forge-std, inheriting
+  `Test`/`StdInvariant`, declaring `setUp()` or Echidna properties, or using
+  hevm cheatcodes is test code and produces no findings.
+- **Fuzz skill scripts:** the local selection UI no longer sets a wildcard
+  CORS header, the browser is opened and the generator invoked with argument
+  arrays instead of shell strings, the request log strips control
+  characters, and the NatSpec regex is linear on crafted input.
+- **Dashboard:** the checkout and refund paths perform one write per
+  function.
+
+The repository's own `truent release-check --strict` is READY again
+(PASS 341 · ACCEPTED 21 · ASSESS 32 · NEEDS-TOOL 13 · FAIL 0).
+
 ### Added
 - **Detect autonomous agent command execution.** A new detector,
   `gen_agent_command_execution`, reports where a language model's output flows
@@ -19,6 +53,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rule is narrow — model output that is shown, logged or returned as data is
   not reported — and ships with correct-code and bad-code fixtures. Mapped to
   CWE-94/77/78, MITRE ATT&CK T1059 and NIST CSF PR.PS-06.
+- **Probe scope allow-list.** `truent probe` reads a `.truent-scope` file (or
+  `--scope <file>`): a list of hosts, CIDRs and domains the probe is permitted
+  to reach. A target not in the list is refused deterministically in code
+  before any packet is sent, hardening `--authorized` from an assertion into
+  an enforced gate. Loopback is always allowed; with no file present the
+  behaviour is unchanged. `.truent-scope.example` documents the format.
+  (Adapted from the scope-enforcement idea in ThreatSwarm, MIT.)
 - **Skills brought to pashov depth, on the engine, across four chains.**
   `truent-audit`, `truent-recon` and `truent-fuzz` (0.2.0) adapt
   [pashov/skills](https://github.com/pashov/skills) `solidity-auditor`,
