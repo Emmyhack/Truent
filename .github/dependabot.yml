@@ -1,26 +1,59 @@
+# Grouped so the update queue stays small: one weekly PR per ecosystem for
+# minor and patch bumps, with major bumps left as separate PRs (a major is a
+# deliberate upgrade, tracked by an issue, not an auto-merge).
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      cargo-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
   - package-ecosystem: "npm"
     directory: "/web"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
+    groups:
+      web-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
   - package-ecosystem: "npm"
     directory: "/truent-npm"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      truent-npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      pip-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
