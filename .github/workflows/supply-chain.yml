@@ -100,7 +100,7 @@ jobs:
         run: ./target/release/truent symbolic examples/foundry --format json --out symbolic.json || true
       - name: Scan with SARIF for code scanning
         run: ./target/release/truent scan . --chain auto --sarif truent.sarif --output json > /dev/null || true
-      - uses: github/codeql-action/upload-sarif@f09c1c0a94de965c15400f5634aa42fac8fb8f88 # v3
+      - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v3
         if: always()
         with:
           sarif_file: truent.sarif
