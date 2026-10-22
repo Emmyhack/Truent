@@ -42,6 +42,17 @@ The repository's own `truent release-check --strict` is READY again
 (PASS 341 · ACCEPTED 21 · ASSESS 32 · NEEDS-TOOL 13 · FAIL 0).
 
 ### Added
+- **Detect autonomous agent command execution.** A new detector,
+  `gen_agent_command_execution`, reports where a language model's output flows
+  into a shell, process spawn, or interpreter (`os.system`, `subprocess`,
+  `child_process`, `exec.Command`, `eval`) in Python, JavaScript/TypeScript
+  and Go. That flow is what lets an "AI agent" run commands on its own: steer
+  the model and you steer the host. It is the engine of an autonomous
+  offensive agent, so Truent flags it CRITICAL; a CI gate
+  (`truent scan --fail-on high --fail-on-leads`) stops it from merging. The
+  rule is narrow — model output that is shown, logged or returned as data is
+  not reported — and ships with correct-code and bad-code fixtures. Mapped to
+  CWE-94/77/78, MITRE ATT&CK T1059 and NIST CSF PR.PS-06.
 - **Probe scope allow-list.** `truent probe` reads a `.truent-scope` file (or
   `--scope <file>`): a list of hosts, CIDRs and domains the probe is permitted
   to reach. A target not in the list is refused deterministically in code

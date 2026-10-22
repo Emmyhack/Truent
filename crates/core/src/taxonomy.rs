@@ -1840,6 +1840,19 @@ static TAXONOMY: &[Taxonomy] = &[
         nist_csf: &[],
     },
     Taxonomy {
+        invariant_id: "gen_agent_command_execution",
+        cwe: &[
+            C::CODE_INJECTION,
+            C::IMPROPER_DYNAMIC_CODE_CONTROL,
+            C::IMPROPER_NEUTRALIZATION_OS,
+        ],
+        swc: &[],
+        owasp_sc: &[],
+        dasp: &[],
+        attack: &[A::COMMAND_AND_SCRIPTING, A::EXPLOIT_PUBLIC_APPLICATION],
+        nist_csf: &[N::PR_PS_06],
+    },
+    Taxonomy {
         invariant_id: "gen_ci_pwn_request",
         cwe: &[C::UNTRUSTED_FUNCTIONALITY_INCLUSION, C::CODE_INJECTION],
         swc: &[],

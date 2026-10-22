@@ -1,9 +1,9 @@
 {
  "generated_from": "truent 0.6.0",
- "total_detectors": 202,
+ "total_detectors": 203,
  "by_chain": {
   "evm": 77,
-  "general": 49,
+  "general": 50,
   "move": 22,
   "runtime": 12,
   "supply-chain": 8,
@@ -2146,6 +2146,40 @@
    "swc": [],
    "vector": "network",
    "verify": "Test: finalize before the delay elapses reverts."
+  },
+  {
+   "attack": [
+    "T1059",
+    "T1190"
+   ],
+   "attack_names": [
+    "Command and Scripting Interpreter",
+    "Exploit Public-Facing Application"
+   ],
+   "chain": "general",
+   "cwe": [
+    "CWE-94",
+    "CWE-913",
+    "CWE-78"
+   ],
+   "cwe_names": [
+    "Improper Control of Generation of Code ('Code Injection')",
+    "Improper Control of Dynamically-Managed Code Resources",
+    "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+   ],
+   "dasp": [],
+   "fix": "Never pass a model's output to a shell, process spawn or interpreter. Give the agent a fixed, allow-listed set of tools and validate every argument against a schema; keep a human approval step for anything that changes state.",
+   "impact": "full",
+   "interaction": "required",
+   "invariant_id": "gen_agent_command_execution",
+   "nist_csf": [
+    "PR.PS-06"
+   ],
+   "owasp_sc": [],
+   "prereq": "none",
+   "swc": [],
+   "vector": "network",
+   "verify": "Test: a prompt-injected input cannot cause any command outside the allow-list to run."
   },
   {
    "attack": [
