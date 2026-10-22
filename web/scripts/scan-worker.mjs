@@ -6,7 +6,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
-import { chainFor, fileNameFor, mapFinding } from '../lib/scan-worker-core.mjs'
+import { chainFor, fileNameFor, mapFinding, resolveBinary } from '../lib/scan-worker-core.mjs'
 
 const execFileAsync = promisify(execFile)
 const databaseUrl = process.env.DATABASE_URL
@@ -16,7 +16,7 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: data
 const workerId = process.env.HOSTNAME || `worker-${randomUUID()}`
 const pollMs = Math.max(Number(process.env.SCAN_WORKER_POLL_MS || 1000), 100)
 const maxAttempts = Math.max(Number(process.env.SCAN_MAX_ATTEMPTS || 3), 1)
-const binary = process.env.TRUENT_BINARY || 'truent'
+const binary = resolveBinary(process.env.TRUENT_BINARY)
 let stopping = false
 
 async function claim() {
