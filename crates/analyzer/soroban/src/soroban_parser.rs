@@ -89,7 +89,10 @@ fn analyze_function(method: &syn::ImplItemFn, source: &str) -> ContractFunction 
     let has_checked_math = body_lower.contains("checked_add")
         || body_lower.contains("checked_sub")
         || body_lower.contains("checked_mul")
-        || body_lower.contains("checked_div");
+        || body_lower.contains("checked_div")
+        || body_lower.contains("saturating_add")
+        || body_lower.contains("saturating_sub")
+        || body_lower.contains("saturating_mul");
     let has_raw_arithmetic = body.contains('+') || body.contains('-') || body.contains('*');
     let uses_unchecked_arithmetic = has_raw_arithmetic && !has_checked_math;
 
@@ -175,6 +178,14 @@ impl TokenContract {
         env.storage().persistent().set(&DataKey::Balance(from), &new_balance);
         env.storage().persistent().extend_ttl(&DataKey::Balance(from), 100, 200);
     }
+
+    pub fn saturating_deposit(env: Env, from: Address, to: Address, amount: i128) {
+        from.require_auth();
+        let balance: i128 = env.storage().persistent().get(&DataKey::Balance(to.clone())).unwrap();
+        let new_balance = balance.saturating_add(amount);
+        env.storage().persistent().set(&DataKey::Balance(to.clone()), &new_balance);
+        env.storage().persistent().extend_ttl(&DataKey::Balance(to), 100, 200);
+    }
 }
 "#;
 
@@ -182,7 +193,15 @@ impl TokenContract {
     fn parses_contractimpl_functions_only() {
         let functions = parse_contract_functions(CONTRACT).unwrap();
         let names: Vec<_> = functions.iter().map(|f| f.name.as_str()).collect();
-        assert_eq!(names, vec!["initialize", "withdraw", "safe_withdraw"]);
+        assert_eq!(
+            names,
+            vec![
+                "initialize",
+                "withdraw",
+                "safe_withdraw",
+                "saturating_deposit"
+            ]
+        );
     }
 
     #[test]
@@ -213,5 +232,13 @@ impl TokenContract {
         assert!(safe.has_require_auth);
         assert!(!safe.uses_unchecked_arithmetic);
         assert!(safe.extends_ttl);
+
+        let saturating = functions
+            .iter()
+            .find(|f| f.name == "saturating_deposit")
+            .unwrap();
+        assert!(saturating.has_require_auth);
+        assert!(!saturating.uses_unchecked_arithmetic);
+        assert!(saturating.extends_ttl);
     }
 }
