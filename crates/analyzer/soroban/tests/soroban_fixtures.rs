@@ -140,3 +140,26 @@ impl VaultContract {
         .iter()
         .any(|f| f.invariant_id == "sor_unchecked_arithmetic"));
 }
+
+#[test]
+fn saturating_arithmetic_suppresses_unchecked_arithmetic_finding() {
+    let source = r#"
+#[contract]
+pub struct VaultContract;
+
+#[contractimpl]
+impl VaultContract {
+    pub fn credit(env: Env, admin: Address, to: Address, amount: i128) {
+        admin.require_auth();
+        let balance: i128 = env.storage().persistent().get(&DataKey::Balance(to.clone())).unwrap_or(0);
+        let new_balance = balance.saturating_add(amount);
+        env.storage().persistent().set(&DataKey::Balance(to.clone()), &new_balance);
+        env.storage().persistent().extend_ttl(&DataKey::Balance(to), 100, 200);
+    }
+}
+"#;
+    let findings = run_all_detectors(source, "vault.rs");
+    assert!(!findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_unchecked_arithmetic"));
+}
