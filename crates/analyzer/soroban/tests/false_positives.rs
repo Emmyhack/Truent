@@ -124,3 +124,33 @@ fn bad_corpus_headers_name_real_detectors() {
         }
     }
 }
+
+#[test]
+fn each_soroban_detector_has_at_least_one_bad_fixture() {
+    let mut covered = std::collections::HashSet::new();
+    for (_name, source) in corpus("bad") {
+        for e in expectations(&source) {
+            covered.insert(e);
+        }
+    }
+
+    let required_detectors = [
+        "sor_missing_require_auth",
+        "sor_unprotected_upgrade",
+        "sor_reinitialization",
+        "sor_unchecked_arithmetic",
+        "sor_storage_ttl_not_extended",
+        "sor_temporary_storage_critical_state",
+        "sor_reentrancy_external_call",
+        "sor_thin_liquidity_oracle_price",
+        "sor_unhandled_panic",
+    ];
+
+    for detector in required_detectors {
+        assert!(
+            covered.contains(detector),
+            "Detector '{}' is missing a bad fixture in corpus/bad/",
+            detector
+        );
+    }
+}
