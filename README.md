@@ -578,6 +578,9 @@ Truent ships with 28 built-in security checks across all four chains.
 | `sor_storage_ttl_extended` | Storage TTL Extended | High |
 | `sor_no_reentrancy` | No Reentrancy | High |
 
+For a ready copy-paste GitHub Actions workflow gating Soroban pull requests, see [docs/examples/soroban-ci.yml](docs/examples/soroban-ci.yml).
+
+
 ---
 
 ## Configuration
