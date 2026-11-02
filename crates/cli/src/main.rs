@@ -3947,6 +3947,36 @@ fn cmd_scan(args: ScanArgs, quiet: bool, verbose: bool) -> Result<()> {
             }
         }
         FormatArg::Json => {
+            // Stable JSON schema for `truent scan --output json` (pinned by golden snapshot test).
+            //
+            // Top-level fields:
+            //   - `version` (string): Truent CLI package version.
+            //   - `chain` (string): Name of analyzed smart contract chain.
+            //   - `target` (string): Target file or directory path.
+            //   - `duration_ms` (integer): Execution duration in milliseconds.
+            //   - `summary` (object): Aggregated scan metrics:
+            //       - `violations` (integer): Total detected violations.
+            //       - `critical`, `high`, `medium`, `low` (integer): Severity breakdown.
+            //   - `violations` (array of objects): Finding objects (`Violation`):
+            //       - `index` (integer, 1-based), `total` (integer)
+            //       - `severity` (string: "critical" | "high" | "medium" | "low")
+            //       - `title` (string): Vulnerability name.
+            //       - `invariant_id` (string): Invariant detector identifier.
+            //       - `location` (string: "file:line"), `file` (string), `line` (integer)
+            //       - `cwe` (optional string): Mapped CWE identifier and description.
+            //       - `swc` (array of string): Mapped SWC registry entries.
+            //       - `owasp_sc` (array of string): OWASP Smart Contract Top 10 categories.
+            //       - `dasp` (array of string): DASP Top 10 categories.
+            //       - `message` (string): Detailed vulnerability message.
+            //       - `recommendation` (string): Actionable fix guidance.
+            //       - `reference` (string): Documentation URL.
+            //       - `code_snippet` (string): Vulnerable code excerpt.
+            //       - `evidence` (string: "proven" | "lead"): Verification certainty.
+            //       - `chain` (optional string), `dialect` (optional string)
+            //       - `exploitability` (optional string: "likely" | "possible" | "unlikely" | "theoretical")
+            //       - `exploit_reasons` (array of string): Exploitability justification.
+            //       - `fix` (optional string), `verify` (optional string)
+            //       - `attack` (array of string), `nist_csf` (array of string)
             let report = json!({
                 "version": env!("CARGO_PKG_VERSION"),
                 "chain": summary.chain,
