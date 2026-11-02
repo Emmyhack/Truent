@@ -4123,7 +4123,7 @@ fn cmd_invariants(args: InvariantsArgs, quiet: bool) -> Result<()> {
                         }
                     } else {
                         println!("(Total across all chains)\n");
-                        println!("  Use --chain evm|solana|move to filter\n");
+                        println!("  Use --chain evm|solana|move|soroban to filter\n");
                     }
                     println!("{}", "=".repeat(80));
                 }

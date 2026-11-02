@@ -578,6 +578,9 @@ Truent ships with 28 built-in security checks across all four chains.
 | `sor_storage_ttl_extended` | Storage TTL Extended | High |
 | `sor_no_reentrancy` | No Reentrancy | High |
 
+For worked `.sinv` invariant DSL definitions for Soroban (admin-only upgrade, persistent TTL extension, balance conservation), see [`invariants/soroban/`](invariants/soroban/) and the [DSL Reference](docs/DSL_REFERENCE.md#soroban-invariant-dsl-sinv-format).
+
+
 ---
 
 ## Configuration

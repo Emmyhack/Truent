@@ -1,0 +1,16 @@
+# Soroban: Balance Conservation Invariant
+# Detects: Vault or token transfers that fail to conserve aggregate balances
+
+invariant = "sor_balance_conservation"
+severity = "HIGH"
+chain = "soroban"
+description = "Token or vault state mutation does not maintain total balance conservation"
+message = "Transfer function at {line} updates account balances with raw unverified delta"
+
+# Rule: When balance of sender decreases by amount, recipient balance
+# must increase by amount, preserving invariant sum(balances_after) == sum(balances_before)
+
+references = [
+  "https://developers.stellar.org/docs/tokens/token-interface",
+  "https://github.com/stellar/soroban-examples/tree/main/token"
+]

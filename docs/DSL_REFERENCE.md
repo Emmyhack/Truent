@@ -552,6 +552,73 @@ Optimize by:
 3. Avoiding nested loops
 4. Caching frequently checked values
 
+## Soroban Invariant DSL (.sinv format)
+
+The `.sinv` declarative format allows authors to define chain-specific invariants compiled directly into Truent's binary. Under `invariants/soroban/`, each rule captures a security invariant specific to Stellar's Soroban smart contract environment.
+
+### Format Specification
+
+```toml
+# Comments start with #
+invariant = "<chain_prefix>_<name>"
+severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+chain = "soroban"
+description = "<one-line explanation of the security property>"
+message = "<failure message reported to the developer>"
+references = [
+  "<url1>",
+  "<url2>"
+]
+```
+
+### Worked Soroban Examples
+
+#### 1. Admin-Only Upgrade Protection (`invariants/soroban/admin_only_upgrade.sinv`)
+
+Guards Soroban's contract upgradeability pathway (`update_current_contract_wasm`). Ensures an unauthorized caller cannot overwrite contract bytecode without an explicit `admin.require_auth()` check.
+
+```toml
+invariant = "sor_admin_only_upgrade"
+severity = "CRITICAL"
+chain = "soroban"
+description = "WASM contract bytecode update executed without admin require_auth check"
+message = "Upgrade function at {line} executes update_current_contract_wasm without admin authorization"
+references = [
+  "https://developers.stellar.org/docs/learn/smart-contract-internals/authorization",
+  "https://github.com/stellar/soroban-examples"
+]
+```
+
+#### 2. Storage TTL Extended on Persistent Writes (`invariants/soroban/ttl_extended_persistent_writes.sinv`)
+
+Addresses Soroban's state archival mechanism. Because persistent storage entries expire unless explicitly renewed, any state write must accompany an `extend_ttl` or `.bump()` call to prevent contract state loss.
+
+```toml
+invariant = "sor_ttl_extended_persistent_writes"
+severity = "HIGH"
+chain = "soroban"
+description = "Persistent storage write lacks extend_ttl or bump call risking state archival"
+message = "Function at {line} writes persistent storage without extending entry TTL threshold"
+references = [
+  "https://developers.stellar.org/docs/learn/smart-contract-internals/state-archival"
+]
+```
+
+#### 3. Balance Conservation Invariant (`invariants/soroban/balance_conservation.sinv`)
+
+Enforces monetary conservation across token and vault state transitions: a balance decrement for sender $A$ must equal balance increment for recipient $B$, preventing unauthorized inflation or token destruction.
+
+```toml
+invariant = "sor_balance_conservation"
+severity = "HIGH"
+chain = "soroban"
+description = "Token or vault state mutation does not maintain total balance conservation"
+message = "Transfer function at {line} updates account balances with raw unverified delta"
+references = [
+  "https://developers.stellar.org/docs/tokens/token-interface"
+]
+```
+
 ## Examples
 
 See `examples/` directory for complete examples:
