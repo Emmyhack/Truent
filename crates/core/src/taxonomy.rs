@@ -2900,6 +2900,15 @@ static TAXONOMY: &[Taxonomy] = &[
         nist_csf: &[],
     },
     Taxonomy {
+        invariant_id: "sor_admin_single_step_transfer",
+        cwe: &[C::MISSING_AUTHORIZATION, C::IMPROPER_ACCESS_CONTROL],
+        swc: &[],
+        owasp_sc: &[O::AccessControl],
+        dasp: &[D::AccessControl],
+        attack: &[],
+        nist_csf: &[],
+    },
+    Taxonomy {
         invariant_id: "sor_checked_arithmetic",
         cwe: &[C::INTEGER_OVERFLOW, C::INTEGER_UNDERFLOW],
         swc: &[],

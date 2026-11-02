@@ -280,6 +280,33 @@ pub fn detect_unhandled_panic(functions: &[ContractFunction], file_path: &str) -
         .collect()
 }
 
+/// Detects an admin or owner setter that takes effect immediately with no
+/// two-step (propose then accept) transfer pattern.
+pub fn detect_admin_single_step_transfer(
+    functions: &[ContractFunction],
+    file_path: &str,
+) -> Vec<Finding> {
+    functions
+        .iter()
+        .filter(|f| f.sets_admin_single_step)
+        .map(|f| {
+            Finding::new(
+                "sor_admin_single_step_transfer".to_string(),
+                Severity::Medium,
+                file_path.to_string(),
+                f.line,
+                0,
+                format!(
+                    "Function '{}' transfers admin or owner authority directly in a single step without a two-step propose/accept pattern",
+                    f.name
+                ),
+                f.name.clone(),
+            )
+            .with_metadata("chain".to_string(), "soroban".to_string())
+        })
+        .collect()
+}
+
 /// Run every Soroban detector against pre-parsed contract functions.
 pub fn detect_all(functions: &[ContractFunction], file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
@@ -295,6 +322,7 @@ pub fn detect_all(functions: &[ContractFunction], file_path: &str) -> Vec<Findin
     findings.extend(detect_reentrancy_external_call(functions, file_path));
     findings.extend(detect_thin_liquidity_oracle_price(functions, file_path));
     findings.extend(detect_unhandled_panic(functions, file_path));
+    findings.extend(detect_admin_single_step_transfer(functions, file_path));
 
     findings.sort_by(|a, b| match b.severity.cmp(&a.severity) {
         std::cmp::Ordering::Equal => a.line.cmp(&b.line),

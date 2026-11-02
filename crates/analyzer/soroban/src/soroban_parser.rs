@@ -57,6 +57,20 @@ pub fn parse_contract_functions(source: &str) -> syn::Result<Vec<ContractFunctio
         }
     }
 
+    let has_two_step = functions.iter().any(|f| {
+        let n = f.name.to_lowercase();
+        n.contains("propose") || n.contains("pending")
+    }) && functions.iter().any(|f| {
+        let n = f.name.to_lowercase();
+        n.contains("accept") || n.contains("claim")
+    });
+
+    if has_two_step {
+        for f in &mut functions {
+            f.sets_admin_single_step = false;
+        }
+    }
+
     Ok(functions)
 }
 
@@ -131,6 +145,20 @@ fn analyze_function(method: &syn::ImplItemFn, source: &str) -> ContractFunction 
         && !body_lower.contains("average_price")
         && !body_lower.contains("median");
 
+    let name_lower = name.to_lowercase();
+    let sets_admin_single_step = !is_initialize
+        && (name_lower.contains("set_admin")
+            || name_lower.contains("set_owner")
+            || name_lower.contains("change_admin")
+            || name_lower.contains("transfer_admin")
+            || name_lower.contains("transfer_ownership")
+            || body.contains(".set(&DataKey::Admin")
+            || body.contains(".set(&DataKey::Owner")
+            || body.contains(".set(&Admin")
+            || body.contains(".set(&Owner")
+            || body_lower.contains(".set(&\"admin\"")
+            || body_lower.contains(".set(&\"owner\""));
+
     ContractFunction {
         name,
         line,
@@ -145,6 +173,7 @@ fn analyze_function(method: &syn::ImplItemFn, source: &str) -> ContractFunction 
         writes_temporary_storage_of_sensitive_state,
         external_call_before_storage_write,
         uses_single_source_price_oracle,
+        sets_admin_single_step,
     }
 }
 
