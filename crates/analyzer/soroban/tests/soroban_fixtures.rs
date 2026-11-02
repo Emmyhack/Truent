@@ -163,3 +163,19 @@ impl VaultContract {
         .iter()
         .any(|f| f.invariant_id == "sor_unchecked_arithmetic"));
 }
+
+#[test]
+fn ttl_extended_storage_good_fixture_produces_no_storage_ttl_findings() {
+    let source = include_str!("corpus/good/ttl_extended_storage.rs");
+    let findings = run_all_detectors(source, "ttl_extended_storage.rs");
+    let storage_findings: Vec<_> = findings
+        .iter()
+        .filter(|f| f.invariant_id == "sor_storage_ttl_not_extended")
+        .collect();
+    assert!(
+        storage_findings.is_empty(),
+        "expected zero sor_storage_ttl_not_extended findings on good fixture, got: {:?}",
+        storage_findings
+    );
+}
+
