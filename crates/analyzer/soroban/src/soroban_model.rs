@@ -45,6 +45,9 @@ pub struct ContractFunction {
     /// price call (`get_price`/`.price(`/`spot_price`/`exchange_rate`) with
     /// no TWAP/multi-source corroboration anywhere in the function.
     pub uses_single_source_price_oracle: bool,
+    /// Whether the body publishes an event via `env.events().publish(...)`
+    /// without a schema version field or constant in its topics tuple.
+    pub publishes_event_without_version: bool,
 }
 
 /// Key/type-name substrings that indicate storage holding durable contract
