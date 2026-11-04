@@ -1,0 +1,16 @@
+# Soroban: Admin-Only Upgrade Protection
+# Detects: Contract upgrade functions without administrator authentication guard
+
+invariant = "sor_admin_only_upgrade"
+severity = "CRITICAL"
+chain = "soroban"
+description = "WASM contract bytecode update executed without admin require_auth check"
+message = "Upgrade function at {line} executes update_current_contract_wasm without admin authorization"
+
+# Rule: If a contractimpl function calls update_current_contract_wasm,
+# it must require authorization from the registered admin address in instance storage
+
+references = [
+  "https://developers.stellar.org/docs/learn/smart-contract-internals/authorization",
+  "https://github.com/stellar/soroban-examples"
+]

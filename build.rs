@@ -44,8 +44,8 @@ fn main() {
 
     let mut all_invariants: BTreeMap<String, InvariantDef> = BTreeMap::new();
 
-    // Scan invariants/evm, invariants/solana, invariants/move
-    for chain_dir in &["evm", "solana", "move"] {
+    // Scan invariants/evm, invariants/solana, invariants/move, invariants/soroban
+    for chain_dir in &["evm", "solana", "move", "soroban"] {
         let chain_path = invariants_dir.join(chain_dir);
 
         if !chain_path.exists() {
