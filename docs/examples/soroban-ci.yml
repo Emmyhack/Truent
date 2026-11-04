@@ -1,0 +1,43 @@
+name: Truent Soroban Security Gate
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  truent-soroban-scan:
+    name: Soroban Invariant & Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Truent CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/truent
+          key: ${{ runner.os }}-truent-cli
+
+      - name: Install Truent CLI
+        run: |
+          if ! command -v truent &> /dev/null; then
+            cargo install truent-cli
+          fi
+
+      - name: Run Truent Soroban Security Analysis
+        run: |
+          truent scan . --chain soroban --fail-on high --format html --output truent-soroban-report.html
+
+      - name: Upload Scan Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: truent-soroban-report
+          path: truent-soroban-report.html
+          retention-days: 14

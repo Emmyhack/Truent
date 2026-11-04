@@ -59,6 +59,47 @@ jobs:
             })
 ```
 
+### Soroban (Stellar Smart Contracts) GitHub Actions Gate
+
+Add this workflow to `.github/workflows/truent-soroban.yml` (also available as a template at [`docs/examples/soroban-ci.yml`](examples/soroban-ci.yml)):
+
+```yaml
+name: Truent Soroban Security Gate
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  truent-soroban-scan:
+    name: Soroban Invariant & Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Truent
+        run: |
+          if ! command -v truent &> /dev/null; then
+            cargo install truent-cli
+          fi
+
+      - name: Run Truent Soroban Analysis
+        run: truent scan . --chain soroban --fail-on high --format html --output truent-soroban-report.html
+
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: truent-soroban-report
+          path: truent-soroban-report.html
+```
+
 ### GitLab CI
 
 Add to `.gitlab-ci.yml`:
