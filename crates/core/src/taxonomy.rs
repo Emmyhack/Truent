@@ -2909,6 +2909,15 @@ static TAXONOMY: &[Taxonomy] = &[
         nist_csf: &[],
     },
     Taxonomy {
+        invariant_id: "sor_cross_contract_call_unauthorized",
+        cwe: &[C::MISSING_AUTHORIZATION, C::IMPROPER_ACCESS_CONTROL],
+        swc: &[],
+        owasp_sc: &[O::AccessControl],
+        dasp: &[D::AccessControl],
+        attack: &[],
+        nist_csf: &[],
+    },
+    Taxonomy {
         invariant_id: "sor_init_guard",
         cwe: &[C::IMPROPER_INITIALIZATION, C::MISSING_AUTHORIZATION],
         swc: &[],
