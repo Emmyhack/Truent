@@ -1,0 +1,199 @@
+---
+source: crates/cli/tests/golden.rs
+expression: snapshot_data
+---
+{
+  "top_level_fields": [
+    "chain",
+    "duration_ms",
+    "summary",
+    "target",
+    "version",
+    "violations"
+  ],
+  "summary_fields": [
+    "critical",
+    "high",
+    "low",
+    "medium",
+    "violations"
+  ],
+  "violation_fields": [
+    "attack",
+    "chain",
+    "code_snippet",
+    "cwe",
+    "dasp",
+    "dialect",
+    "evidence",
+    "exploit_reasons",
+    "exploitability",
+    "file",
+    "fix",
+    "index",
+    "invariant_id",
+    "line",
+    "location",
+    "message",
+    "nist_csf",
+    "owasp_sc",
+    "recommendation",
+    "reference",
+    "severity",
+    "swc",
+    "title",
+    "total",
+    "verify"
+  ],
+  "report": {
+    "chain": "Soroban",
+    "duration_ms": "[DURATION_MS]",
+    "summary": {
+      "critical": 2,
+      "high": 1,
+      "low": 0,
+      "medium": 1,
+      "violations": 4
+    },
+    "target": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs",
+    "version": "[VERSION]",
+    "violations": [
+      {
+        "attack": [],
+        "chain": "soroban",
+        "code_snippet": "pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {",
+        "cwe": "CWE-862 · Missing Authorization",
+        "dasp": [
+          "DASP-2 · Access Control"
+        ],
+        "dialect": null,
+        "evidence": "lead",
+        "exploit_reasons": [
+          "reachable by anyone who can reach the service or submit a transaction",
+          "no account, token or role needed"
+        ],
+        "exploitability": "likely",
+        "file": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs",
+        "fix": "Call `address.require_auth()` on the acting address before any state change on its behalf.",
+        "index": 1,
+        "invariant_id": "sor_missing_require_auth",
+        "line": 10,
+        "location": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs:10",
+        "message": "Function 'transfer' performs a privileged action with no require_auth() call reaching it",
+        "nist_csf": [],
+        "owasp_sc": [
+          "SC01 · Access Control Vulnerabilities"
+        ],
+        "recommendation": "Call `address.require_auth()` on the acting address before any state change on its behalf.",
+        "reference": "https://github.com/Emmyhack/Truent/search?q=sor%20missing%20require%20auth",
+        "severity": "critical",
+        "swc": [],
+        "title": "Sor Missing Require Auth",
+        "total": 4,
+        "verify": "Test: invocation without authorization fails."
+      },
+      {
+        "attack": [],
+        "chain": null,
+        "code_snippet": "pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {",
+        "cwe": "CWE-862 · Missing Authorization",
+        "dasp": [
+          "DASP-2 · Access Control"
+        ],
+        "dialect": null,
+        "evidence": "lead",
+        "exploit_reasons": [
+          "reachable by anyone who can reach the service or submit a transaction",
+          "no account, token or role needed"
+        ],
+        "exploitability": "likely",
+        "file": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs",
+        "fix": "Restrict every state-mutating privileged function to an authenticated admin role.",
+        "index": 2,
+        "invariant_id": "unauthorized_privileged_mutation",
+        "line": 10,
+        "location": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs:10",
+        "message": "Entry point 'transfer' performs a privileged mutation (FundTransfer) with no authorization check reaching it",
+        "nist_csf": [],
+        "owasp_sc": [
+          "SC01 · Access Control Vulnerabilities"
+        ],
+        "recommendation": "Restrict every state-mutating privileged function to an authenticated admin role.",
+        "reference": "https://github.com/Emmyhack/Truent/search?q=unauthorized%20privileged%20mutation",
+        "severity": "critical",
+        "swc": [],
+        "title": "Unauthorized Privileged Mutation",
+        "total": 4,
+        "verify": "Test: unauthorized caller is rejected."
+      },
+      {
+        "attack": [],
+        "chain": "soroban",
+        "code_snippet": "pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {",
+        "cwe": "CWE-190 · Integer Overflow or Wraparound",
+        "dasp": [
+          "DASP-3 · Arithmetic"
+        ],
+        "dialect": null,
+        "evidence": "lead",
+        "exploit_reasons": [
+          "reachable by anyone who can reach the service or submit a transaction",
+          "no account, token or role needed"
+        ],
+        "exploitability": "likely",
+        "file": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs",
+        "fix": "Use `checked_add/sub/mul` and handle `None`; enable overflow checks in release.",
+        "index": 3,
+        "invariant_id": "sor_unchecked_arithmetic",
+        "line": 10,
+        "location": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs:10",
+        "message": "Function 'transfer' performs raw arithmetic with no checked_add/checked_sub/checked_mul/checked_div call in the same function; Rust release builds do not trap on overflow by default",
+        "nist_csf": [],
+        "owasp_sc": [
+          "SC08 · Integer Overflow and Underflow"
+        ],
+        "recommendation": "Use `checked_add/sub/mul` and handle `None`; enable overflow checks in release.",
+        "reference": "https://github.com/Emmyhack/Truent/search?q=sor%20unchecked%20arithmetic",
+        "severity": "high",
+        "swc": [],
+        "title": "Sor Unchecked Arithmetic",
+        "total": 4,
+        "verify": "Test boundary values; overflow errors."
+      },
+      {
+        "attack": [],
+        "chain": "soroban",
+        "code_snippet": "pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {",
+        "cwe": "CWE-672 · Operation on a Resource after Expiration or Release",
+        "dasp": [
+          "DASP-5 · Denial of Service"
+        ],
+        "dialect": null,
+        "evidence": "lead",
+        "exploit_reasons": [
+          "reachable by anyone who can reach the service or submit a transaction",
+          "needs a specific state or configuration to be present"
+        ],
+        "exploitability": "possible",
+        "file": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs",
+        "fix": "Keep critical state in persistent/instance storage and extend TTL (`extend_ttl`) on every access; never in temporary storage.",
+        "index": 4,
+        "invariant_id": "sor_storage_ttl_not_extended",
+        "line": 10,
+        "location": "crates/analyzer/soroban/tests/corpus/bad/missing_require_auth.rs:10",
+        "message": "Function 'transfer' writes persistent storage but never extends its TTL, risking archival/expiry of this state",
+        "nist_csf": [],
+        "owasp_sc": [
+          "SC10 · Denial of Service Attacks"
+        ],
+        "recommendation": "Keep critical state in persistent/instance storage and extend TTL (`extend_ttl`) on every access; never in temporary storage.",
+        "reference": "https://github.com/Emmyhack/Truent/search?q=sor%20storage%20ttl%20not%20extended",
+        "severity": "medium",
+        "swc": [],
+        "title": "Sor Storage Ttl Not Extended",
+        "total": 4,
+        "verify": "Test: state survives ledger expiry simulation."
+      }
+    ]
+  }
+}

@@ -32,7 +32,7 @@ pub fn render_banner(version: &str) -> String {
         .join("\n");
 
     let subtitle = format!(
-        "  Multi-chain Smart Contract Invariant Checker  ·  v{}",
+        "  Truent: Multi-chain Smart Contract Invariant Checker  ·  v{}",
         version
     );
     let colored_subtitle = color_dim(&subtitle);
