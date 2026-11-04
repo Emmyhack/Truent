@@ -101,7 +101,7 @@ tree-sitter-solidity = "1.2"
 cc = "1.0"
 
 # Terminal UI
-terminal_size = "0.3"
+terminal_size = "0.4"
 
 # Solana
 solana-program = "1"
