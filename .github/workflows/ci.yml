@@ -25,7 +25,7 @@ jobs:
           toolchain: stable
           components: rustfmt
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -42,7 +42,7 @@ jobs:
           toolchain: stable
           components: clippy
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Run clippy strict
         run: cargo clippy --all --all-targets --all-features -- -D warnings -D clippy::all
@@ -82,7 +82,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Run unit tests
         run: cargo test --lib --all --verbose
@@ -102,7 +102,7 @@ jobs:
         with:
           toolchain: beta
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Run unit tests
         run: cargo test --lib --all --verbose
@@ -122,7 +122,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Run property tests
         run: cargo test --tests --verbose
@@ -139,7 +139,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Run security tests
         run: cargo test --tests --verbose
@@ -155,7 +155,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Run integration tests
         run: cargo test --tests --verbose
@@ -171,7 +171,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Build CLI
         run: cargo build --release --bin truent
@@ -222,7 +222,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Build release binary
         run: cargo build --release --bin truent
@@ -270,7 +270,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
@@ -292,7 +292,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Run benchmark smoke test
         run: cargo bench --no-run
@@ -308,7 +308,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Run tests multiple times (determinism)
         run: |
@@ -342,7 +342,7 @@ jobs:
         with:
           toolchain: stable
       
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       
       - name: Build release
         run: cargo build --release --bin truent --verbose
@@ -420,7 +420,7 @@ jobs:
         with:
           toolchain: stable
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
       - name: Build CLI
         run: cargo build --bin truent
