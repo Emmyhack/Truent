@@ -16,6 +16,32 @@ One tool. Four chains. One DSL.
 
 ---
 
+## Soroban
+
+Truent is a native [Soroban](https://developers.stellar.org/docs/build/smart-contracts) (Stellar) analyzer, not an EVM tool with Soroban bolted on. It parses `#[contract]` / `#[contractimpl]` Rust and runs nine Soroban-specific detectors:
+
+| Detector | What it flags |
+|---|---|
+| `sor_missing_require_auth` | a state-changing entry point that never calls `require_auth` on the caller |
+| `sor_unprotected_upgrade` | `update_current_contract_wasm` reachable without an authorization check |
+| `sor_reinitialization` | an initializer that can run twice (no "already initialized" guard) |
+| `sor_unchecked_arithmetic` | raw `+ - *` on balances instead of the checked forms |
+| `sor_storage_ttl_not_extended` | persistent storage written but never given a TTL extension, so the entry can expire |
+| `sor_temporary_storage_critical_state` | critical state kept in `temporary()` storage that is designed to be evicted |
+| `sor_reentrancy_external_call` | state written after a cross-contract call (a checks-effects-interactions violation) |
+| `sor_thin_liquidity_oracle_price` | a price read from a single spot source with no TWAP or multi-source corroboration |
+| `sor_unhandled_panic` | `.unwrap()` / `.expect()` that panics the contract on attacker-reachable input |
+
+Run it against a Soroban contract:
+
+```bash
+truent scan path/to/contract.rs --chain soroban
+```
+
+`--chain soroban` is also auto-selected for any `.rs` file that imports `soroban_sdk`, so `truent scan . --chain auto` finds Soroban contracts in a mixed repository. Example contracts the detectors are tested against live in [`crates/analyzer/soroban/tests/corpus`](crates/analyzer/soroban/tests/corpus).
+
+---
+
 ## Self-check
 
 `truent doctor` exercises every subsystem rather than reporting that it loaded:
