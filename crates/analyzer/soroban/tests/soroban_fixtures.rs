@@ -163,3 +163,47 @@ impl VaultContract {
         .iter()
         .any(|f| f.invariant_id == "sor_unchecked_arithmetic"));
 }
+
+#[test]
+fn single_step_admin_transfer_is_flagged_and_two_step_is_not() {
+    let bad_source = r#"
+#[contract]
+pub struct SingleStepVault;
+
+#[contractimpl]
+impl SingleStepVault {
+    pub fn set_admin(env: Env, new_admin: Address) {
+        new_admin.require_auth();
+        env.storage().instance().set(&DataKey::Admin, &new_admin);
+    }
+}
+"#;
+    let bad_findings = run_all_detectors(bad_source, "single_step.rs");
+    assert!(bad_findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_admin_single_step_transfer"));
+
+    let good_source = r#"
+#[contract]
+pub struct TwoStepVault;
+
+#[contractimpl]
+impl TwoStepVault {
+    pub fn propose_admin(env: Env, new_admin: Address) {
+        new_admin.require_auth();
+        env.storage().instance().set(&DataKey::PendingAdmin, &new_admin);
+    }
+
+    pub fn accept_admin(env: Env) {
+        let pending: Address = env.storage().instance().get(&DataKey::PendingAdmin).unwrap();
+        pending.require_auth();
+        env.storage().instance().set(&DataKey::Admin, &pending);
+    }
+}
+"#;
+    let good_findings = run_all_detectors(good_source, "two_step.rs");
+    assert!(!good_findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_admin_single_step_transfer"));
+}
+
