@@ -1883,6 +1883,15 @@ static EXPOSURE: &[Exposure] = &[
         verify: "Test boundary values; overflow errors.",
     },
     Exposure {
+        invariant_id: "sor_event_without_version",
+        vector: Vector::Local,
+        prereq: Prereq::None,
+        interaction: Interaction::None,
+        impact: Impact::Partial,
+        fix: "Include a schema version constant or symbol in the event topics tuple (e.g. `(symbol_short!(\"transfer\"), 1u32, ...)`).",
+        verify: "Verify emitted event topics contain an explicit version marker.",
+    },
+    Exposure {
         invariant_id: "sor_init_guard",
         vector: Vector::Network,
         prereq: Prereq::None,
