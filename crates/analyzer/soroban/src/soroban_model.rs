@@ -45,6 +45,9 @@ pub struct ContractFunction {
     /// price call (`get_price`/`.price(`/`spot_price`/`exchange_rate`) with
     /// no TWAP/multi-source corroboration anywhere in the function.
     pub uses_single_source_price_oracle: bool,
+    /// Whether the function sets an admin or owner storage key directly
+    /// without a two-step propose/accept flow.
+    pub sets_admin_single_step: bool,
     /// Whether the body performs a cross-contract external call (`invoke_contract`/`Client::new`).
     pub has_cross_contract_call: bool,
     /// Whether the function performs a privileged mutation or action (moves value or authority).

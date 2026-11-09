@@ -206,6 +206,49 @@ impl VaultContract {
 }
 
 #[test]
+fn single_step_admin_transfer_is_flagged_and_two_step_is_not() {
+    let bad_source = r#"
+#[contract]
+pub struct SingleStepVault;
+
+#[contractimpl]
+impl SingleStepVault {
+    pub fn set_admin(env: Env, new_admin: Address) {
+        new_admin.require_auth();
+        env.storage().instance().set(&DataKey::Admin, &new_admin);
+    }
+}
+"#;
+    let bad_findings = run_all_detectors(bad_source, "single_step.rs");
+    assert!(bad_findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_admin_single_step_transfer"));
+
+    let good_source = r#"
+#[contract]
+pub struct TwoStepVault;
+
+#[contractimpl]
+impl TwoStepVault {
+    pub fn propose_admin(env: Env, new_admin: Address) {
+        new_admin.require_auth();
+        env.storage().instance().set(&DataKey::PendingAdmin, &new_admin);
+    }
+
+    pub fn accept_admin(env: Env) {
+        let pending: Address = env.storage().instance().get(&DataKey::PendingAdmin).unwrap();
+        pending.require_auth();
+        env.storage().instance().set(&DataKey::Admin, &pending);
+    }
+}
+"#;
+    let good_findings = run_all_detectors(good_source, "two_step.rs");
+    assert!(!good_findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_admin_single_step_transfer"));
+}
+
+#[test]
 fn ttl_extended_storage_good_fixture_produces_no_storage_ttl_findings() {
     let source = include_str!("corpus/good/ttl_extended_storage.rs");
     let findings = run_all_detectors(source, "ttl_extended_storage.rs");
@@ -219,4 +262,3 @@ fn ttl_extended_storage_good_fixture_produces_no_storage_ttl_findings() {
         storage_findings
     );
 }
-

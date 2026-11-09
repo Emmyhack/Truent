@@ -1874,6 +1874,15 @@ static EXPOSURE: &[Exposure] = &[
         verify: "Test: passing a fake account (wrong owner/seeds/mint) fails.",
     },
     Exposure {
+        invariant_id: "sor_admin_single_step_transfer",
+        vector: Vector::Network,
+        prereq: Prereq::None,
+        interaction: Interaction::None,
+        impact: Impact::Full,
+        fix: "Implement a two-step ownership transfer pattern (propose_admin and accept_admin) rather than a single-step setter.",
+        verify: "Test: single-step setter is replaced with pending propose and accept flow.",
+    },
+    Exposure {
         invariant_id: "sor_checked_arithmetic",
         vector: Vector::Network,
         prereq: Prereq::None,
