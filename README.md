@@ -580,6 +580,8 @@ Truent ships with 28 built-in security checks across all four chains.
 
 For worked `.sinv` invariant DSL definitions for Soroban (admin-only upgrade, persistent TTL extension, balance conservation), see [`invariants/soroban/`](invariants/soroban/) and the [DSL Reference](docs/DSL_REFERENCE.md#soroban-invariant-dsl-sinv-format).
 
+For an out-of-the-box GitHub Actions security gate on Soroban repositories, see the [Soroban CI workflow example](docs/examples/soroban-ci.yml).
+
 
 ---
 
