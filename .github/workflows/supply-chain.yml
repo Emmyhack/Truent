@@ -27,7 +27,7 @@ jobs:
         run: git clone --depth 1 https://github.com/rustsec/advisory-db.git /tmp/advdb
       - name: SBOM and dependency analysis
         run: ./target/release/truent deps . --advisory-db /tmp/advdb --sbom sbom.cdx.json --fail-on high
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom
           path: sbom.cdx.json
@@ -71,7 +71,7 @@ jobs:
           for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3111/ && break; sleep 1; done
           ./target/release/truent probe http://127.0.0.1:3111 --authorized --ports none --format json --fail-on critical > probe-web.json
           ./target/release/truent probe http://127.0.0.1:3111 --authorized --ports none --fail-on critical || true
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: probe-web
           path: probe-web.json
@@ -109,7 +109,7 @@ jobs:
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then STRICT=--strict; else STRICT=; fi
           ./target/release/truent release-check . --advisory-db /tmp/advdb --probe-report probe-web.json --symbolic-report symbolic.json --out release-check.md $STRICT
           head -60 release-check.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: release-check
