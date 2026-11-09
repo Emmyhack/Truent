@@ -92,6 +92,30 @@ pub static INVARIANT_REGISTRY: Lazy<BTreeMap<&'static str, CompiledInvariant>> =
             message: "Account '{var}' at {line} should have #[account(signer)] constraint",
         });
 
+        map.insert("sor_admin_only_upgrade", CompiledInvariant {
+            id: "sor_admin_only_upgrade",
+            severity: "CRITICAL",
+            chain: "soroban",
+            description: "WASM contract bytecode update executed without admin require_auth check",
+            message: "Upgrade function at {line} executes update_current_contract_wasm without admin authorization",
+        });
+
+        map.insert("sor_balance_conservation", CompiledInvariant {
+            id: "sor_balance_conservation",
+            severity: "HIGH",
+            chain: "soroban",
+            description: "Token or vault state mutation does not maintain total balance conservation",
+            message: "Transfer function at {line} updates account balances with raw unverified delta",
+        });
+
+        map.insert("sor_ttl_extended_persistent_writes", CompiledInvariant {
+            id: "sor_ttl_extended_persistent_writes",
+            severity: "HIGH",
+            chain: "soroban",
+            description: "Persistent storage write lacks extend_ttl or bump call risking state archival",
+            message: "Function at {line} writes persistent storage without extending entry TTL threshold",
+        });
+
         map
     });
 

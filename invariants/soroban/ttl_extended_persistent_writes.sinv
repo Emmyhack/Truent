@@ -1,0 +1,16 @@
+# Soroban: TTL Extended on Persistent Storage Writes
+# Detects: Persistent state writes without extending entry time-to-live (TTL)
+
+invariant = "sor_ttl_extended_persistent_writes"
+severity = "HIGH"
+chain = "soroban"
+description = "Persistent storage write lacks extend_ttl or bump call risking state archival"
+message = "Function at {line} writes persistent storage without extending entry TTL threshold"
+
+# Rule: Every persistent storage write (env.storage().persistent().set/remove)
+# should invoke extend_ttl with a defined threshold to prevent state expiry
+
+references = [
+  "https://developers.stellar.org/docs/learn/smart-contract-internals/state-archival",
+  "https://developers.stellar.org/docs/learn/smart-contract-internals/fees-and-metering#rent"
+]

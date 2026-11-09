@@ -132,6 +132,23 @@ fn analyze_function(method: &syn::ImplItemFn, source: &str) -> ContractFunction 
         && !body_lower.contains("median");
 
     let publishes_event_without_version = has_unversioned_event_publish(&body);
+    let has_cross_contract_call = body.contains("invoke_contract") || body.contains("Client::new");
+    let name_lower = name.to_lowercase();
+    let is_privileged = name_lower.contains("withdraw")
+        || name_lower.contains("transfer")
+        || name_lower.contains("pay")
+        || name_lower.contains("mint")
+        || name_lower.contains("burn")
+        || name_lower.contains("set_admin")
+        || name_lower.contains("set_owner")
+        || name_lower.contains("bridge")
+        || name_lower.contains("forward")
+        || name_lower.contains("claim")
+        || name_lower.contains("execute")
+        || body_lower.contains("transfer")
+        || body_lower.contains("mint")
+        || body_lower.contains("burn")
+        || body_lower.contains("withdraw");
 
     ContractFunction {
         name,
@@ -148,6 +165,8 @@ fn analyze_function(method: &syn::ImplItemFn, source: &str) -> ContractFunction 
         external_call_before_storage_write,
         uses_single_source_price_oracle,
         publishes_event_without_version,
+        has_cross_contract_call,
+        is_privileged,
     }
 }
 

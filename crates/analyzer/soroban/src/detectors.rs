@@ -220,6 +220,33 @@ pub fn detect_reentrancy_external_call(
         .collect()
 }
 
+/// Detects privileged functions that perform a cross-contract call without
+/// requiring authorization from the caller.
+pub fn detect_cross_contract_call_unauthorized(
+    functions: &[ContractFunction],
+    file_path: &str,
+) -> Vec<Finding> {
+    functions
+        .iter()
+        .filter(|f| f.has_cross_contract_call && f.is_privileged && !f.has_require_auth)
+        .map(|f| {
+            Finding::new(
+                "sor_cross_contract_call_unauthorized".to_string(),
+                Severity::High,
+                file_path.to_string(),
+                f.line,
+                0,
+                format!(
+                    "Function '{}' performs a cross-contract call forwarding value or authority with no require_auth() guarding it",
+                    f.name
+                ),
+                f.name.clone(),
+            )
+            .with_metadata("chain".to_string(), "soroban".to_string())
+        })
+        .collect()
+}
+
 /// Detects a price read from what looks like a single spot-price call with
 /// no TWAP/multi-source corroboration. A thin-liquidity venue's spot price
 /// can be pumped by one large order, letting an attacker over-borrow
@@ -320,6 +347,9 @@ pub fn detect_all(functions: &[ContractFunction], file_path: &str) -> Vec<Findin
         functions, file_path,
     ));
     findings.extend(detect_reentrancy_external_call(functions, file_path));
+    findings.extend(detect_cross_contract_call_unauthorized(
+        functions, file_path,
+    ));
     findings.extend(detect_thin_liquidity_oracle_price(functions, file_path));
     findings.extend(detect_unhandled_panic(functions, file_path));
     findings.extend(detect_event_without_version(functions, file_path));
@@ -380,6 +410,7 @@ impl VaultContract {
         assert!(ids.contains("sor_storage_ttl_not_extended"));
         assert!(ids.contains("sor_temporary_storage_critical_state"));
         assert!(ids.contains("sor_reentrancy_external_call"));
+        assert!(ids.contains("sor_cross_contract_call_unauthorized"));
         assert!(ids.contains("sor_unhandled_panic"));
     }
 
