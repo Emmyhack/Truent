@@ -59,6 +59,10 @@ jobs:
             })
 ```
 
+### GitHub Actions for Soroban (Stellar)
+
+For a self-contained Soroban CI workflow with SARIF report uploads to GitHub Code Scanning, see [`docs/examples/soroban-ci.yml`](examples/soroban-ci.yml).
+
 ### GitLab CI
 
 Add to `.gitlab-ci.yml`:

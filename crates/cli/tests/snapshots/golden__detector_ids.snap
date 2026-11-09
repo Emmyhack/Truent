@@ -191,6 +191,7 @@ expression: ids
   "sol_treasury_single_authority",
   "sol_unchecked_token_account_type",
   "sor_checked_arithmetic",
+  "sor_cross_contract_call_unauthorized",
   "sor_init_guard",
   "sor_missing_require_auth",
   "sor_no_reentrancy",
