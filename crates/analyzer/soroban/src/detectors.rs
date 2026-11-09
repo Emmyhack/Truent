@@ -307,6 +307,33 @@ pub fn detect_unhandled_panic(functions: &[ContractFunction], file_path: &str) -
         .collect()
 }
 
+/// Detects event publishes via `env.events().publish(...)` where the topics
+/// tuple does not carry a schema version constant or symbol.
+pub fn detect_event_without_version(
+    functions: &[ContractFunction],
+    file_path: &str,
+) -> Vec<Finding> {
+    functions
+        .iter()
+        .filter(|f| f.publishes_event_without_version)
+        .map(|f| {
+            Finding::new(
+                "sor_event_without_version".to_string(),
+                Severity::Low,
+                file_path.to_string(),
+                f.line,
+                0,
+                format!(
+                    "Function '{}' publishes an event without a schema version field in topics",
+                    f.name
+                ),
+                f.name.clone(),
+            )
+            .with_metadata("chain".to_string(), "soroban".to_string())
+        })
+        .collect()
+}
+
 /// Run every Soroban detector against pre-parsed contract functions.
 pub fn detect_all(functions: &[ContractFunction], file_path: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
@@ -325,6 +352,7 @@ pub fn detect_all(functions: &[ContractFunction], file_path: &str) -> Vec<Findin
     ));
     findings.extend(detect_thin_liquidity_oracle_price(functions, file_path));
     findings.extend(detect_unhandled_panic(functions, file_path));
+    findings.extend(detect_event_without_version(functions, file_path));
 
     findings.sort_by(|a, b| match b.severity.cmp(&a.severity) {
         std::cmp::Ordering::Equal => a.line.cmp(&b.line),

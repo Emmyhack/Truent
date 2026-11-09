@@ -206,6 +206,44 @@ impl VaultContract {
 }
 
 #[test]
+fn unversioned_event_publish_is_flagged() {
+    let source = r#"
+#[contract]
+pub struct EventContract;
+
+#[contractimpl]
+impl EventContract {
+    pub fn emit_event(env: Env, to: Address, amount: i128) {
+        env.events().publish((symbol_short!("transfer"), to), amount);
+    }
+}
+"#;
+    let findings = run_all_detectors(source, "event.rs");
+    assert!(findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_event_without_version"));
+}
+
+#[test]
+fn versioned_event_publish_is_not_flagged() {
+    let source = r#"
+#[contract]
+pub struct EventContract;
+
+#[contractimpl]
+impl EventContract {
+    pub fn emit_event(env: Env, to: Address, amount: i128) {
+        env.events().publish((symbol_short!("transfer"), symbol_short!("v1"), to), amount);
+    }
+}
+"#;
+    let findings = run_all_detectors(source, "event.rs");
+    assert!(!findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_event_without_version"));
+}
+
+#[test]
 fn ttl_extended_storage_good_fixture_produces_no_storage_ttl_findings() {
     let source = include_str!("corpus/good/ttl_extended_storage.rs");
     let findings = run_all_detectors(source, "ttl_extended_storage.rs");
@@ -219,4 +257,3 @@ fn ttl_extended_storage_good_fixture_produces_no_storage_ttl_findings() {
         storage_findings
     );
 }
-

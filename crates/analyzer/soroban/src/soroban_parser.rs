@@ -131,6 +131,7 @@ fn analyze_function(method: &syn::ImplItemFn, source: &str) -> ContractFunction 
         && !body_lower.contains("average_price")
         && !body_lower.contains("median");
 
+    let publishes_event_without_version = has_unversioned_event_publish(&body);
     let has_cross_contract_call = body.contains("invoke_contract") || body.contains("Client::new");
     let name_lower = name.to_lowercase();
     let is_privileged = name_lower.contains("withdraw")
@@ -163,9 +164,68 @@ fn analyze_function(method: &syn::ImplItemFn, source: &str) -> ContractFunction 
         writes_temporary_storage_of_sensitive_state,
         external_call_before_storage_write,
         uses_single_source_price_oracle,
+        publishes_event_without_version,
         has_cross_contract_call,
         is_privileged,
     }
+}
+
+fn has_unversioned_event_publish(body: &str) -> bool {
+    let marker = ".events().publish(";
+    let mut search_from = 0;
+    let mut found_any_publish = false;
+    let mut found_unversioned = false;
+
+    while let Some(pos) = body[search_from..].find(marker) {
+        found_any_publish = true;
+        let start = search_from + pos + marker.len();
+        let call_args = &body[start..];
+        if call_args.starts_with('(') {
+            let mut depth = 0;
+            let mut topics_end = None;
+            for (i, c) in call_args.char_indices() {
+                if c == '(' {
+                    depth += 1;
+                } else if c == ')' {
+                    depth -= 1;
+                    if depth == 0 {
+                        topics_end = Some(i);
+                        break;
+                    }
+                }
+            }
+            if let Some(end) = topics_end {
+                let topics = &call_args[1..end];
+                let lower = topics.to_lowercase();
+                let has_ver = lower.contains("version")
+                    || lower.contains("\"v1\"")
+                    || lower.contains("\"v2\"")
+                    || lower.contains("\"v3\"")
+                    || lower.contains("\"v_")
+                    || lower.contains("symbol_short!(\"v")
+                    || topics.contains("1u32")
+                    || topics.contains("2u32")
+                    || topics.contains("1_u32")
+                    || topics.contains("2_u32")
+                    || topics.contains("VERSION")
+                    || topics.contains("SCHEMA_VERSION");
+                if !has_ver {
+                    found_unversioned = true;
+                }
+            } else {
+                found_unversioned = true;
+            }
+        } else {
+            let first_arg = call_args.split(',').next().unwrap_or("");
+            let lower = first_arg.to_lowercase();
+            if !lower.contains("version") && !first_arg.contains("VERSION") {
+                found_unversioned = true;
+            }
+        }
+        search_from = start;
+    }
+
+    found_any_publish && found_unversioned
 }
 
 #[cfg(test)]
