@@ -48,6 +48,10 @@ pub struct ContractFunction {
     /// Whether the function sets an admin or owner storage key directly
     /// without a two-step propose/accept flow.
     pub sets_admin_single_step: bool,
+    /// Whether the body performs a cross-contract external call (`invoke_contract`/`Client::new`).
+    pub has_cross_contract_call: bool,
+    /// Whether the function performs a privileged mutation or action (moves value or authority).
+    pub is_privileged: bool,
 }
 
 /// Key/type-name substrings that indicate storage holding durable contract

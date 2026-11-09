@@ -98,6 +98,47 @@ impl PayoutContract {
 }
 
 #[test]
+fn cross_contract_call_without_auth_is_flagged() {
+    let source = r#"
+#[contract]
+pub struct Forwarder;
+
+#[contractimpl]
+impl Forwarder {
+    pub fn forward_transfer(env: Env, token: Address, to: Address, amount: i128) {
+        let client = token::Client::new(&env, &token);
+        client.transfer(&env.current_contract_address(), &to, &amount);
+    }
+}
+"#;
+    let findings = run_all_detectors(source, "forwarder.rs");
+    assert!(findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_cross_contract_call_unauthorized"));
+}
+
+#[test]
+fn cross_contract_call_with_auth_is_not_flagged() {
+    let source = r#"
+#[contract]
+pub struct Forwarder;
+
+#[contractimpl]
+impl Forwarder {
+    pub fn forward_transfer(env: Env, caller: Address, token: Address, to: Address, amount: i128) {
+        caller.require_auth();
+        let client = token::Client::new(&env, &token);
+        client.transfer(&env.current_contract_address(), &to, &amount);
+    }
+}
+"#;
+    let findings = run_all_detectors(source, "forwarder.rs");
+    assert!(!findings
+        .iter()
+        .any(|f| f.invariant_id == "sor_cross_contract_call_unauthorized"));
+}
+
+#[test]
 fn ttl_extension_suppresses_storage_ttl_finding() {
     let source = r#"
 #[contract]
@@ -207,3 +248,17 @@ impl TwoStepVault {
         .any(|f| f.invariant_id == "sor_admin_single_step_transfer"));
 }
 
+#[test]
+fn ttl_extended_storage_good_fixture_produces_no_storage_ttl_findings() {
+    let source = include_str!("corpus/good/ttl_extended_storage.rs");
+    let findings = run_all_detectors(source, "ttl_extended_storage.rs");
+    let storage_findings: Vec<_> = findings
+        .iter()
+        .filter(|f| f.invariant_id == "sor_storage_ttl_not_extended")
+        .collect();
+    assert!(
+        storage_findings.is_empty(),
+        "expected zero sor_storage_ttl_not_extended findings on good fixture, got: {:?}",
+        storage_findings
+    );
+}

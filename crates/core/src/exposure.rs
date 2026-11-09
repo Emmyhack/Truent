@@ -1892,6 +1892,15 @@ static EXPOSURE: &[Exposure] = &[
         verify: "Test boundary values; overflow errors.",
     },
     Exposure {
+        invariant_id: "sor_cross_contract_call_unauthorized",
+        vector: Vector::Network,
+        prereq: Prereq::None,
+        interaction: Interaction::None,
+        impact: Impact::Full,
+        fix: "Require caller authorization (`caller.require_auth()`) before making cross-contract calls or forwarding funds/privileges.",
+        verify: "Test: cross-contract call without authorization fails.",
+    },
+    Exposure {
         invariant_id: "sor_init_guard",
         vector: Vector::Network,
         prereq: Prereq::None,
