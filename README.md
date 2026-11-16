@@ -376,7 +376,7 @@ cargo install truent-cli
 npm install -g @dextonicx/cli
 
 # Verify installation
-truent --version   # truent 0.4.1
+truent --version   # truent 0.6.0
 truent doctor
 ```
 
@@ -579,6 +579,8 @@ Truent ships with 28 built-in security checks across all four chains.
 | `sor_no_reentrancy` | No Reentrancy | High |
 
 For worked `.sinv` invariant DSL definitions for Soroban (admin-only upgrade, persistent TTL extension, balance conservation), see [`invariants/soroban/`](invariants/soroban/) and the [DSL Reference](docs/DSL_REFERENCE.md#soroban-invariant-dsl-sinv-format).
+
+For an out-of-the-box GitHub Actions security gate on Soroban repositories, see the [Soroban CI workflow example](docs/examples/soroban-ci.yml).
 
 
 ---

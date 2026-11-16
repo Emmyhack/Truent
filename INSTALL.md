@@ -14,19 +14,20 @@ Truent is a production-grade, audit-ready multi-chain smart contract invariant e
 
 Download the latest release from [GitHub Releases](https://github.com/Emmyhack/Truent/releases).
 
-#### Linux / macOS
+#### Linux x86-64 (glibc)
 
 ```bash
 # Download and verify
-curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.3.0/truent-linux-x86_64-0.3.0
-curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.3.0/truent-linux-x86_64-0.3.0.sha256
+curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.6.0/truent-v0.6.0-x86_64-unknown-linux-gnu.tar.gz
+curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.6.0/SHA256SUMS
 
 # Verify checksum (critical for security)
-sha256sum -c truent-linux-x86_64-0.3.0.sha256
+grep 'truent-v0.6.0-x86_64-unknown-linux-gnu.tar.gz' SHA256SUMS | sha256sum -c -
 
 # Install
-chmod +x truent-linux-x86_64-0.3.0
-sudo mv truent-linux-x86_64-0.3.0 /usr/local/bin/truent
+tar -xzf truent-v0.6.0-x86_64-unknown-linux-gnu.tar.gz
+chmod +x truent
+sudo mv truent /usr/local/bin/truent
 
 # Verify installation
 truent --version
@@ -35,20 +36,22 @@ truent --version
 #### macOS (ARM64 / Apple Silicon)
 
 ```bash
-curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.3.0/truent-darwin-aarch64-0.3.0
-sha256sum -c truent-darwin-aarch64-0.3.0.sha256
-chmod +x truent-darwin-aarch64-0.3.0
-sudo mv truent-darwin-aarch64-0.3.0 /usr/local/bin/truent
+curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.6.0/truent-v0.6.0-aarch64-apple-darwin.tar.gz
+curl -L -O https://github.com/Emmyhack/Truent/releases/download/v0.6.0/SHA256SUMS
+grep 'truent-v0.6.0-aarch64-apple-darwin.tar.gz' SHA256SUMS | shasum -a 256 -c -
+tar -xzf truent-v0.6.0-aarch64-apple-darwin.tar.gz
+chmod +x truent
+sudo mv truent /usr/local/bin/truent
 truent --version
 ```
 
 #### Windows
 
-Download `truent-windows-x86_64-0.3.0.exe` from the releases page and add it to your PATH.
+Download `truent-v0.6.0-x86_64-pc-windows-msvc.zip` and `SHA256SUMS` from the releases page, verify the archive, extract `truent.exe`, and add it to your `PATH`.
 
 ### 2. Install from Source
 
-Requires Rust 1.70.0+. Install from [https://rustup.rs/](https://rustup.rs/).
+Requires Rust 1.75.0 or newer. Install from [https://rustup.rs/](https://rustup.rs/).
 
 ```bash
 git clone https://github.com/Emmyhack/Truent.git
@@ -63,7 +66,7 @@ cargo install --path crates/cli
 cargo install truent-cli
 
 # Install specific version
-cargo install truent-cli --version 0.4.0
+cargo install truent-cli --version 0.6.0
 ```
 
 #### Optional: dynamic Solana fuzzing

@@ -125,6 +125,7 @@ const ALL_AUTHZ_CONTRACT: &[&str] = &[
     "move_privileged_handle_exposed",
     "sor_missing_require_auth",
     "sor_require_auth_checks",
+    "sor_cross_contract_call_unauthorized",
     "unauthorized_privileged_mutation",
 ];
 const REENTRANCY: &[&str] = &[
@@ -302,7 +303,7 @@ pub static SECTIONS: &[Section] = &[
         d("Role-based access-control testing", Any, ALL_AUTHZ_CONTRACT), d("Permission testing", Any, &["gen_iac_wildcard_iam", "gen_insecure_file_permissions"]),
         d("Object-level authorization testing", Web, &["gen_object_level_auth_missing"]), d("Function-level authorization testing", Any, ALL_AUTHZ_CONTRACT),
         d("Horizontal privilege-escalation testing", Web, &["gen_object_level_auth_missing"]), d("Vertical privilege-escalation testing", Any, &["gen_mass_assignment", "unauthorized_privileged_mutation"]),
-        d("Admin-access testing", Contracts, &["evm_single_eoa_admin", "evm_insufficient_multisig_threshold", "sol_admin_no_timelock", "move_admin_no_timelock"]),
+        d("Admin-access testing", Contracts, &["evm_single_eoa_admin", "evm_insufficient_multisig_threshold", "sol_admin_no_timelock", "move_admin_no_timelock", "sor_admin_single_step_transfer"]),
         d("Owner-access testing", Contracts, &["evm_access_control", "evm_shallow_auth", "evm_tx_origin_authentication"]), d("Guest-access testing", Web, &["gen_object_level_auth_missing", "gen_web_jwt_unverified"]),
         d("Cross-user data-access testing", Web, &["gen_object_level_auth_missing"]), d("Tenant-isolation testing", Web, &["gen_object_level_auth_missing"]),
         d("API authorization matrix testing", Web, &["gen_object_level_auth_missing", "gen_web_jwt_unverified", "gen_mass_assignment"]), d("Smart-contract access-control testing", Contracts, ALL_AUTHZ_CONTRACT),
@@ -418,7 +419,7 @@ pub static SECTIONS: &[Section] = &[
     ]},
     Section { number: 25, name: "Logging & Monitoring Security Testing", items: &[
         d("Sensitive-data logging checks", Web, &["gen_log_sensitive_data"]), d("Secret/token logging checks", Any, &["gen_log_sensitive_data", "gen_ci_secret_exposed"]),
-        d("Security-event logging", Web, &["gen_missing_security_logging"]), d("Authentication-event logging", Web, &["gen_missing_security_logging"]),
+        d("Security-event logging", Web, &["gen_missing_security_logging"]), d("Contract event schema versioning", Contracts, &["sor_event_without_version"]), d("Authentication-event logging", Web, &["gen_missing_security_logging"]),
         d("Authorization-event logging", Web, &["gen_missing_security_logging"]), m("Financial-transaction logging", "Every value movement writes an immutable audit record"),
         m("Audit-trail integrity", "Logs are append-only and shipped off-host; tampering is detectable"), d("Log-injection testing", Web, &["gen_log_injection"]),
         sig("Alerting verification", S::AlertingConfig), sig("Detection-rule testing", S::AlertingConfig),

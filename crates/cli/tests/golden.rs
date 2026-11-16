@@ -11,10 +11,10 @@
 //! Update deliberately: `INSTA_UPDATE=always cargo test -p truent-cli --test golden`
 //! then review the `.snap` diff like code.
 
-use std::path::Path;
 use assert_cmd::Command;
 use serde::Serialize;
 use serde_json::Value;
+use std::path::Path;
 
 fn corpus(rel: &str) -> Vec<(String, String)> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -170,9 +170,7 @@ fn soroban_scan_json_output_schema_is_unchanged() {
     };
 
     let violation_fields = {
-        let violations = parsed["violations"]
-            .as_array()
-            .expect("violations array");
+        let violations = parsed["violations"].as_array().expect("violations array");
         assert!(!violations.is_empty(), "violations should not be empty");
         let mut keys: Vec<String> = violations[0]
             .as_object()

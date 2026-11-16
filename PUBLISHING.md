@@ -8,13 +8,13 @@ This guide explains how to publish Truent to **crates.io** (Rust packages) and *
 
 ```bash
 # Update version in all Cargo.toml files and package.json
-# Currently at 0.3.0, update to 0.3.1 for example
+./scripts/update_version.sh 0.6.1
 
 # Create annotated tag
-git tag -a v0.3.1 -m "Release v0.3.1: Bug fixes and improvements"
+git tag -a v0.6.1 -m "Release v0.6.1: Bug fixes and improvements"
 
 # Push tag to trigger CI/CD
-git push origin v0.3.1
+git push origin main v0.6.1
 ```
 
 That's it! GitHub Actions will automatically:
@@ -37,7 +37,7 @@ You need to configure two GitHub secrets in your repository:
 # Generate at https://crates.io/me
 # Click "API Tokens" → "New Token"
 # Scopes: select "Only allow API calls scoped to crates.io"
-# Status: Currently active and working (v0.3.0 published successfully)
+# Confirm the token is active before starting a release.
 ```
 
 Navigate to:

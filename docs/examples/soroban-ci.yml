@@ -1,0 +1,43 @@
+name: Truent Soroban Security Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - "Cargo.toml"
+      - ".truent.toml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - "Cargo.toml"
+      - ".truent.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  truent-soroban-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+
+      - name: Install Truent
+        run: cargo install truent-cli --locked
+
+      - name: Scan Soroban contracts
+        run: truent scan . --chain soroban --fail-on high --sarif truent-soroban.sarif
+
+      - name: Upload SARIF
+        if: always() && hashFiles('truent-soroban.sarif') != ''
+        uses: github/codeql-action/upload-sarif@e30612f8d86a2c2b00d65c27201b83b5bdb8f679 # v4
+        with:
+          sarif_file: truent-soroban.sarif
+          category: truent-soroban
