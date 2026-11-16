@@ -3795,16 +3795,7 @@ fn cmd_doctor(args: DoctorArgs, quiet: bool) -> Result<()> {
             }
         }
         FormatArg::Html => {
-            if !quiet {
-                eprintln!("ℹ HTML format is not yet implemented");
-            }
-            // Fall back to JSON
-            let report = json!({
-                "status": if checks.iter().all(|c| c.passed) { "healthy" } else { "error" },
-                "components": checks,
-            });
-
-            println!("{}", serde_json::to_string_pretty(&report)?);
+            anyhow::bail!("HTML output is not supported by `truent doctor`; use --format text or --format json");
         }
     }
 
@@ -3845,6 +3836,18 @@ fn severity_arg_rank(arg: &SeverityArg) -> u32 {
 fn cmd_scan(args: ScanArgs, quiet: bool, verbose: bool) -> Result<()> {
     let start_time = Instant::now();
 
+    if args.rpc.is_some() {
+        anyhow::bail!(
+            "--rpc is not implemented; refusing to claim on-chain verification was performed"
+        );
+    }
+    if args.parallel {
+        anyhow::bail!("--parallel is not implemented; omit it to scan sequentially");
+    }
+    if args.no_color {
+        colored::control::set_override(false);
+    }
+
     let chain_name = match args.chain {
         ChainArg::Evm => "EVM",
         ChainArg::Solana => "Solana",
@@ -3856,15 +3859,6 @@ fn cmd_scan(args: ScanArgs, quiet: bool, verbose: bool) -> Result<()> {
 
     if !quiet {
         eprintln!("▶ Scanning {} on {}...", args.path.display(), chain_name);
-        if args.rpc.is_some() {
-            eprintln!("⚠ --rpc is not yet implemented; on-chain verification will be skipped");
-        }
-        if args.parallel {
-            eprintln!("⚠ --parallel is not yet implemented; scanning sequentially");
-        }
-        if args.no_color {
-            eprintln!("⚠ --no-color is not yet implemented; output may still include ANSI codes");
-        }
     }
 
     // Run detectors. Filters are applied to the findings rather than to the
@@ -4076,9 +4070,7 @@ fn cmd_registry(args: RegistryArgs, quiet: bool) -> Result<()> {
                     println!("{}", serde_json::to_string_pretty(&json_exploits)?);
                 }
                 _ => {
-                    if !quiet {
-                        eprintln!("ℹ Format not yet implemented");
-                    }
+                    anyhow::bail!("HTML output is not supported by `truent registry list`; use --format text or --format json");
                 }
             }
         }
@@ -4106,9 +4098,7 @@ fn cmd_registry(args: RegistryArgs, quiet: bool) -> Result<()> {
                         println!("{}", serde_json::to_string_pretty(&exploit)?);
                     }
                     _ => {
-                        if !quiet {
-                            eprintln!("ℹ Format not yet implemented");
-                        }
+                        anyhow::bail!("HTML output is not supported by `truent registry show`; use --format text or --format json");
                     }
                 },
                 None => {
@@ -4169,9 +4159,7 @@ fn cmd_invariants(args: InvariantsArgs, quiet: bool) -> Result<()> {
                 }
             }
             _ => {
-                if !quiet {
-                    eprintln!("ℹ Format not yet implemented");
-                }
+                anyhow::bail!("HTML output is not supported by `truent invariants list`; use --format text or --format json");
             }
         },
         InvariantsAction::Show { id, format } => match get_invariant(&id) {
@@ -4190,9 +4178,7 @@ fn cmd_invariants(args: InvariantsArgs, quiet: bool) -> Result<()> {
                     println!("{}", serde_json::to_string_pretty(&json!(inv))?);
                 }
                 _ => {
-                    if !quiet {
-                        eprintln!("ℹ Format not yet implemented");
-                    }
+                    anyhow::bail!("HTML output is not supported by `truent invariants show`; use --format text or --format json");
                 }
             },
             None => {
