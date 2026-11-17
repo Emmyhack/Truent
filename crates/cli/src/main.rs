@@ -18,6 +18,7 @@ mod ui;
 use ui::*;
 
 mod catalog_cmd;
+mod deps_cmd;
 mod doctor_cmd;
 mod project_cmd;
 mod skills_cmd;
@@ -83,7 +84,7 @@ enum Commands {
     /// Discover, inspect and run external security skill libraries.
     Skills(skills_cmd::SkillsArgs),
     /// Dependency analysis: vulnerable, unpinned and unlocked dependencies; SBOM.
-    Deps(DepsArgs),
+    Deps(deps_cmd::DepsArgs),
     /// The security-pathway map: how every class of security is covered.
     Pathways(PathwaysArgs),
     /// Assess a repository against the whole security model.
@@ -100,26 +101,6 @@ enum Commands {
     ReleaseCheck(ReleaseCheckArgs),
     /// Symbolic execution: drive halmos / hevm / Mythril on a Foundry project; counterexamples become proven findings.
     Symbolic(SymbolicArgs),
-}
-
-/// Arguments for `deps`.
-#[derive(Parser)]
-struct DepsArgs {
-    /// Repository root.
-    #[arg(default_value = ".")]
-    path: PathBuf,
-    /// Directory of OSV JSON and/or RustSec advisories for vulnerability matching.
-    #[arg(long, value_name = "DIR")]
-    advisory_db: Option<PathBuf>,
-    /// Write a CycloneDX 1.5 SBOM here.
-    #[arg(long, value_name = "FILE")]
-    sbom: Option<PathBuf>,
-    /// Output format.
-    #[arg(long, value_enum, default_value = "text")]
-    format: FormatArg,
-    /// Fail if findings at or above this severity exist.
-    #[arg(long, value_enum, default_value = "critical")]
-    fail_on: SeverityArg,
 }
 
 /// Arguments for `pathways`.
@@ -602,7 +583,7 @@ fn main() -> Result<()> {
         Commands::Fuzz(args) => cmd_fuzz(args, cli.quiet, cli.verbose)?,
         Commands::Taxonomy(args) => taxonomy_cmd::run(args)?,
         Commands::Skills(args) => skills_cmd::run(args, cli.quiet)?,
-        Commands::Deps(args) => cmd_deps(args, cli.quiet)?,
+        Commands::Deps(args) => deps_cmd::run(args, cli.quiet)?,
         Commands::Pathways(args) => cmd_pathways(args)?,
         Commands::Assess(args) => cmd_assess(args, cli.quiet)?,
         Commands::ThreatModel(args) => cmd_threat_model(args)?,
@@ -2116,91 +2097,6 @@ fn write_sarif(findings: &[Finding], path: &Path, quiet: bool) -> Result<()> {
         .with_context(|| format!("writing SARIF report to {}", path.display()))?;
     if !quiet {
         eprintln!("✓ SARIF report written to {}", path.display());
-    }
-    Ok(())
-}
-
-/// Handle `deps`.
-fn cmd_deps(args: DepsArgs, quiet: bool) -> Result<()> {
-    let db = match &args.advisory_db {
-        Some(dir) => Some(
-            truent_sca::AdvisoryDb::load_dir(dir)
-                .with_context(|| format!("loading advisories from {}", dir.display()))?,
-        ),
-        None => None,
-    };
-    let report = truent_sca::analyze(&args.path, db.as_ref());
-
-    if let Some(out) = &args.sbom {
-        let name = args
-            .path
-            .canonicalize()
-            .ok()
-            .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
-            .unwrap_or_else(|| "project".into());
-        let doc = truent_sca::sbom::cyclonedx(&report.packages, &name, env!("CARGO_PKG_VERSION"));
-        std::fs::write(out, serde_json::to_string_pretty(&doc)?)
-            .with_context(|| format!("writing {}", out.display()))?;
-        if !quiet {
-            eprintln!(
-                "✓ SBOM written to {} ({} components)",
-                out.display(),
-                report.packages.len()
-            );
-        }
-    }
-
-    match args.format {
-        FormatArg::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "lockfiles": report.lockfiles,
-                    "packages": report.packages.len(),
-                    "advisory_source": report.advisory_source,
-                    "advisory_count": report.advisory_count,
-                    "findings": report.findings,
-                }))?
-            );
-        }
-        _ => {
-            println!(
-                "Dependencies: {} package(s) from {} lockfile(s)",
-                report.packages.len(),
-                report.lockfiles.len()
-            );
-            for l in &report.lockfiles {
-                println!("  {l}");
-            }
-            match &report.advisory_source {
-                Some(src) => println!("Advisories: {} from {src}", report.advisory_count),
-                None => println!("Advisories: none loaded — pass --advisory-db to match against OSV/RustSec. No vulnerability claims are made without one."),
-            }
-            println!();
-            if report.findings.is_empty() {
-                println!("No dependency findings.");
-            } else {
-                for f in &report.findings {
-                    println!(
-                        "[{}] {}  {}:{}",
-                        f.severity.name(),
-                        f.invariant_id,
-                        f.file,
-                        f.line
-                    );
-                    println!("    {}", f.message);
-                }
-            }
-        }
-    }
-
-    let fail_rank = severity_arg_rank(&args.fail_on);
-    if report
-        .findings
-        .iter()
-        .any(|f| severity_rank(f.severity.name()) >= fail_rank)
-    {
-        std::process::exit(1);
     }
     Ok(())
 }
