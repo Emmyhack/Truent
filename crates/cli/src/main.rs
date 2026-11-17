@@ -21,6 +21,7 @@ mod catalog_cmd;
 mod doctor_cmd;
 mod project_cmd;
 mod skills_cmd;
+mod taxonomy_cmd;
 
 // Import analyzers
 use truent_analyzer_evm::EvmAnalyzer;
@@ -78,7 +79,7 @@ enum Commands {
     /// Run fuzzer on contract invariants.
     Fuzz(FuzzArgs),
     /// Show how detectors map to CWE, SWC, OWASP SC Top 10 and DASP.
-    Taxonomy(TaxonomyArgs),
+    Taxonomy(taxonomy_cmd::TaxonomyArgs),
     /// Discover, inspect and run external security skill libraries.
     Skills(skills_cmd::SkillsArgs),
     /// Dependency analysis: vulnerable, unpinned and unlocked dependencies; SBOM.
@@ -295,38 +296,6 @@ struct ThreatModelArgs {
     /// Output format.
     #[arg(long, value_enum, default_value = "text")]
     format: FormatArg,
-}
-
-/// Arguments for the `taxonomy` subcommand.
-#[derive(Parser)]
-struct TaxonomyArgs {
-    /// Output format.
-    #[arg(long, value_enum, default_value = "text")]
-    format: TaxonomyFormat,
-
-    /// Only show detectors for this chain.
-    #[arg(long, value_enum)]
-    chain: Option<ChainArg>,
-
-    /// Only show detectors mapped to this taxonomy ID (e.g. CWE-841, SWC-107,
-    /// SC01, DASP-1). Matched case-insensitively against every registry.
-    #[arg(long)]
-    id: Option<String>,
-
-    /// Output file.
-    #[arg(long)]
-    output: Option<PathBuf>,
-}
-
-/// Output formats for `truent taxonomy`.
-#[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
-enum TaxonomyFormat {
-    /// Human-readable table.
-    Text,
-    /// Machine-readable JSON.
-    Json,
-    /// Markdown table, as committed to `docs/COVERAGE.md`.
-    Markdown,
 }
 
 /// Arguments for the `check` subcommand.
@@ -631,7 +600,7 @@ fn main() -> Result<()> {
         Commands::Registry(args) => catalog_cmd::registry(args, cli.quiet)?,
         Commands::Invariants(args) => catalog_cmd::invariants(args, cli.quiet)?,
         Commands::Fuzz(args) => cmd_fuzz(args, cli.quiet, cli.verbose)?,
-        Commands::Taxonomy(args) => cmd_taxonomy(args)?,
+        Commands::Taxonomy(args) => taxonomy_cmd::run(args)?,
         Commands::Skills(args) => skills_cmd::run(args, cli.quiet)?,
         Commands::Deps(args) => cmd_deps(args, cli.quiet)?,
         Commands::Pathways(args) => cmd_pathways(args)?,
@@ -2966,191 +2935,6 @@ fn cmd_threat_model(args: ThreatModelArgs) -> Result<()> {
         None => println!("{rendered}"),
     }
     Ok(())
-}
-
-/// Handle the `taxonomy` subcommand.
-///
-/// Answers "what does Truent actually detect, and what is it called elsewhere?"
-/// — the question a security lead asks before adopting a scanner, and the
-/// question `docs/COVERAGE.md` is generated from so the answer cannot go stale.
-fn cmd_taxonomy(args: TaxonomyArgs) -> Result<()> {
-    let chain_filter = args.chain.map(|c| match c {
-        ChainArg::Evm => "evm",
-        ChainArg::Solana => "solana",
-        ChainArg::Move => "move",
-        ChainArg::Soroban => "soroban",
-        ChainArg::General => "general",
-        ChainArg::Auto => "auto",
-    });
-
-    let needle = args.id.as_ref().map(|s| s.to_uppercase());
-
-    let entries: Vec<&truent_core::Taxonomy> = truent_core::taxonomy::all()
-        .iter()
-        .filter(|t| match chain_filter {
-            Some(c) => t.chain() == Some(c),
-            None => true,
-        })
-        .filter(|t| match &needle {
-            Some(n) => t.tags().iter().any(|tag| tag.to_uppercase() == *n),
-            None => true,
-        })
-        .collect();
-
-    let rendered = match args.format {
-        TaxonomyFormat::Json => serde_json::to_string_pretty(&json!({
-            "total": entries.len(),
-            "detectors": entries.iter().map(|t| {
-                let e = truent_core::exposure::exposure_for(t.invariant_id);
-                json!({
-                    "invariant_id": t.invariant_id,
-                    "chain": t.chain(),
-                    "cwe": t.cwe.iter().map(|c| c.id_str()).collect::<Vec<_>>(),
-                    "cwe_names": t.cwe.iter().map(|c| c.name).collect::<Vec<_>>(),
-                    "swc": t.swc.iter().map(|x| x.id_str()).collect::<Vec<_>>(),
-                    "owasp_sc": t.owasp_sc.iter().map(|o| o.id_str()).collect::<Vec<_>>(),
-                    "dasp": t.dasp.iter().map(|d| d.id_str()).collect::<Vec<_>>(),
-                    "attack": t.attack.iter().map(|a| a.id).collect::<Vec<_>>(),
-                    "attack_names": t.attack.iter().map(|a| a.name).collect::<Vec<_>>(),
-                    "nist_csf": t.nist_csf.iter().map(|n| n.id).collect::<Vec<_>>(),
-                    // Exposure profile: how the weakness is reached and closed.
-                    "vector": e.map(|e| e.vector),
-                    "prereq": e.map(|e| e.prereq),
-                    "interaction": e.map(|e| e.interaction),
-                    "impact": e.map(|e| e.impact),
-                    "fix": e.map(|e| e.fix),
-                    "verify": e.map(|e| e.verify),
-                })
-            }).collect::<Vec<_>>(),
-        }))?,
-        TaxonomyFormat::Markdown => render_taxonomy_markdown(&entries),
-        TaxonomyFormat::Text => render_taxonomy_text(&entries),
-    };
-
-    match args.output {
-        Some(path) => {
-            std::fs::write(&path, &rendered)
-                .with_context(|| format!("writing {}", path.display()))?;
-        }
-        None => println!("{rendered}"),
-    }
-    Ok(())
-}
-
-/// Render the coverage matrix as the Markdown committed to `docs/COVERAGE.md`.
-fn render_taxonomy_markdown(entries: &[&truent_core::Taxonomy]) -> String {
-    // A raw string: a backslash-continued literal bakes this function's own
-    // indentation into the generated Markdown.
-    let mut out = String::from(
-        r#"# Detector coverage
-
-<!-- Generated by `truent taxonomy --format markdown`. Do not edit by hand.
-     Regenerate with: truent taxonomy --format markdown --output docs/COVERAGE.md -->
-
-Every detector Truent ships, and the industry identifiers it maps to. A blank
-cell means no honest mapping exists — SWC, OWASP SC and DASP are contract
-registries, so repository rows leave them empty, and MITRE ATT&CK / NIST CSF
-are populated only for repository findings, where they are precise.
-
-"#,
-    );
-
-    out.push_str(&format!("**{} detectors.**\n\n", entries.len()));
-
-    for (chain, label) in [
-        (Some("evm"), "EVM"),
-        (Some("solana"), "Solana"),
-        (Some("move"), "Move"),
-        (Some("soroban"), "Soroban"),
-        (Some("general"), "General (any repository)"),
-        (Some("supply-chain"), "Supply chain (dependencies)"),
-        (Some("runtime"), "Runtime (live probe, proven)"),
-        (None, "Chain-agnostic"),
-    ] {
-        let rows: Vec<&&truent_core::Taxonomy> =
-            entries.iter().filter(|t| t.chain() == chain).collect();
-        if rows.is_empty() {
-            continue;
-        }
-        let noun = if rows.len() == 1 {
-            "detector"
-        } else {
-            "detectors"
-        };
-        out.push_str(&format!("## {label} ({} {noun})\n\n", rows.len()));
-        out.push_str(
-            "| Detector | CWE | SWC | OWASP SC Top 10 | DASP | MITRE ATT&CK | NIST CSF |\n",
-        );
-        out.push_str("|---|---|---|---|---|---|---|\n");
-        for t in rows {
-            out.push_str(&format!(
-                "| `{}` | {} | {} | {} | {} | {} | {} |\n",
-                t.invariant_id,
-                t.cwe
-                    .iter()
-                    .map(|c| format!("[{}]({})", c.id_str(), c.url()))
-                    .collect::<Vec<_>>()
-                    .join("<br>"),
-                t.swc
-                    .iter()
-                    .map(|x| format!("[{}]({})", x.id_str(), x.url()))
-                    .collect::<Vec<_>>()
-                    .join("<br>"),
-                t.owasp_sc
-                    .iter()
-                    .map(|o| o.id_str().to_string())
-                    .collect::<Vec<_>>()
-                    .join("<br>"),
-                t.dasp
-                    .iter()
-                    .map(|d| d.id_str())
-                    .collect::<Vec<_>>()
-                    .join("<br>"),
-                t.attack
-                    .iter()
-                    .map(|a| format!("[{}]({})", a.id, a.url()))
-                    .collect::<Vec<_>>()
-                    .join("<br>"),
-                t.nist_csf
-                    .iter()
-                    .map(|n| n.id.to_string())
-                    .collect::<Vec<_>>()
-                    .join("<br>"),
-            ));
-        }
-        out.push('\n');
-    }
-    out
-}
-
-/// Render the coverage matrix for a terminal.
-fn render_taxonomy_text(entries: &[&truent_core::Taxonomy]) -> String {
-    let mut out = format!("{} detector(s)\n\n", entries.len());
-    for t in entries {
-        out.push_str(&format!(
-            "{}  [{}]\n",
-            t.invariant_id,
-            t.chain().unwrap_or("all chains")
-        ));
-        for (label, values) in [
-            ("CWE  ", t.cwe.iter().map(|c| c.label()).collect::<Vec<_>>()),
-            ("SWC  ", t.swc.iter().map(|x| x.label()).collect::<Vec<_>>()),
-            (
-                "OWASP",
-                t.owasp_sc.iter().map(|o| o.label()).collect::<Vec<_>>(),
-            ),
-            (
-                "DASP ",
-                t.dasp.iter().map(|d| d.label()).collect::<Vec<_>>(),
-            ),
-        ] {
-            if !values.is_empty() {
-                out.push_str(&format!("  {label}  {}\n", values.join(", ")));
-            }
-        }
-        out.push('\n');
-    }
-    out
 }
 
 /// CWE label for an invariant, from the shared taxonomy table.
