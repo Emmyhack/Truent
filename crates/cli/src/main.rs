@@ -18,6 +18,7 @@ mod ui;
 use ui::*;
 
 mod catalog_cmd;
+mod project_cmd;
 mod skills_cmd;
 
 // Import analyzers
@@ -64,9 +65,9 @@ enum Commands {
     /// Scan contracts with full invariant enforcement (primary command).
     Scan(ScanArgs),
     /// Generate a report from analysis results.
-    Report(ReportArgs),
+    Report(project_cmd::ReportArgs),
     /// Initialize a .truent.toml configuration file.
-    Init(InitArgs),
+    Init(project_cmd::InitArgs),
     /// Check that all Truent components are working correctly.
     Doctor(DoctorArgs),
     /// Display exploit registry.
@@ -579,30 +580,6 @@ struct FuzzArgs {
     invariants: Option<PathBuf>,
 }
 
-/// Arguments for the `report` subcommand.
-#[derive(Parser)]
-struct ReportArgs {
-    /// Input results file.
-    #[arg(long)]
-    input: PathBuf,
-
-    /// Output format.
-    #[arg(long, value_enum, default_value = "text")]
-    format: FormatArg,
-
-    /// Output file.
-    #[arg(long)]
-    output: Option<PathBuf>,
-}
-
-/// Arguments for the `init` subcommand.
-#[derive(Parser)]
-struct InitArgs {
-    /// Project directory.
-    #[arg(default_value = ".")]
-    path: PathBuf,
-}
-
 /// Supported blockchain networks.
 #[derive(ValueEnum, Clone, Debug)]
 enum ChainArg {
@@ -659,8 +636,8 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Check(args) => cmd_check(args, cli.quiet, cli.verbose)?,
         Commands::Scan(args) => cmd_scan(args, cli.quiet, cli.verbose)?,
-        Commands::Report(args) => cmd_report(args, cli.quiet)?,
-        Commands::Init(args) => cmd_init(args, cli.quiet)?,
+        Commands::Report(args) => project_cmd::report(args, cli.quiet)?,
+        Commands::Init(args) => project_cmd::init(args, cli.quiet)?,
         Commands::Doctor(args) => cmd_doctor(args, cli.quiet)?,
         Commands::Registry(args) => catalog_cmd::registry(args, cli.quiet)?,
         Commands::Invariants(args) => catalog_cmd::invariants(args, cli.quiet)?,
@@ -3219,161 +3196,6 @@ fn count_violations_by_severity(violations: &[Violation]) -> (usize, usize, usiz
     }
 
     (critical, high, medium, low)
-}
-
-/// Handle the `report` subcommand.
-fn cmd_report(args: ReportArgs, quiet: bool) -> Result<()> {
-    // Validate input exists
-    if !args.input.exists() {
-        return Err(anyhow::anyhow!(
-            "Input file not found: {}",
-            args.input.display()
-        ));
-    }
-
-    // Read input file
-    let input_content = std::fs::read_to_string(&args.input)
-        .map_err(|e| anyhow::anyhow!("Failed to read input file: {}", e))?;
-
-    // Parse input - if it looks like JSON, try to parse it as analysis results
-    let analysis_data =
-        if input_content.trim().starts_with('{') || input_content.trim().starts_with('[') {
-            serde_json::from_str::<serde_json::Value>(&input_content)
-                .unwrap_or_else(|_| json!({"content": input_content}))
-        } else {
-            // If it's not JSON, treat it as raw content
-            json!({"content": input_content})
-        };
-
-    // Generate report based on format
-    let report_output = match args.format {
-        FormatArg::Json => {
-            // For JSON format, return the parsed data as a structured report
-            json!({
-                "report_type": "analysis",
-                "source": args.input.display().to_string(),
-                "data": analysis_data,
-                "format": "json"
-            })
-            .to_string()
-        }
-        FormatArg::Html => {
-            // For HTML format, generate a simple HTML wrapper around the data
-            format!(
-                r#"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Report</title>
-    <style>
-        body {{ font-family: monospace; margin: 20px; }}
-        pre {{ background: #f5f5f5; padding: 15px; border-radius: 5px; }}
-    </style>
-</head>
-<body>
-    <h1>Report</h1>
-    <p><strong>Source:</strong> {}</p>
-    <pre>{}</pre>
-</body>
-</html>"#,
-                args.input.display(),
-                serde_json::to_string_pretty(&analysis_data).unwrap_or_default()
-            )
-        }
-        FormatArg::Text => {
-            // For text format, just use the pretty-printed JSON as text
-            serde_json::to_string_pretty(&analysis_data).unwrap_or_default()
-        }
-    };
-
-    if !quiet {
-        eprintln!(
-            "✓ Generating {} report from {}",
-            match args.format {
-                FormatArg::Text => "text",
-                FormatArg::Json => "JSON",
-                FormatArg::Html => "HTML",
-            },
-            args.input.display()
-        );
-    }
-
-    // Output the report
-    if let Some(output_path) = args.output {
-        std::fs::write(&output_path, &report_output)
-            .map_err(|e| anyhow::anyhow!("Failed to write report: {}", e))?;
-        if !quiet {
-            eprintln!("✓ Report written to {}", output_path.display());
-        }
-    } else {
-        println!("{}", report_output);
-    }
-
-    if !quiet {
-        eprintln!("✓ Report generated successfully");
-    }
-
-    Ok(())
-}
-
-/// Generate an HTML report from analysis data
-/// Generate a text report from analysis data
-fn generate_text_report(data: &serde_json::Value, source: &std::path::Path) -> String {
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| format!("{} seconds since epoch", d.as_secs()))
-        .unwrap_or_else(|_| "unknown time".to_string());
-
-    format!(
-        r#"================================================================================
-                        TRUENT ANALYSIS REPORT
-================================================================================
-
-Generated: {}
-Source:    {}
-
-================================================================================
-                          ANALYSIS SUMMARY
-================================================================================
-
-{}
-
-================================================================================
-                            END OF REPORT
-================================================================================
-"#,
-        timestamp,
-        source.display(),
-        serde_json::to_string_pretty(data).unwrap_or_default()
-    )
-}
-
-/// Handle the `init` subcommand.
-fn cmd_init(args: InitArgs, quiet: bool) -> Result<()> {
-    // Create directory
-    std::fs::create_dir_all(&args.path)?;
-
-    // Create .truent.toml
-    let config_path = args.path.join(".truent.toml");
-    let config_content = r#"# Truent Configuration
-[project]
-name = "my_contracts"
-version = "0.1.0"
-
-[chains]
-enabled = ["evm"]
-
-[invariants]
-# Add your invariant checks here
-"#;
-
-    std::fs::write(&config_path, config_content)?;
-
-    if !quiet {
-        println!("{}", render_init_success(&args.path));
-    }
-
-    Ok(())
 }
 
 /// Handle the `doctor` subcommand.
