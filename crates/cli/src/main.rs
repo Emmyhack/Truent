@@ -18,6 +18,7 @@ mod ui;
 use ui::*;
 
 mod catalog_cmd;
+mod doctor_cmd;
 mod project_cmd;
 mod skills_cmd;
 
@@ -69,7 +70,7 @@ enum Commands {
     /// Initialize a .truent.toml configuration file.
     Init(project_cmd::InitArgs),
     /// Check that all Truent components are working correctly.
-    Doctor(DoctorArgs),
+    Doctor(doctor_cmd::DoctorArgs),
     /// Display exploit registry.
     Registry(RegistryArgs),
     /// Display compiled invariants.
@@ -326,18 +327,6 @@ enum TaxonomyFormat {
     Json,
     /// Markdown table, as committed to `docs/COVERAGE.md`.
     Markdown,
-}
-
-/// Arguments for the `doctor` subcommand.
-#[derive(Parser)]
-struct DoctorArgs {
-    /// Output format.
-    #[arg(long, value_enum, default_value = "text")]
-    format: FormatArg,
-
-    /// Output file.
-    #[arg(long)]
-    output: Option<PathBuf>,
 }
 
 /// Arguments for the `check` subcommand.
@@ -638,7 +627,7 @@ fn main() -> Result<()> {
         Commands::Scan(args) => cmd_scan(args, cli.quiet, cli.verbose)?,
         Commands::Report(args) => project_cmd::report(args, cli.quiet)?,
         Commands::Init(args) => project_cmd::init(args, cli.quiet)?,
-        Commands::Doctor(args) => cmd_doctor(args, cli.quiet)?,
+        Commands::Doctor(args) => doctor_cmd::run(args, cli.quiet)?,
         Commands::Registry(args) => catalog_cmd::registry(args, cli.quiet)?,
         Commands::Invariants(args) => catalog_cmd::invariants(args, cli.quiet)?,
         Commands::Fuzz(args) => cmd_fuzz(args, cli.quiet, cli.verbose)?,
@@ -3484,155 +3473,6 @@ fn runtime_health_check() -> HealthCheck {
             format!("self-test: {headers} header finding(s), {weak} TLS finding(s)")
         },
     }
-}
-
-fn cmd_doctor(args: DoctorArgs, quiet: bool) -> Result<()> {
-    use doctor_fixtures as fx;
-
-    let checks = vec![
-        core_health_check(),
-        detector_health_check(
-            "EVM analyzer",
-            truent_analyzer_evm::detectors::run_all_detectors(fx::EVM, "self-test.sol").len(),
-        ),
-        detector_health_check(
-            "Solana analyzer",
-            truent_analyzer_solana::run_all_detectors(fx::SOLANA, "self-test.rs").len(),
-        ),
-        detector_health_check(
-            "Move analyzer",
-            truent_analyzer_move::run_all_detectors(fx::MOVE, "self-test.move").len(),
-        ),
-        detector_health_check(
-            "Soroban analyzer",
-            truent_analyzer_soroban::run_all_detectors(fx::SOROBAN, "self-test.rs").len(),
-        ),
-        detector_health_check(
-            "General analyzer",
-            general::run_all_detectors(fx::GENERAL, "self-test.py").len(),
-        ),
-        sca_health_check(),
-        runtime_health_check(),
-        HealthCheck {
-            component: "Exposure & remediation".to_string(),
-            passed: truent_core::taxonomy::all()
-                .iter()
-                .all(|t| truent_core::exposure::exposure_for(t.invariant_id).is_some())
-                && !truent_pathways::chains().is_empty(),
-            message: format!(
-                "{} detectors have an attack profile, fix and verify step; {} attack chains known",
-                truent_core::exposure::all().len(),
-                truent_pathways::chains().len()
-            ),
-        },
-        HealthCheck {
-            component: "Symbolic execution".to_string(),
-            passed: {
-                let (f, s) = truent_symbolic::halmos::parse(
-                    r#"{"exitcode":1,"test_results":{"t/A.t.sol:A":[{"name":"check_x(uint256)","exitcode":1,"num_models":1,"models":[{"model":{"p":{"variable_name":"x","solidity_type":"uint256","value":1}},"is_valid":true}]}]}}"#,
-                    "p",
-                );
-                s.failed == 1 && f.len() == 1 && f[0].is_proven()
-            },
-            message: format!(
-                "halmos/hevm/mythril parsers turn counterexamples into proven findings; installed: {}",
-                {
-                    let t = truent_symbolic::detect();
-                    if t.is_empty() { "none (pip install halmos)".to_string() } else { t.iter().map(|i| format!("{} {}", i.tool.name(), i.version)).collect::<Vec<_>>().join(", ") }
-                }
-            ),
-        },
-        HealthCheck {
-            component: "Release checklist".to_string(),
-            passed: truent_pathways::SECTIONS.len() == 33
-                && truent_pathways::Signal::all().len() >= 20,
-            message: format!(
-                "{} sections, {} items, {} repository signals",
-                truent_pathways::SECTIONS.len(),
-                truent_pathways::SECTIONS
-                    .iter()
-                    .map(|s| s.items.len())
-                    .sum::<usize>(),
-                truent_pathways::Signal::all().len()
-            ),
-        },
-        HealthCheck {
-            component: "Security pathways".to_string(),
-            passed: truent_pathways::pathways().len() >= 21,
-            message: format!(
-                "{} pathways mapped to native detectors, hosted skills and assessment controls",
-                truent_pathways::pathways().len()
-            ),
-        },
-        dsl_health_check(),
-        HealthCheck {
-            component: "Invariant library".to_string(),
-            passed: builtin_invariant_count() > 0,
-            message: format!("{} built-in invariants loaded", builtin_invariant_count()),
-        },
-        HealthCheck {
-            component: "Detector taxonomy".to_string(),
-            passed: !truent_core::taxonomy::all().is_empty(),
-            message: format!(
-                "{} detectors mapped to CWE/SWC/OWASP/DASP",
-                truent_core::taxonomy::all().len()
-            ),
-        },
-        report_health_check(),
-        skills_health_check(),
-    ];
-
-    match args.format {
-        FormatArg::Text => {
-            if !quiet {
-                println!("{}", render_doctor_results(&checks));
-            }
-        }
-        FormatArg::Json => {
-            // Build components map
-            let mut components = serde_json::Map::new();
-            for check in &checks {
-                components.insert(
-                    check.component.clone(),
-                    json!({
-                        "status": if check.passed { "ok" } else { "error" },
-                        "message": &check.message,
-                    }),
-                );
-            }
-
-            let report = json!({
-                "status": if checks.iter().all(|c| c.passed) { "healthy" } else { "error" },
-                "components": components,
-            });
-
-            let output_json = serde_json::to_string_pretty(&report)?;
-
-            if let Some(output_path) = args.output {
-                std::fs::write(&output_path, &output_json)?;
-                if !quiet {
-                    eprintln!("✓ Report written to {}", output_path.display());
-                }
-            } else {
-                println!("{}", output_json);
-            }
-        }
-        FormatArg::Html => {
-            anyhow::bail!("HTML output is not supported by `truent doctor`; use --format text or --format json");
-        }
-    }
-
-    // Exit non-zero when a component is unhealthy.
-    //
-    // Every check used to be a hardcoded `passed: true`, so the return value
-    // was academic. Now that checks report real state, `truent doctor` is only
-    // usable as an install gate — which is exactly how the release workflow
-    // uses it — if a failure actually fails.
-    if checks.iter().any(|c| !c.passed) {
-        std::process::exit(1);
-    }
-
-    Ok(())
 }
 
 /// Handle the `scan` subcommand (enhanced version of check).
