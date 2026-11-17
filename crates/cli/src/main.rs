@@ -17,6 +17,7 @@ use std::time::Instant;
 mod ui;
 use ui::*;
 
+mod catalog_cmd;
 mod skills_cmd;
 
 // Import analyzers
@@ -661,8 +662,8 @@ fn main() -> Result<()> {
         Commands::Report(args) => cmd_report(args, cli.quiet)?,
         Commands::Init(args) => cmd_init(args, cli.quiet)?,
         Commands::Doctor(args) => cmd_doctor(args, cli.quiet)?,
-        Commands::Registry(args) => cmd_registry(args, cli.quiet)?,
-        Commands::Invariants(args) => cmd_invariants(args, cli.quiet)?,
+        Commands::Registry(args) => catalog_cmd::registry(args, cli.quiet)?,
+        Commands::Invariants(args) => catalog_cmd::invariants(args, cli.quiet)?,
         Commands::Fuzz(args) => cmd_fuzz(args, cli.quiet, cli.verbose)?,
         Commands::Taxonomy(args) => cmd_taxonomy(args)?,
         Commands::Skills(args) => skills_cmd::run(args, cli.quiet)?,
@@ -4028,165 +4029,6 @@ fn cmd_scan(args: ScanArgs, quiet: bool, verbose: bool) -> Result<()> {
     });
     if blocking {
         std::process::exit(1);
-    }
-
-    Ok(())
-}
-
-/// Handle the `registry` subcommand.
-fn cmd_registry(args: RegistryArgs, quiet: bool) -> Result<()> {
-    use truent_core::EXPLOIT_REGISTRY;
-
-    match args.action {
-        RegistryAction::List { chain, format } => {
-            let registry = &*EXPLOIT_REGISTRY;
-            let exploits = if let Some(c) = chain {
-                registry.by_chain(&c)
-            } else {
-                registry.all()
-            };
-
-            match format {
-                FormatArg::Text => {
-                    if !quiet {
-                        println!(
-                            "\n{} Historical DeFi Exploits Mapped to Truent Invariants",
-                            exploits.len()
-                        );
-                        println!("{}", "=".repeat(80));
-                        for exploit in &exploits {
-                            println!(
-                                "\n  {} | {} | {} | ${} loss",
-                                exploit.id, exploit.protocol, exploit.date, exploit.loss_usd
-                            );
-                            println!("    Invariants: {}", exploit.invariant_ids.join(", "));
-                        }
-                        println!("\n{}", "=".repeat(80));
-                        println!("Total loss: ${}", registry.total_loss());
-                    }
-                }
-                FormatArg::Json => {
-                    let json_exploits: Vec<_> = exploits.iter().map(|e| json!(e)).collect();
-                    println!("{}", serde_json::to_string_pretty(&json_exploits)?);
-                }
-                _ => {
-                    anyhow::bail!("HTML output is not supported by `truent registry list`; use --format text or --format json");
-                }
-            }
-        }
-        RegistryAction::Show { id, format } => {
-            let registry = &*EXPLOIT_REGISTRY;
-
-            match registry.get(&id) {
-                Some(exploit) => match format {
-                    FormatArg::Text => {
-                        if !quiet {
-                            println!("\n{} - {} ({})", exploit.id, exploit.protocol, exploit.date);
-                            println!("{}", "=".repeat(80));
-                            println!("Loss: ${}", exploit.loss_usd);
-                            println!("Chain: {}", exploit.chain);
-                            println!("\nAttack Summary:\n{}\n", exploit.attack_summary);
-                            println!("Invariants Violated:");
-                            for inv_id in &exploit.invariant_ids {
-                                println!("  - {}", inv_id);
-                            }
-                            println!("\nTx Hash: {}", exploit.tx_hash);
-                            println!("Postmortem: {}\n", exploit.postmortem_url);
-                        }
-                    }
-                    FormatArg::Json => {
-                        println!("{}", serde_json::to_string_pretty(&exploit)?);
-                    }
-                    _ => {
-                        anyhow::bail!("HTML output is not supported by `truent registry show`; use --format text or --format json");
-                    }
-                },
-                None => {
-                    if !quiet {
-                        eprintln!("✗ Exploit not found: {}", id);
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(())
-}
-
-/// Handle the `invariants` subcommand.
-fn cmd_invariants(args: InvariantsArgs, quiet: bool) -> Result<()> {
-    use truent_core::{get_invariant, invariant_count, invariants_for_chain};
-
-    match args.action {
-        InvariantsAction::List {
-            chain,
-            severity: _,
-            format,
-        } => match format {
-            FormatArg::Text => {
-                if !quiet {
-                    // Count what is actually listed. Printing the global total
-                    // above a filtered list reads as "9 invariants" over six
-                    // rows.
-                    let count = match &chain {
-                        Some(c) => invariants_for_chain(c).len(),
-                        None => invariant_count(),
-                    };
-                    println!("\n {} Compiled Invariants", count);
-                    println!("{}", "=".repeat(80));
-
-                    if let Some(c) = &chain {
-                        let invariants = invariants_for_chain(c);
-                        println!("Chain: {}\n", c);
-                        for inv in &invariants {
-                            println!("  {} | {} | {}", inv.id, inv.severity, inv.description);
-                        }
-                    } else {
-                        println!("(Total across all chains)\n");
-                        println!("  Use --chain evm|solana|move|soroban to filter\n");
-                    }
-                    println!("{}", "=".repeat(80));
-                }
-            }
-            FormatArg::Json => {
-                if let Some(c) = chain {
-                    let invariants = invariants_for_chain(&c);
-                    let json_invs: Vec<_> = invariants
-                        .iter()
-                        .map(|i| json!({"id": i.id, "severity": i.severity, "chain": i.chain}))
-                        .collect();
-                    println!("{}", serde_json::to_string_pretty(&json_invs)?);
-                }
-            }
-            _ => {
-                anyhow::bail!("HTML output is not supported by `truent invariants list`; use --format text or --format json");
-            }
-        },
-        InvariantsAction::Show { id, format } => match get_invariant(&id) {
-            Some(inv) => match format {
-                FormatArg::Text => {
-                    if !quiet {
-                        println!("\n{}", inv.id);
-                        println!("{}", "=".repeat(80));
-                        println!("Severity: {}", inv.severity);
-                        println!("Chain: {}", inv.chain);
-                        println!("\nDescription:\n{}\n", inv.description);
-                        println!("Message Template: {}\n", inv.message);
-                    }
-                }
-                FormatArg::Json => {
-                    println!("{}", serde_json::to_string_pretty(&json!(inv))?);
-                }
-                _ => {
-                    anyhow::bail!("HTML output is not supported by `truent invariants show`; use --format text or --format json");
-                }
-            },
-            None => {
-                if !quiet {
-                    eprintln!("✗ Invariant not found: {}", id);
-                }
-            }
-        },
     }
 
     Ok(())
