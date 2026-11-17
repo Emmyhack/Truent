@@ -406,6 +406,49 @@ impl ControlFlowGraph {
     pub fn block_count(&self) -> usize {
         self.graph.node_count()
     }
+
+    /// Block IDs in deterministic order.
+    pub fn block_ids(&self) -> Vec<usize> {
+        let mut ids: Vec<_> = self.block_map.keys().copied().collect();
+        ids.sort_unstable();
+        ids
+    }
+
+    /// Read a block by its stable ID.
+    pub fn block(&self, block_id: usize) -> Option<&BasicBlock> {
+        self.block_map
+            .get(&block_id)
+            .and_then(|index| self.graph.node_weight(*index))
+    }
+
+    /// Predecessor block IDs in deterministic order.
+    pub fn predecessors(&self, block_id: usize) -> AnalysisResult<Vec<usize>> {
+        self.neighbors(block_id, petgraph::Direction::Incoming)
+    }
+
+    /// Successor block IDs in deterministic order.
+    pub fn successors(&self, block_id: usize) -> AnalysisResult<Vec<usize>> {
+        self.neighbors(block_id, petgraph::Direction::Outgoing)
+    }
+
+    fn neighbors(
+        &self,
+        block_id: usize,
+        direction: petgraph::Direction,
+    ) -> AnalysisResult<Vec<usize>> {
+        let index = self
+            .block_map
+            .get(&block_id)
+            .copied()
+            .ok_or_else(|| AnalysisError::cfg("Block not found"))?;
+        let mut ids: Vec<_> = self
+            .graph
+            .neighbors_directed(index, direction)
+            .filter_map(|neighbor| self.graph.node_weight(neighbor).map(|block| block.id))
+            .collect();
+        ids.sort_unstable();
+        Ok(ids)
+    }
 }
 
 impl Default for ControlFlowGraph {
@@ -435,9 +478,10 @@ impl CfgBuilder {
 
         let mut cfg = ControlFlowGraph::new();
 
-        // For now, simple linear CFG from function body
-        // TODO: Parse function body statements and create appropriate branching
         let entry = cfg.entry();
+        for source in &function.body {
+            cfg.add_statement(entry, parse_statement(source))?;
+        }
         cfg.mark_exit(entry)?;
 
         // Compute dominance
@@ -447,6 +491,36 @@ impl CfgBuilder {
         cfg.detect_loops()?;
 
         Ok(cfg)
+    }
+}
+
+fn parse_statement(source: &str) -> Statement {
+    let code = source.trim().trim_end_matches(';').trim();
+    if let Some(value) = code.strip_prefix("return") {
+        let value = value.trim();
+        return Statement::Return {
+            value: (!value.is_empty()).then(|| value.to_string()),
+        };
+    }
+    if code.starts_with("if ") || code.starts_with("if(") || code.starts_with("require(") {
+        return Statement::Branch {
+            condition: code.to_string(),
+        };
+    }
+    if let Some((left, right)) = code.split_once('=') {
+        let target = left
+            .split_whitespace()
+            .last()
+            .unwrap_or(left)
+            .trim()
+            .to_string();
+        return Statement::Assignment {
+            target,
+            value: right.trim().to_string(),
+        };
+    }
+    Statement::Generic {
+        code: code.to_string(),
     }
 }
 
@@ -487,5 +561,48 @@ mod tests {
 
         cfg.mark_exit(entry).ok();
         assert!(cfg.exits().contains(&entry));
+    }
+
+    #[test]
+    fn builder_preserves_linear_function_statements() {
+        let function = AstFunction {
+            name: "withdraw".to_string(),
+            parameters: Vec::new(),
+            returns: Vec::new(),
+            visibility: crate::ast::Visibility::Public,
+            is_mutable: true,
+            is_pure: false,
+            is_view: false,
+            modifiers: Vec::new(),
+            body: vec![
+                "uint256 amount = msg.value;".to_string(),
+                "uint256 fee = amount / 100;".to_string(),
+                "return fee;".to_string(),
+            ],
+            id: 1,
+        };
+
+        let cfg = CfgBuilder::build(&function).expect("CFG builds");
+        let block = cfg.block(cfg.entry()).expect("entry block");
+        assert_eq!(block.statements.len(), 3);
+        assert!(matches!(
+            &block.statements[0],
+            Statement::Assignment { target, value }
+                if target == "amount" && value == "msg.value"
+        ));
+        assert!(matches!(
+            &block.statements[2],
+            Statement::Return { value: Some(value) } if value == "fee"
+        ));
+    }
+
+    #[test]
+    fn predecessor_and_successor_views_are_stable() {
+        let mut cfg = ControlFlowGraph::new();
+        let entry = cfg.entry();
+        let second = cfg.new_block();
+        cfg.add_edge(entry, second, "next").expect("edge");
+        assert_eq!(cfg.successors(entry).expect("successors"), vec![second]);
+        assert_eq!(cfg.predecessors(second).expect("predecessors"), vec![entry]);
     }
 }
