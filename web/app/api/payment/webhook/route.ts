@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import prisma from '@/lib/prisma'
 import { isPlanId, isProductId, PRODUCTS } from '@/lib/plans'
+import { checkoutAction } from '@/lib/api-policy'
 
 export const runtime = 'nodejs'
 
@@ -42,35 +43,29 @@ export async function POST(request: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const checkout = event.data.object
-    const userId = checkout.metadata?.userId
-    const kind = checkout.metadata?.kind
-    if (!userId) return NextResponse.json({ received: true })
+    const action = checkoutAction(checkout)
 
-    if (kind === 'subscription' || (!kind && checkout.subscription)) {
-      const plan = checkout.metadata?.planId
-      if (plan && isPlanId(plan) && checkout.subscription) {
-        const providerSubscriptionId = typeof checkout.subscription === 'string' ? checkout.subscription : checkout.subscription.id
-        const providerCustomerId = typeof checkout.customer === 'string' ? checkout.customer : (checkout.customer?.id ?? '')
+    if (action?.kind === 'subscription') {
+      if (isPlanId(action.planId)) {
         await prisma.subscription.upsert({
-          where: { userId },
-          create: { userId, provider: 'stripe', providerCustomerId, providerSubscriptionId, plan, status: 'active' },
-          update: { provider: 'stripe', providerCustomerId, providerSubscriptionId, plan, status: 'active' },
+          where: { userId: action.userId },
+          create: { userId: action.userId, provider: 'stripe', providerCustomerId: action.customerId, providerSubscriptionId: action.subscriptionId, plan: action.planId, status: 'active' },
+          update: { provider: 'stripe', providerCustomerId: action.customerId, providerSubscriptionId: action.subscriptionId, plan: action.planId, status: 'active' },
         })
-        await recordPayment(checkout, userId, plan)
+        await recordPayment(checkout, action.userId, action.planId)
       }
     }
 
-    if (kind === 'credits' && checkout.payment_status === 'paid') {
-      const productId = checkout.metadata?.productId
-      if (isProductId(productId)) {
-        const product = PRODUCTS[productId]
+    if (action?.kind === 'credits') {
+      if (isProductId(action.productId)) {
+        const product = PRODUCTS[action.productId]
         // `source` is unique: a retried webhook cannot grant the pack twice.
         await prisma.scanCredit.upsert({
           where: { source: checkout.id },
-          create: { userId, source: checkout.id, product: productId, granted: product.credits, remaining: product.credits },
+          create: { userId: action.userId, source: checkout.id, product: action.productId, granted: product.credits, remaining: product.credits },
           update: {},
         })
-        await recordPayment(checkout, userId, productId)
+        await recordPayment(checkout, action.userId, action.productId)
       }
     }
   }

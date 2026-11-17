@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import { entitlementFor, periodKey, type Entitlement } from '@/lib/plans'
+import { spendFirstAvailable } from '@/lib/credit-spend'
 
 export class QuotaExceeded extends Error {
   entitlement: Entitlement
@@ -75,10 +76,20 @@ export async function consumeScan(userId: string, now = new Date()): Promise<Con
     const r = await prisma.usage.updateMany({ where: { userId, period, scans: { lt: ent.quota } }, data: { scans: { increment: 1 } } })
     if (r.count === 1) return { from: 'quota', entitlement: await getEntitlement(userId, now) }
   }
-  const credit = await prisma.scanCredit.findFirst({ where: liveCredits(userId, now), orderBy: { createdAt: 'asc' } })
+  const credits = await prisma.scanCredit.findMany({
+    where: liveCredits(userId, now),
+    orderBy: { createdAt: 'asc' },
+    select: { id: true },
+  })
+  const credit = await spendFirstAvailable(credits, async ({ id }) => {
+    const r = await prisma.scanCredit.updateMany({
+      where: { id, remaining: { gt: 0 } },
+      data: { remaining: { decrement: 1 } },
+    })
+    return r.count === 1
+  })
   if (credit) {
-    const r = await prisma.scanCredit.updateMany({ where: { id: credit.id, remaining: { gt: 0 } }, data: { remaining: { decrement: 1 } } })
-    if (r.count === 1) return { from: 'credit', creditId: credit.id, entitlement: await getEntitlement(userId, now) }
+    return { from: 'credit', creditId: credit.id, entitlement: await getEntitlement(userId, now) }
   }
   throw new QuotaExceeded(await getEntitlement(userId, now))
 }
