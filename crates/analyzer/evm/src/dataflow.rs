@@ -179,15 +179,30 @@ impl DataFlowAnalyzer {
     fn compute_reaching_definitions(
         cfg: &ControlFlowGraph,
     ) -> AnalysisResult<HashMap<usize, HashSet<String>>> {
-        let mut reaching = HashMap::new();
-
-        // TODO: Implement iterative reaching definitions algorithm
-        // For now, return empty map
-        let blocks = vec![cfg.entry()];
-        for block in blocks {
-            reaching.insert(block, HashSet::new());
+        let blocks = cfg.block_ids();
+        let mut reaching: HashMap<_, HashSet<String>> =
+            blocks.iter().map(|id| (*id, HashSet::new())).collect();
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for block_id in &blocks {
+                let mut next = HashSet::new();
+                for predecessor in cfg.predecessors(*block_id)? {
+                    next.extend(reaching.get(&predecessor).cloned().unwrap_or_default());
+                }
+                if let Some(block) = cfg.block(*block_id) {
+                    for statement in &block.statements {
+                        if let Some(definition) = defined_variable(statement) {
+                            next.insert(definition.to_string());
+                        }
+                    }
+                }
+                if reaching.get(block_id) != Some(&next) {
+                    reaching.insert(*block_id, next);
+                    changed = true;
+                }
+            }
         }
-
         Ok(reaching)
     }
 
@@ -195,30 +210,80 @@ impl DataFlowAnalyzer {
     fn compute_live_variables(
         cfg: &ControlFlowGraph,
     ) -> AnalysisResult<HashMap<usize, HashSet<String>>> {
-        let mut live = HashMap::new();
-
-        // TODO: Implement live variable analysis
-        // For now, return empty map
-        let blocks = vec![cfg.entry()];
-        for block in blocks {
-            live.insert(block, HashSet::new());
+        let blocks = cfg.block_ids();
+        let mut live: HashMap<_, HashSet<String>> =
+            blocks.iter().map(|id| (*id, HashSet::new())).collect();
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for block_id in blocks.iter().rev() {
+                let mut out = HashSet::new();
+                for successor in cfg.successors(*block_id)? {
+                    out.extend(live.get(&successor).cloned().unwrap_or_default());
+                }
+                let mut next = out;
+                if let Some(block) = cfg.block(*block_id) {
+                    for statement in block.statements.iter().rev() {
+                        if let Some(definition) = defined_variable(statement) {
+                            next.remove(definition);
+                        }
+                        next.extend(used_variables(statement));
+                    }
+                }
+                if live.get(block_id) != Some(&next) {
+                    live.insert(*block_id, next);
+                    changed = true;
+                }
+            }
         }
-
         Ok(live)
     }
 
     /// Extract definition-use chains from control flow graph.
     fn extract_def_use_chains(
-        _cfg: &ControlFlowGraph,
-        analysis: DataFlow,
+        cfg: &ControlFlowGraph,
+        mut analysis: DataFlow,
     ) -> AnalysisResult<DataFlow> {
-        // TODO: Walk through CFG and extract def-use chains
-
+        let mut latest: HashMap<String, usize> = HashMap::new();
+        for block_id in cfg.block_ids() {
+            let Some(block) = cfg.block(block_id) else {
+                continue;
+            };
+            for (statement_idx, statement) in block.statements.iter().enumerate() {
+                for variable in used_variables(statement) {
+                    if let Some(chain) = latest
+                        .get(&variable)
+                        .and_then(|index| analysis.def_use_chains.get_mut(*index))
+                    {
+                        chain.uses.push(Location {
+                            block: block_id,
+                            statement_idx,
+                            line: None,
+                        });
+                    }
+                }
+                if let Some(variable) = defined_variable(statement) {
+                    analysis.def_use_chains.push(DefUse {
+                        variable: variable.to_string(),
+                        definition: Location {
+                            block: block_id,
+                            statement_idx,
+                            line: None,
+                        },
+                        uses: Vec::new(),
+                    });
+                    latest.insert(variable.to_string(), analysis.def_use_chains.len() - 1);
+                }
+            }
+        }
         Ok(analysis)
     }
 
     /// Identify tainted variables through data flow.
-    fn identify_tainted(_cfg: &ControlFlowGraph, analysis: DataFlow) -> AnalysisResult<DataFlow> {
+    fn identify_tainted(
+        cfg: &ControlFlowGraph,
+        mut analysis: DataFlow,
+    ) -> AnalysisResult<DataFlow> {
         // Sources of taint:
         // - External calls
         // - Function parameters marked as untrusted
@@ -227,15 +292,66 @@ impl DataFlowAnalyzer {
 
         info!("Identifying tainted variables");
 
-        // TODO: Taint propagation analysis
-
+        let sources = ["msg.sender", "tx.origin", "msg.data", "calldata", "input"];
+        for block_id in cfg.block_ids() {
+            let Some(block) = cfg.block(block_id) else {
+                continue;
+            };
+            for statement in &block.statements {
+                let Some(target) = defined_variable(statement) else {
+                    continue;
+                };
+                let value = statement_value(statement).unwrap_or_default();
+                let dependencies = identifiers(value);
+                let tainted = sources.iter().any(|source| value.contains(source))
+                    || dependencies
+                        .iter()
+                        .any(|dependency| analysis.tainted_vars.contains(dependency));
+                let origin = if tainted {
+                    ValueOrigin::Untrusted {
+                        source: value.to_string(),
+                    }
+                } else if value.parse::<i128>().is_ok() {
+                    ValueOrigin::Constant {
+                        value: value.to_string(),
+                    }
+                } else {
+                    ValueOrigin::Unknown
+                };
+                analysis.origins.insert(target.to_string(), origin);
+                if tainted {
+                    analysis.tainted_vars.insert(target.to_string());
+                } else {
+                    analysis.tainted_vars.remove(target);
+                }
+            }
+        }
         Ok(analysis)
     }
 
     /// Build data dependency graph.
-    fn build_dependencies(_cfg: &ControlFlowGraph, analysis: DataFlow) -> AnalysisResult<DataFlow> {
-        // TODO: Construct dependency graph from def-use chains
-
+    fn build_dependencies(
+        cfg: &ControlFlowGraph,
+        mut analysis: DataFlow,
+    ) -> AnalysisResult<DataFlow> {
+        for block_id in cfg.block_ids() {
+            let Some(block) = cfg.block(block_id) else {
+                continue;
+            };
+            for statement in &block.statements {
+                if let (Some(target), Some(value)) =
+                    (defined_variable(statement), statement_value(statement))
+                {
+                    let dependencies = identifiers(value)
+                        .into_iter()
+                        .filter(|identifier| identifier != target)
+                        .collect();
+                    analysis
+                        .dependencies
+                        .insert(target.to_string(), dependencies);
+                }
+            }
+        }
         Ok(analysis)
     }
 }
@@ -296,11 +412,15 @@ pub struct UseDefAnalyzer;
 
 impl UseDefAnalyzer {
     /// Compute use-def chains for all variables.
-    pub fn compute_chains(_cfg: &ControlFlowGraph) -> AnalysisResult<HashMap<String, Vec<DefUse>>> {
-        let chains: HashMap<String, Vec<DefUse>> = HashMap::new();
-
-        // TODO: Walk CFG and compute use-def chains
-
+    pub fn compute_chains(cfg: &ControlFlowGraph) -> AnalysisResult<HashMap<String, Vec<DefUse>>> {
+        let analysis = DataFlowAnalyzer::extract_def_use_chains(cfg, DataFlow::new())?;
+        let mut chains: HashMap<String, Vec<DefUse>> = HashMap::new();
+        for chain in analysis.def_use_chains {
+            chains
+                .entry(chain.variable.clone())
+                .or_default()
+                .push(chain);
+        }
         Ok(chains)
     }
 
@@ -316,6 +436,59 @@ impl UseDefAnalyzer {
             .find(|du| du.variable == var)
             .map(|du| du.definition.clone())
     }
+}
+
+fn defined_variable(statement: &crate::cfg::Statement) -> Option<&str> {
+    match statement {
+        crate::cfg::Statement::Assignment { target, .. }
+        | crate::cfg::Statement::StateMutation {
+            variable: target, ..
+        } => Some(target),
+        _ => None,
+    }
+}
+
+fn statement_value(statement: &crate::cfg::Statement) -> Option<&str> {
+    match statement {
+        crate::cfg::Statement::Assignment { value, .. }
+        | crate::cfg::Statement::StateMutation { value, .. } => Some(value),
+        _ => None,
+    }
+}
+
+fn used_variables(statement: &crate::cfg::Statement) -> HashSet<String> {
+    match statement {
+        crate::cfg::Statement::Assignment { value, .. }
+        | crate::cfg::Statement::StateMutation { value, .. } => identifiers(value),
+        crate::cfg::Statement::Branch { condition } => identifiers(condition),
+        crate::cfg::Statement::FunctionCall { function, args } => {
+            let mut used = identifiers(function);
+            for argument in args {
+                used.extend(identifiers(argument));
+            }
+            used
+        }
+        crate::cfg::Statement::Return { value } => {
+            value.as_deref().map(identifiers).unwrap_or_default()
+        }
+        crate::cfg::Statement::Generic { code } => identifiers(code),
+    }
+}
+
+fn identifiers(source: &str) -> HashSet<String> {
+    source
+        .split(|character: char| {
+            !(character.is_ascii_alphanumeric() || character == '_' || character == '.')
+        })
+        .filter(|token| {
+            token
+                .chars()
+                .next()
+                .is_some_and(|first| first.is_ascii_alphabetic() || first == '_')
+        })
+        .filter(|token| !matches!(*token, "if" | "return" | "true" | "false"))
+        .map(str::to_string)
+        .collect()
 }
 
 #[cfg(test)]
@@ -384,5 +557,64 @@ mod tests {
         let dependents = data_flow.transitive_dependents("a");
         assert!(dependents.contains("b"));
         assert!(dependents.contains("c"));
+    }
+
+    #[test]
+    fn analysis_builds_def_use_dependencies_and_propagates_taint() {
+        let mut cfg = ControlFlowGraph::new();
+        let entry = cfg.entry();
+        cfg.add_statement(
+            entry,
+            crate::cfg::Statement::Assignment {
+                target: "sender".to_string(),
+                value: "msg.sender".to_string(),
+            },
+        )
+        .expect("sender assignment");
+        cfg.add_statement(
+            entry,
+            crate::cfg::Statement::Assignment {
+                target: "recipient".to_string(),
+                value: "sender".to_string(),
+            },
+        )
+        .expect("recipient assignment");
+        cfg.add_statement(
+            entry,
+            crate::cfg::Statement::Return {
+                value: Some("recipient".to_string()),
+            },
+        )
+        .expect("return");
+        cfg.mark_exit(entry).expect("exit");
+
+        let analysis = DataFlowAnalyzer::analyze(&cfg).expect("data flow");
+        assert!(analysis.is_tainted("sender"));
+        assert!(analysis.is_tainted("recipient"));
+        assert!(analysis.dependencies["recipient"].contains("sender"));
+        let recipient = analysis
+            .def_use_chains
+            .iter()
+            .find(|chain| chain.variable == "recipient")
+            .expect("recipient def-use chain");
+        assert_eq!(recipient.uses.len(), 1);
+    }
+
+    #[test]
+    fn use_def_analyzer_groups_redefinitions() {
+        let mut cfg = ControlFlowGraph::new();
+        let entry = cfg.entry();
+        for value in ["1", "2"] {
+            cfg.add_statement(
+                entry,
+                crate::cfg::Statement::Assignment {
+                    target: "amount".to_string(),
+                    value: value.to_string(),
+                },
+            )
+            .expect("assignment");
+        }
+        let chains = UseDefAnalyzer::compute_chains(&cfg).expect("chains");
+        assert_eq!(chains["amount"].len(), 2);
     }
 }

@@ -171,6 +171,8 @@ contract Vault {
             events: vec![],
             modifiers: vec![],
             base_contracts: vec![],
+            bytecode: String::new(),
+            runtime_bytecode: String::new(),
         };
 
         let model = build_semantic_model(&contract, FIXTURE, "Vault.sol");

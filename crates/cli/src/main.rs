@@ -17,6 +17,9 @@ use std::time::Instant;
 mod ui;
 use ui::*;
 
+mod catalog_cmd;
+mod doctor_cmd;
+mod project_cmd;
 mod skills_cmd;
 
 // Import analyzers
@@ -63,11 +66,11 @@ enum Commands {
     /// Scan contracts with full invariant enforcement (primary command).
     Scan(ScanArgs),
     /// Generate a report from analysis results.
-    Report(ReportArgs),
+    Report(project_cmd::ReportArgs),
     /// Initialize a .truent.toml configuration file.
-    Init(InitArgs),
+    Init(project_cmd::InitArgs),
     /// Check that all Truent components are working correctly.
-    Doctor(DoctorArgs),
+    Doctor(doctor_cmd::DoctorArgs),
     /// Display exploit registry.
     Registry(RegistryArgs),
     /// Display compiled invariants.
@@ -326,18 +329,6 @@ enum TaxonomyFormat {
     Markdown,
 }
 
-/// Arguments for the `doctor` subcommand.
-#[derive(Parser)]
-struct DoctorArgs {
-    /// Output format.
-    #[arg(long, value_enum, default_value = "text")]
-    format: FormatArg,
-
-    /// Output file.
-    #[arg(long)]
-    output: Option<PathBuf>,
-}
-
 /// Arguments for the `check` subcommand.
 #[derive(Parser)]
 struct CheckArgs {
@@ -578,30 +569,6 @@ struct FuzzArgs {
     invariants: Option<PathBuf>,
 }
 
-/// Arguments for the `report` subcommand.
-#[derive(Parser)]
-struct ReportArgs {
-    /// Input results file.
-    #[arg(long)]
-    input: PathBuf,
-
-    /// Output format.
-    #[arg(long, value_enum, default_value = "text")]
-    format: FormatArg,
-
-    /// Output file.
-    #[arg(long)]
-    output: Option<PathBuf>,
-}
-
-/// Arguments for the `init` subcommand.
-#[derive(Parser)]
-struct InitArgs {
-    /// Project directory.
-    #[arg(default_value = ".")]
-    path: PathBuf,
-}
-
 /// Supported blockchain networks.
 #[derive(ValueEnum, Clone, Debug)]
 enum ChainArg {
@@ -658,11 +625,11 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Check(args) => cmd_check(args, cli.quiet, cli.verbose)?,
         Commands::Scan(args) => cmd_scan(args, cli.quiet, cli.verbose)?,
-        Commands::Report(args) => cmd_report(args, cli.quiet)?,
-        Commands::Init(args) => cmd_init(args, cli.quiet)?,
-        Commands::Doctor(args) => cmd_doctor(args, cli.quiet)?,
-        Commands::Registry(args) => cmd_registry(args, cli.quiet)?,
-        Commands::Invariants(args) => cmd_invariants(args, cli.quiet)?,
+        Commands::Report(args) => project_cmd::report(args, cli.quiet)?,
+        Commands::Init(args) => project_cmd::init(args, cli.quiet)?,
+        Commands::Doctor(args) => doctor_cmd::run(args, cli.quiet)?,
+        Commands::Registry(args) => catalog_cmd::registry(args, cli.quiet)?,
+        Commands::Invariants(args) => catalog_cmd::invariants(args, cli.quiet)?,
         Commands::Fuzz(args) => cmd_fuzz(args, cli.quiet, cli.verbose)?,
         Commands::Taxonomy(args) => cmd_taxonomy(args)?,
         Commands::Skills(args) => skills_cmd::run(args, cli.quiet)?,
@@ -3220,161 +3187,6 @@ fn count_violations_by_severity(violations: &[Violation]) -> (usize, usize, usiz
     (critical, high, medium, low)
 }
 
-/// Handle the `report` subcommand.
-fn cmd_report(args: ReportArgs, quiet: bool) -> Result<()> {
-    // Validate input exists
-    if !args.input.exists() {
-        return Err(anyhow::anyhow!(
-            "Input file not found: {}",
-            args.input.display()
-        ));
-    }
-
-    // Read input file
-    let input_content = std::fs::read_to_string(&args.input)
-        .map_err(|e| anyhow::anyhow!("Failed to read input file: {}", e))?;
-
-    // Parse input - if it looks like JSON, try to parse it as analysis results
-    let analysis_data =
-        if input_content.trim().starts_with('{') || input_content.trim().starts_with('[') {
-            serde_json::from_str::<serde_json::Value>(&input_content)
-                .unwrap_or_else(|_| json!({"content": input_content}))
-        } else {
-            // If it's not JSON, treat it as raw content
-            json!({"content": input_content})
-        };
-
-    // Generate report based on format
-    let report_output = match args.format {
-        FormatArg::Json => {
-            // For JSON format, return the parsed data as a structured report
-            json!({
-                "report_type": "analysis",
-                "source": args.input.display().to_string(),
-                "data": analysis_data,
-                "format": "json"
-            })
-            .to_string()
-        }
-        FormatArg::Html => {
-            // For HTML format, generate a simple HTML wrapper around the data
-            format!(
-                r#"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Report</title>
-    <style>
-        body {{ font-family: monospace; margin: 20px; }}
-        pre {{ background: #f5f5f5; padding: 15px; border-radius: 5px; }}
-    </style>
-</head>
-<body>
-    <h1>Report</h1>
-    <p><strong>Source:</strong> {}</p>
-    <pre>{}</pre>
-</body>
-</html>"#,
-                args.input.display(),
-                serde_json::to_string_pretty(&analysis_data).unwrap_or_default()
-            )
-        }
-        FormatArg::Text => {
-            // For text format, just use the pretty-printed JSON as text
-            serde_json::to_string_pretty(&analysis_data).unwrap_or_default()
-        }
-    };
-
-    if !quiet {
-        eprintln!(
-            "✓ Generating {} report from {}",
-            match args.format {
-                FormatArg::Text => "text",
-                FormatArg::Json => "JSON",
-                FormatArg::Html => "HTML",
-            },
-            args.input.display()
-        );
-    }
-
-    // Output the report
-    if let Some(output_path) = args.output {
-        std::fs::write(&output_path, &report_output)
-            .map_err(|e| anyhow::anyhow!("Failed to write report: {}", e))?;
-        if !quiet {
-            eprintln!("✓ Report written to {}", output_path.display());
-        }
-    } else {
-        println!("{}", report_output);
-    }
-
-    if !quiet {
-        eprintln!("✓ Report generated successfully");
-    }
-
-    Ok(())
-}
-
-/// Generate an HTML report from analysis data
-/// Generate a text report from analysis data
-fn generate_text_report(data: &serde_json::Value, source: &std::path::Path) -> String {
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| format!("{} seconds since epoch", d.as_secs()))
-        .unwrap_or_else(|_| "unknown time".to_string());
-
-    format!(
-        r#"================================================================================
-                        TRUENT ANALYSIS REPORT
-================================================================================
-
-Generated: {}
-Source:    {}
-
-================================================================================
-                          ANALYSIS SUMMARY
-================================================================================
-
-{}
-
-================================================================================
-                            END OF REPORT
-================================================================================
-"#,
-        timestamp,
-        source.display(),
-        serde_json::to_string_pretty(data).unwrap_or_default()
-    )
-}
-
-/// Handle the `init` subcommand.
-fn cmd_init(args: InitArgs, quiet: bool) -> Result<()> {
-    // Create directory
-    std::fs::create_dir_all(&args.path)?;
-
-    // Create .truent.toml
-    let config_path = args.path.join(".truent.toml");
-    let config_content = r#"# Truent Configuration
-[project]
-name = "my_contracts"
-version = "0.1.0"
-
-[chains]
-enabled = ["evm"]
-
-[invariants]
-# Add your invariant checks here
-"#;
-
-    std::fs::write(&config_path, config_content)?;
-
-    if !quiet {
-        println!("{}", render_init_success(&args.path));
-    }
-
-    Ok(())
-}
-
 /// Handle the `doctor` subcommand.
 /// Total built-in invariants across every supported chain.
 fn builtin_invariant_count() -> usize {
@@ -3663,155 +3475,6 @@ fn runtime_health_check() -> HealthCheck {
     }
 }
 
-fn cmd_doctor(args: DoctorArgs, quiet: bool) -> Result<()> {
-    use doctor_fixtures as fx;
-
-    let checks = vec![
-        core_health_check(),
-        detector_health_check(
-            "EVM analyzer",
-            truent_analyzer_evm::detectors::run_all_detectors(fx::EVM, "self-test.sol").len(),
-        ),
-        detector_health_check(
-            "Solana analyzer",
-            truent_analyzer_solana::run_all_detectors(fx::SOLANA, "self-test.rs").len(),
-        ),
-        detector_health_check(
-            "Move analyzer",
-            truent_analyzer_move::run_all_detectors(fx::MOVE, "self-test.move").len(),
-        ),
-        detector_health_check(
-            "Soroban analyzer",
-            truent_analyzer_soroban::run_all_detectors(fx::SOROBAN, "self-test.rs").len(),
-        ),
-        detector_health_check(
-            "General analyzer",
-            general::run_all_detectors(fx::GENERAL, "self-test.py").len(),
-        ),
-        sca_health_check(),
-        runtime_health_check(),
-        HealthCheck {
-            component: "Exposure & remediation".to_string(),
-            passed: truent_core::taxonomy::all()
-                .iter()
-                .all(|t| truent_core::exposure::exposure_for(t.invariant_id).is_some())
-                && !truent_pathways::chains().is_empty(),
-            message: format!(
-                "{} detectors have an attack profile, fix and verify step; {} attack chains known",
-                truent_core::exposure::all().len(),
-                truent_pathways::chains().len()
-            ),
-        },
-        HealthCheck {
-            component: "Symbolic execution".to_string(),
-            passed: {
-                let (f, s) = truent_symbolic::halmos::parse(
-                    r#"{"exitcode":1,"test_results":{"t/A.t.sol:A":[{"name":"check_x(uint256)","exitcode":1,"num_models":1,"models":[{"model":{"p":{"variable_name":"x","solidity_type":"uint256","value":1}},"is_valid":true}]}]}}"#,
-                    "p",
-                );
-                s.failed == 1 && f.len() == 1 && f[0].is_proven()
-            },
-            message: format!(
-                "halmos/hevm/mythril parsers turn counterexamples into proven findings; installed: {}",
-                {
-                    let t = truent_symbolic::detect();
-                    if t.is_empty() { "none (pip install halmos)".to_string() } else { t.iter().map(|i| format!("{} {}", i.tool.name(), i.version)).collect::<Vec<_>>().join(", ") }
-                }
-            ),
-        },
-        HealthCheck {
-            component: "Release checklist".to_string(),
-            passed: truent_pathways::SECTIONS.len() == 33
-                && truent_pathways::Signal::all().len() >= 20,
-            message: format!(
-                "{} sections, {} items, {} repository signals",
-                truent_pathways::SECTIONS.len(),
-                truent_pathways::SECTIONS
-                    .iter()
-                    .map(|s| s.items.len())
-                    .sum::<usize>(),
-                truent_pathways::Signal::all().len()
-            ),
-        },
-        HealthCheck {
-            component: "Security pathways".to_string(),
-            passed: truent_pathways::pathways().len() >= 21,
-            message: format!(
-                "{} pathways mapped to native detectors, hosted skills and assessment controls",
-                truent_pathways::pathways().len()
-            ),
-        },
-        dsl_health_check(),
-        HealthCheck {
-            component: "Invariant library".to_string(),
-            passed: builtin_invariant_count() > 0,
-            message: format!("{} built-in invariants loaded", builtin_invariant_count()),
-        },
-        HealthCheck {
-            component: "Detector taxonomy".to_string(),
-            passed: !truent_core::taxonomy::all().is_empty(),
-            message: format!(
-                "{} detectors mapped to CWE/SWC/OWASP/DASP",
-                truent_core::taxonomy::all().len()
-            ),
-        },
-        report_health_check(),
-        skills_health_check(),
-    ];
-
-    match args.format {
-        FormatArg::Text => {
-            if !quiet {
-                println!("{}", render_doctor_results(&checks));
-            }
-        }
-        FormatArg::Json => {
-            // Build components map
-            let mut components = serde_json::Map::new();
-            for check in &checks {
-                components.insert(
-                    check.component.clone(),
-                    json!({
-                        "status": if check.passed { "ok" } else { "error" },
-                        "message": &check.message,
-                    }),
-                );
-            }
-
-            let report = json!({
-                "status": if checks.iter().all(|c| c.passed) { "healthy" } else { "error" },
-                "components": components,
-            });
-
-            let output_json = serde_json::to_string_pretty(&report)?;
-
-            if let Some(output_path) = args.output {
-                std::fs::write(&output_path, &output_json)?;
-                if !quiet {
-                    eprintln!("✓ Report written to {}", output_path.display());
-                }
-            } else {
-                println!("{}", output_json);
-            }
-        }
-        FormatArg::Html => {
-            anyhow::bail!("HTML output is not supported by `truent doctor`; use --format text or --format json");
-        }
-    }
-
-    // Exit non-zero when a component is unhealthy.
-    //
-    // Every check used to be a hardcoded `passed: true`, so the return value
-    // was academic. Now that checks report real state, `truent doctor` is only
-    // usable as an install gate — which is exactly how the release workflow
-    // uses it — if a failure actually fails.
-    if checks.iter().any(|c| !c.passed) {
-        std::process::exit(1);
-    }
-
-    Ok(())
-}
-
 /// Handle the `scan` subcommand (enhanced version of check).
 /// Rank a violation/finding severity string for threshold comparisons (higher = more severe).
 fn severity_rank(name: &str) -> u32 {
@@ -4028,165 +3691,6 @@ fn cmd_scan(args: ScanArgs, quiet: bool, verbose: bool) -> Result<()> {
     });
     if blocking {
         std::process::exit(1);
-    }
-
-    Ok(())
-}
-
-/// Handle the `registry` subcommand.
-fn cmd_registry(args: RegistryArgs, quiet: bool) -> Result<()> {
-    use truent_core::EXPLOIT_REGISTRY;
-
-    match args.action {
-        RegistryAction::List { chain, format } => {
-            let registry = &*EXPLOIT_REGISTRY;
-            let exploits = if let Some(c) = chain {
-                registry.by_chain(&c)
-            } else {
-                registry.all()
-            };
-
-            match format {
-                FormatArg::Text => {
-                    if !quiet {
-                        println!(
-                            "\n{} Historical DeFi Exploits Mapped to Truent Invariants",
-                            exploits.len()
-                        );
-                        println!("{}", "=".repeat(80));
-                        for exploit in &exploits {
-                            println!(
-                                "\n  {} | {} | {} | ${} loss",
-                                exploit.id, exploit.protocol, exploit.date, exploit.loss_usd
-                            );
-                            println!("    Invariants: {}", exploit.invariant_ids.join(", "));
-                        }
-                        println!("\n{}", "=".repeat(80));
-                        println!("Total loss: ${}", registry.total_loss());
-                    }
-                }
-                FormatArg::Json => {
-                    let json_exploits: Vec<_> = exploits.iter().map(|e| json!(e)).collect();
-                    println!("{}", serde_json::to_string_pretty(&json_exploits)?);
-                }
-                _ => {
-                    anyhow::bail!("HTML output is not supported by `truent registry list`; use --format text or --format json");
-                }
-            }
-        }
-        RegistryAction::Show { id, format } => {
-            let registry = &*EXPLOIT_REGISTRY;
-
-            match registry.get(&id) {
-                Some(exploit) => match format {
-                    FormatArg::Text => {
-                        if !quiet {
-                            println!("\n{} - {} ({})", exploit.id, exploit.protocol, exploit.date);
-                            println!("{}", "=".repeat(80));
-                            println!("Loss: ${}", exploit.loss_usd);
-                            println!("Chain: {}", exploit.chain);
-                            println!("\nAttack Summary:\n{}\n", exploit.attack_summary);
-                            println!("Invariants Violated:");
-                            for inv_id in &exploit.invariant_ids {
-                                println!("  - {}", inv_id);
-                            }
-                            println!("\nTx Hash: {}", exploit.tx_hash);
-                            println!("Postmortem: {}\n", exploit.postmortem_url);
-                        }
-                    }
-                    FormatArg::Json => {
-                        println!("{}", serde_json::to_string_pretty(&exploit)?);
-                    }
-                    _ => {
-                        anyhow::bail!("HTML output is not supported by `truent registry show`; use --format text or --format json");
-                    }
-                },
-                None => {
-                    if !quiet {
-                        eprintln!("✗ Exploit not found: {}", id);
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(())
-}
-
-/// Handle the `invariants` subcommand.
-fn cmd_invariants(args: InvariantsArgs, quiet: bool) -> Result<()> {
-    use truent_core::{get_invariant, invariant_count, invariants_for_chain};
-
-    match args.action {
-        InvariantsAction::List {
-            chain,
-            severity: _,
-            format,
-        } => match format {
-            FormatArg::Text => {
-                if !quiet {
-                    // Count what is actually listed. Printing the global total
-                    // above a filtered list reads as "9 invariants" over six
-                    // rows.
-                    let count = match &chain {
-                        Some(c) => invariants_for_chain(c).len(),
-                        None => invariant_count(),
-                    };
-                    println!("\n {} Compiled Invariants", count);
-                    println!("{}", "=".repeat(80));
-
-                    if let Some(c) = &chain {
-                        let invariants = invariants_for_chain(c);
-                        println!("Chain: {}\n", c);
-                        for inv in &invariants {
-                            println!("  {} | {} | {}", inv.id, inv.severity, inv.description);
-                        }
-                    } else {
-                        println!("(Total across all chains)\n");
-                        println!("  Use --chain evm|solana|move|soroban to filter\n");
-                    }
-                    println!("{}", "=".repeat(80));
-                }
-            }
-            FormatArg::Json => {
-                if let Some(c) = chain {
-                    let invariants = invariants_for_chain(&c);
-                    let json_invs: Vec<_> = invariants
-                        .iter()
-                        .map(|i| json!({"id": i.id, "severity": i.severity, "chain": i.chain}))
-                        .collect();
-                    println!("{}", serde_json::to_string_pretty(&json_invs)?);
-                }
-            }
-            _ => {
-                anyhow::bail!("HTML output is not supported by `truent invariants list`; use --format text or --format json");
-            }
-        },
-        InvariantsAction::Show { id, format } => match get_invariant(&id) {
-            Some(inv) => match format {
-                FormatArg::Text => {
-                    if !quiet {
-                        println!("\n{}", inv.id);
-                        println!("{}", "=".repeat(80));
-                        println!("Severity: {}", inv.severity);
-                        println!("Chain: {}", inv.chain);
-                        println!("\nDescription:\n{}\n", inv.description);
-                        println!("Message Template: {}\n", inv.message);
-                    }
-                }
-                FormatArg::Json => {
-                    println!("{}", serde_json::to_string_pretty(&json!(inv))?);
-                }
-                _ => {
-                    anyhow::bail!("HTML output is not supported by `truent invariants show`; use --format text or --format json");
-                }
-            },
-            None => {
-                if !quiet {
-                    eprintln!("✗ Invariant not found: {}", id);
-                }
-            }
-        },
     }
 
     Ok(())

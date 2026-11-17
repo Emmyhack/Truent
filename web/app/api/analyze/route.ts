@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
 import { consumeScan, QuotaExceeded, refundScan } from '@/lib/entitlements'
 import { quotaMessage } from '@/lib/plans'
+import { scanRateLimited } from '@/lib/api-policy'
 
 const submissionSchema = z.object({
   code: z.string().min(1, 'Code is required').max(500_000, 'Code exceeds maximum size'),
@@ -17,7 +18,8 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const minuteAgo = new Date(Date.now() - 60_000)
-    if (await prisma.scan.count({ where: { userId: user.id, createdAt: { gte: minuteAgo } } }) >= 5) {
+    const recentScans = await prisma.scan.count({ where: { userId: user.id, createdAt: { gte: minuteAgo } } })
+    if (scanRateLimited(recentScans)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please wait before submitting another scan.' },
         { status: 429, headers: { 'Retry-After': '60' } },
