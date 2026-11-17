@@ -15,7 +15,7 @@ use truent_core::Finding;
 use truent_core::{AnalysisContext, Result};
 
 use crate::ast::{AstContract, SolidityParser, Visibility};
-use crate::bytecode::{IssueType, Severity};
+use crate::bytecode::{BytecodeAnalyzer, IssueType, Severity};
 use crate::cfg::ControlFlowGraph;
 // DEPRECATED: Old detector imports disabled for v0.3.0
 // use crate::detectors::{
@@ -71,10 +71,35 @@ impl EvmAnalyzer {
     }
 
     /// Analyze bytecode for compiled patterns.
-    fn analyze_bytecode(&self, _contract: &AstContract) -> Vec<(IssueType, Severity, String)> {
-        // TODO: Extract bytecode from solc compilation output and analyze
-        // For now, return empty as bytecode is not directly available from AstContract
-        Vec::new()
+    fn analyze_bytecode(&self, contract: &AstContract) -> Vec<(IssueType, Severity, String)> {
+        // Runtime bytecode represents the code callers can execute. Creation
+        // bytecode is only a fallback for compiler outputs that omit it.
+        let bytecode = if contract.runtime_bytecode.is_empty() {
+            &contract.bytecode
+        } else {
+            &contract.runtime_bytecode
+        };
+        if bytecode.is_empty() {
+            return Vec::new();
+        }
+
+        match BytecodeAnalyzer::analyze(bytecode) {
+            Ok(analysis) => analysis
+                .issues
+                .into_iter()
+                .map(|issue| {
+                    (
+                        issue.issue_type,
+                        issue.severity,
+                        format!("{} (bytecode PC {})", issue.description, issue.pc),
+                    )
+                })
+                .collect(),
+            Err(error) => {
+                warn!("Skipping invalid bytecode for '{}': {error}", contract.name);
+                Vec::new()
+            }
+        }
     }
 
     /// Detect security vulnerabilities using pattern matching and structure analysis.
@@ -82,9 +107,16 @@ impl EvmAnalyzer {
         &self,
         contract: &AstContract,
         _cfg: &ControlFlowGraph,
-        _bytecode_issues: &[(IssueType, Severity, String)],
+        bytecode_issues: &[(IssueType, Severity, String)],
     ) -> Vec<(String, String)> {
         let mut vulnerabilities = Vec::new();
+
+        for (issue_type, severity, description) in bytecode_issues {
+            vulnerabilities.push((
+                format!("BYTECODE_{issue_type:?}_{severity:?}").to_uppercase(),
+                description.clone(),
+            ));
+        }
 
         // Check each function for vulnerabilities
         for func in &contract.functions {
@@ -397,5 +429,45 @@ mod tests {
     fn test_analyzer_creation() {
         let analyzer = EvmAnalyzer::new();
         assert_eq!("evm", analyzer.chain());
+    }
+
+    fn contract_with_bytecode(runtime_bytecode: &str, bytecode: &str) -> AstContract {
+        AstContract {
+            name: "Fixture".to_string(),
+            id: 1,
+            state_vars: vec![],
+            functions: vec![],
+            events: vec![],
+            modifiers: vec![],
+            base_contracts: vec![],
+            bytecode: bytecode.to_string(),
+            runtime_bytecode: runtime_bytecode.to_string(),
+        }
+    }
+
+    #[test]
+    fn bytecode_analysis_uses_runtime_code() {
+        // CALL followed by SSTORE is surfaced as a reentrancy risk. The
+        // creation bytecode is deliberately invalid to prove it is ignored.
+        let contract = contract_with_bytecode("50f155", "not-hex");
+        let issues = EvmAnalyzer::new().analyze_bytecode(&contract);
+
+        assert!(issues
+            .iter()
+            .any(|(kind, _, _)| *kind == IssueType::PotentialReentrancy));
+    }
+
+    #[test]
+    fn bytecode_analysis_falls_back_to_creation_code() {
+        let contract = contract_with_bytecode("", "50f155");
+        let issues = EvmAnalyzer::new().analyze_bytecode(&contract);
+
+        assert!(!issues.is_empty());
+    }
+
+    #[test]
+    fn invalid_bytecode_does_not_abort_source_analysis() {
+        let contract = contract_with_bytecode("not-hex", "");
+        assert!(EvmAnalyzer::new().analyze_bytecode(&contract).is_empty());
     }
 }

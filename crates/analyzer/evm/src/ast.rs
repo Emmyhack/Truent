@@ -42,6 +42,10 @@ pub struct AstContract {
     pub modifiers: Vec<AstModifier>,
     /// Inheritance chain.
     pub base_contracts: Vec<String>,
+    /// Creation bytecode emitted by solc.
+    pub bytecode: String,
+    /// Deployed runtime bytecode emitted by solc.
+    pub runtime_bytecode: String,
 }
 
 /// State variable in contract.
@@ -319,6 +323,8 @@ impl SolidityParser {
             events: Self::extract_events(ast)?,
             modifiers: Self::extract_modifiers(ast)?,
             base_contracts: Self::extract_base_contracts(ast),
+            bytecode: output.bytecode.clone(),
+            runtime_bytecode: output.runtime_bytecode.clone(),
         };
 
         info!(
