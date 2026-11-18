@@ -15,6 +15,15 @@ export function scanRateLimited(recentCount: number): boolean {
   return recentCount >= MAX_SCANS_PER_MINUTE
 }
 
+/** Prisma reports uniqueness races with P2002; keep route error handling
+ * structural so it remains testable without importing or initializing Prisma. */
+export function isUniqueConstraintError(error: unknown): boolean {
+  return typeof error === 'object'
+    && error !== null
+    && 'code' in error
+    && (error as { code?: unknown }).code === 'P2002'
+}
+
 export type CheckoutLike = {
   id: string
   payment_status?: string | null
@@ -48,10 +57,14 @@ export function checkoutAction(checkout: CheckoutLike): CheckoutAction | null {
     const subscriptionId = typeof checkout.subscription === 'string'
       ? checkout.subscription
       : checkout.subscription?.id
-    if (!planId || !subscriptionId) return null
     const customerId = typeof checkout.customer === 'string'
       ? checkout.customer
       : (checkout.customer?.id ?? '')
+    // A completed Checkout Session is not necessarily paid (for example,
+    // delayed payment methods). Never grant a subscription until Stripe says
+    // the session is paid, and never persist a subscription we cannot later
+    // manage through a concrete customer id.
+    if (checkout.payment_status !== 'paid' || !planId || !subscriptionId || !customerId) return null
     return { kind: 'subscription', userId, planId, subscriptionId, customerId }
   }
 
