@@ -7,7 +7,7 @@
 //! - Path-sensitive analysis
 //! - Automated vulnerability detection
 
-use crate::errors::AnalysisResult;
+use crate::errors::{AnalysisError, AnalysisResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -244,11 +244,14 @@ impl SymbolicState {
         });
     }
 
-    /// Check constraint satisfiability (placeholder).
+    /// Check constraint satisfiability.
+    ///
+    /// Truent does not currently ship an SMT solver, so callers must not treat
+    /// this state as satisfiable or unsatisfiable without external proof.
     pub fn is_satisfiable(&self) -> AnalysisResult<bool> {
-        // In production, would use Z3 or similar SMT solver
-        // For now, return true
-        Ok(true)
+        Err(AnalysisError::symbolic(
+            "constraint solving is unavailable: no SMT solver is configured",
+        ))
     }
 }
 
@@ -370,8 +373,9 @@ impl SymbolicExecutor {
 
     /// Check satisfiability of constraint system.
     fn check_satisfiability(_system: &ConstraintSystem) -> AnalysisResult<bool> {
-        // In production, would use Z3 solver
-        Ok(false)
+        Err(AnalysisError::symbolic(
+            "invariant verification is unavailable: no SMT solver is configured",
+        ))
     }
 }
 
@@ -533,6 +537,19 @@ mod tests {
         let mut state = SymbolicState::new();
         state.add_variable("x".to_string(), SymbolicValue::concrete(42));
         assert!(state.variables.contains_key("x"));
+    }
+
+    #[test]
+    fn symbolic_state_fails_closed_without_solver() {
+        let error = SymbolicState::new().is_satisfiable().unwrap_err();
+        assert!(error.to_string().contains("no SMT solver is configured"));
+    }
+
+    #[test]
+    fn invariant_verification_fails_closed_without_solver() {
+        let error =
+            SymbolicExecutor::verify_invariant("balance >= 0", "function f() {}", 256).unwrap_err();
+        assert!(error.to_string().contains("no SMT solver is configured"));
     }
 
     #[test]
