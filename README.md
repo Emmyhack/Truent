@@ -645,10 +645,11 @@ pub mystery: AccountInfo<'info>,
 | --- | --- | --- |
 | v0.1 | Pattern-based analysis, 22 invariants, full CLI | ✅ Shipped |
 | v0.2 | Real AST parsing, Anchor-aware analysis | ✅ Shipped |
-| v0.3 | Runtime fuzzing — revm + solana-program-test | 🔨 Next |
-| v0.4 | Bounded model checking | 📋 Planned |
-| v0.5 | Symbolic execution via Z3 | 📋 Planned |
-| v1.0 | Slither + Echidna + Mythril for every chain | 🎯 Goal |
+| v0.3 | Multi-chain detectors and runtime fuzzing | ✅ Shipped |
+| v0.4 | Security pathways and repository-wide analysis | ✅ Shipped |
+| v0.5 | Symbolic execution and release hardening | ✅ Shipped |
+| v0.6 | General, supply-chain, runtime, and Soroban coverage | ✅ Current |
+| v1.0 | Stable detector and report compatibility guarantees | 🎯 Goal |
 
 ---
 
@@ -665,8 +666,9 @@ pub mystery: AccountInfo<'info>,
 
 Issues, PRs, and feedback are welcome.
 
-If you are a Rust engineer familiar with `syn` or Anchor internals,
-the v0.3 fuzzing work is the highest-impact contribution area right now.
+If you are a Rust engineer familiar with compiler analysis or Anchor internals,
+high-precision detector improvements and false-positive regression fixtures are
+the highest-impact contribution areas right now.
 
 If you are a smart contract auditor, help expand the invariant library
 with real attack patterns you have encountered.

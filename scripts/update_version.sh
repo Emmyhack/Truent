@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Update version across all crates and npm package
-# Usage: ./scripts/update_version.sh 0.1.8
+# Update the workspace version, internal dependency pins, and npm package.
+# Usage: ./scripts/update_version.sh 0.6.1
 
 set -e
 
 if [ -z "$1" ]; then
   echo "Usage: $0 <new_version>"
-  echo "Example: $0 0.1.8"
+  echo "Example: $0 0.6.1"
   exit 1
 fi
 
@@ -69,28 +69,8 @@ update_package_json() {
 # Update workspace Cargo.toml
 update_cargo_toml "Cargo.toml"
 
-# Update all crate Cargo.toml files
-CRATE_DIRS=(
-  "crates/core"
-  "crates/cli"
-  "crates/analyzer/solana"
-  "crates/analyzer/evm"
-  "crates/analyzer/move"
-  "crates/simulator"
-  "crates/dsl_parser"
-  "crates/ir"
-  "crates/report"
-  "crates/utils"
-  "crates/invariant_library"
-  "crates/generator/evm"
-  "crates/generator/move"
-  "crates/generator/solana"
-)
-
-echo "Updating Cargo.toml files..."
-for dir in "${CRATE_DIRS[@]}"; do
-  update_cargo_toml "$dir/Cargo.toml"
-done
+# Member crates use `version.workspace = true`; updating them individually is
+# both unnecessary and error-prone when a new crate is added.
 
 # Update npm package
 echo ""
