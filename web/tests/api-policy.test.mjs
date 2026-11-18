@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { checkoutAction, scanListLimit, scanRateLimited } from '../lib/api-policy.ts'
+import { checkoutAction, isUniqueConstraintError, scanListLimit, scanRateLimited } from '../lib/api-policy.ts'
 import { spendFirstAvailable } from '../lib/credit-spend.ts'
 
 test('scan list limits are finite integers clamped to the API bounds', () => {
@@ -16,6 +16,13 @@ test('the sixth scan in a minute is refused', () => {
   assert.equal(scanRateLimited(4), false)
   assert.equal(scanRateLimited(5), true)
   assert.equal(scanRateLimited(6), true)
+})
+
+test('only Prisma unique-constraint failures are classified as signup conflicts', () => {
+  assert.equal(isUniqueConstraintError({ code: 'P2002', meta: { target: ['email'] } }), true)
+  assert.equal(isUniqueConstraintError({ code: 'P2024' }), false)
+  assert.equal(isUniqueConstraintError(new Error('P2002')), false)
+  assert.equal(isUniqueConstraintError(null), false)
 })
 
 test('checkout classification fails closed on incomplete or unpaid payloads', () => {

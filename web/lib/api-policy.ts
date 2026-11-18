@@ -15,6 +15,15 @@ export function scanRateLimited(recentCount: number): boolean {
   return recentCount >= MAX_SCANS_PER_MINUTE
 }
 
+/** Prisma reports uniqueness races with P2002; keep route error handling
+ * structural so it remains testable without importing or initializing Prisma. */
+export function isUniqueConstraintError(error: unknown): boolean {
+  return typeof error === 'object'
+    && error !== null
+    && 'code' in error
+    && (error as { code?: unknown }).code === 'P2002'
+}
+
 export type CheckoutLike = {
   id: string
   payment_status?: string | null

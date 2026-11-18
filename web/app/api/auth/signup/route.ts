@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { newUserDefaults } from '@/lib/new-user'
+import { isUniqueConstraintError } from '@/lib/api-policy'
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: 'Email already in use' },
-        { status: 400 }
+        { status: 409 }
       )
     }
 
@@ -54,6 +55,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: error.issues[0].message },
         { status: 400 }
+      )
+    }
+
+    // The pre-insert lookup improves the common response, but the database
+    // unique constraint is the authority when two signups race.
+    if (isUniqueConstraintError(error)) {
+      return NextResponse.json(
+        { error: 'Email already in use' },
+        { status: 409 },
       )
     }
 
