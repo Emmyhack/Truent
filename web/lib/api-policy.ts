@@ -48,10 +48,14 @@ export function checkoutAction(checkout: CheckoutLike): CheckoutAction | null {
     const subscriptionId = typeof checkout.subscription === 'string'
       ? checkout.subscription
       : checkout.subscription?.id
-    if (!planId || !subscriptionId) return null
     const customerId = typeof checkout.customer === 'string'
       ? checkout.customer
       : (checkout.customer?.id ?? '')
+    // A completed Checkout Session is not necessarily paid (for example,
+    // delayed payment methods). Never grant a subscription until Stripe says
+    // the session is paid, and never persist a subscription we cannot later
+    // manage through a concrete customer id.
+    if (checkout.payment_status !== 'paid' || !planId || !subscriptionId || !customerId) return null
     return { kind: 'subscription', userId, planId, subscriptionId, customerId }
   }
 

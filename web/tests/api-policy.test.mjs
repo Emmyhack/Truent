@@ -22,6 +22,8 @@ test('checkout classification fails closed on incomplete or unpaid payloads', ()
   assert.equal(checkoutAction({ id: 'x', metadata: { kind: 'credits', productId: 'scan_pack_25' }, payment_status: 'paid' }), null)
   assert.equal(checkoutAction({ id: 'x', metadata: { userId: 'u', kind: 'credits', productId: 'scan_pack_25' }, payment_status: 'unpaid' }), null)
   assert.equal(checkoutAction({ id: 'x', metadata: { userId: 'u', kind: 'subscription', planId: 'team' } }), null)
+  assert.equal(checkoutAction({ id: 'x', metadata: { userId: 'u', kind: 'subscription', planId: 'team' }, subscription: 'sub', customer: 'cus', payment_status: 'unpaid' }), null)
+  assert.equal(checkoutAction({ id: 'x', metadata: { userId: 'u', kind: 'subscription', planId: 'team' }, subscription: 'sub', payment_status: 'paid' }), null)
   assert.equal(checkoutAction({ id: 'x', metadata: { userId: 'u', kind: 'unknown' } }), null)
 })
 
@@ -31,7 +33,7 @@ test('checkout classification returns one explicit fulfillment action', () => {
     { kind: 'credits', userId: 'u', productId: 'scan_pack_25' },
   )
   assert.deepEqual(
-    checkoutAction({ id: 's', metadata: { userId: 'u', planId: 'team' }, subscription: { id: 'sub' }, customer: 'cus' }),
+    checkoutAction({ id: 's', metadata: { userId: 'u', planId: 'team' }, subscription: { id: 'sub' }, customer: 'cus', payment_status: 'paid' }),
     { kind: 'subscription', userId: 'u', planId: 'team', subscriptionId: 'sub', customerId: 'cus' },
   )
 })
