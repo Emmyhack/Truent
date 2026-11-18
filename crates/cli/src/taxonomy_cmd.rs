@@ -55,23 +55,29 @@ pub(crate) fn run(args: TaxonomyArgs) -> Result<()> {
 
     let needle = args.id.as_ref().map(|s| s.to_uppercase());
 
-    let entries: Vec<&truent_core::Taxonomy> = truent_core::taxonomy::all()
-        .iter()
-        .filter(|t| match chain_filter {
-            Some(c) => t.chain() == Some(c),
+    let metadata: Vec<truent_core::DetectorMetadata> = truent_core::all_metadata()
+        .filter(|row| match chain_filter {
+            Some(c) => row.taxonomy.chain() == Some(c),
             None => true,
         })
-        .filter(|t| match &needle {
-            Some(n) => t.tags().iter().any(|tag| tag.to_uppercase() == *n),
+        .filter(|row| match &needle {
+            Some(n) => row
+                .taxonomy
+                .tags()
+                .iter()
+                .any(|tag| tag.to_uppercase() == *n),
             None => true,
         })
         .collect();
 
+    let entries: Vec<&truent_core::Taxonomy> = metadata.iter().map(|row| row.taxonomy).collect();
+
     let rendered = match args.format {
         TaxonomyFormat::Json => serde_json::to_string_pretty(&json!({
             "total": entries.len(),
-            "detectors": entries.iter().map(|t| {
-                let e = truent_core::exposure::exposure_for(t.invariant_id);
+            "detectors": metadata.iter().map(|row| {
+                let t = row.taxonomy;
+                let e = row.exposure;
                 json!({
                     "invariant_id": t.invariant_id,
                     "chain": t.chain(),
@@ -84,12 +90,12 @@ pub(crate) fn run(args: TaxonomyArgs) -> Result<()> {
                     "attack_names": t.attack.iter().map(|a| a.name).collect::<Vec<_>>(),
                     "nist_csf": t.nist_csf.iter().map(|n| n.id).collect::<Vec<_>>(),
                     // Exposure profile: how the weakness is reached and closed.
-                    "vector": e.map(|e| e.vector),
-                    "prereq": e.map(|e| e.prereq),
-                    "interaction": e.map(|e| e.interaction),
-                    "impact": e.map(|e| e.impact),
-                    "fix": e.map(|e| e.fix),
-                    "verify": e.map(|e| e.verify),
+                    "vector": e.vector,
+                    "prereq": e.prereq,
+                    "interaction": e.interaction,
+                    "impact": e.impact,
+                    "fix": e.fix,
+                    "verify": e.verify,
                 })
             }).collect::<Vec<_>>(),
         }))?,

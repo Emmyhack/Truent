@@ -48,9 +48,7 @@ pub(crate) fn run(args: DoctorArgs, quiet: bool) -> Result<()> {
         super::runtime_health_check(),
         HealthCheck {
             component: "Exposure & remediation".to_string(),
-            passed: truent_core::taxonomy::all()
-                .iter()
-                .all(|t| truent_core::exposure::exposure_for(t.invariant_id).is_some())
+            passed: truent_core::all_metadata().len() == truent_core::taxonomy::all().len()
                 && !truent_pathways::chains().is_empty(),
             message: format!(
                 "{} detectors have an attack profile, fix and verify step; {} attack chains known",
