@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/Emmyhack/Truent/discussions
+    about: Ask a question, propose an idea, or discuss an approach before opening an issue.
+  - name: Getting started
+    url: https://github.com/Emmyhack/Truent#readme
+    about: How to install Truent, run it against a contract, and where the detectors live.
