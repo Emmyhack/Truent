@@ -96,7 +96,7 @@ hex = "0.4"
 
 # Code analysis
 petgraph = { version = "0.6", features = ["serde-1"] }
-tree-sitter = "0.20"
+tree-sitter = "0.26"
 tree-sitter-solidity = "1.2"
 cc = "1.0"
 
