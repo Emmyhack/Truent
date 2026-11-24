@@ -3356,7 +3356,7 @@ dependencies = [
  "serde_json",
  "solc",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "truent-core",
  "truent-ir",
@@ -3383,7 +3383,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "tree-sitter",
  "truent-core",
@@ -3404,7 +3404,7 @@ dependencies = [
  "serde_json",
  "syn 2.0.117",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "truent-core",
  "truent-ir",
@@ -3424,7 +3424,7 @@ dependencies = [
  "serde_json",
  "syn 2.0.117",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "truent-core",
  "truent-ir",
@@ -3450,7 +3450,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "terminal_size",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "toml",
  "tracing",
  "tracing-subscriber",
@@ -3488,7 +3488,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "toml",
  "tracing",
 ]
@@ -3502,7 +3502,7 @@ dependencies = [
  "pest_derive",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "truent-core",
 ]
 
@@ -3512,7 +3512,7 @@ version = "0.6.0"
 dependencies = [
  "rand 0.8.6",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -3542,7 +3542,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "truent-dynamic-core",
 ]
 
@@ -3553,7 +3553,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "truent-analyzer-evm",
  "truent-core",
@@ -3568,7 +3568,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "truent-analyzer-move",
  "truent-core",
@@ -3587,7 +3587,7 @@ dependencies = [
  "serde",
  "serde_json",
  "syn 2.0.117",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "truent-analyzer-solana",
  "truent-core",
@@ -3612,7 +3612,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "toml",
  "tracing",
  "truent-core",
@@ -3652,7 +3652,7 @@ dependencies = [
  "rustls-pki-types",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "truent-core",
  "ureq",
  "webpki-roots 0.26.11",
@@ -3668,7 +3668,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "truent-core",
 ]
 
@@ -3681,7 +3681,7 @@ dependencies = [
  "serde_json",
  "serde_yaml_ng",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "walkdir",
 ]
 
@@ -3701,7 +3701,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "truent-core",
 ]
 
@@ -3716,7 +3716,7 @@ dependencies = [
  "serde_json",
  "sha3",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "tracing-subscriber",
  "ureq",
